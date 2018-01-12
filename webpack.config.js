@@ -7,13 +7,11 @@ module.exports = {
     filename: 'index.js'
   },
   resolve: {
-    modules: [
-      path.join(__dirname, "src"),
-      "node_modules"
-    ],
-    extensions: ['.js', '.elm']
+    extensions: ['.js', '.elm'],
+    modules: [path.join(__dirname, "src"), 'node_modules']
   },
   module: {
+    noParse: /\.elm$/,
     rules: [
       {
         test: /\.html$/,
@@ -35,8 +33,7 @@ module.exports = {
           // loader: './src/index.js'
         }
       }
-    ],
-    noParse: /\.elm$/
+    ]
   },
   devServer: {
     inline: true,
