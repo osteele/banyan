@@ -13,7 +13,12 @@ app.ports.listFiles.subscribe((accessToken) => {
         fn
             .then((response) => {
                 var files = response.entries.map((entry) => {
-                    return { tag: entry['.tag'], path: entry.path_display, size: entry.size || 0 };
+                    return {
+                        tag: entry['.tag']
+                        , key: entry.path_lower
+                        , path: entry.path_display
+                        , size: entry.size || null
+                    };
                 })
                 app.ports.fileList.send(files);
                 if (--pages > 0 && response.has_more) {

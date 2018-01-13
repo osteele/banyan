@@ -135,16 +135,16 @@ addItem filePath fileSize tree =
             tree
 
 
-updateTree : List FileEntry -> SizeTree -> SizeTree
-updateTree files tree =
+addFileEntries : List FileEntry -> SizeTree -> SizeTree
+addFileEntries entries tree =
     let
         components filePath =
             filePath |> dropPrefix "/" |> Maybe.withDefault filePath |> String.split "/"
 
-        update item tree =
-            addItem (components item.path) item.size tree
+        update entry tree =
+            addItem (components entry.path) (entry.size |> Maybe.withDefault 0) tree
     in
-    List.foldl update tree <| List.filter (\f -> f.tag == "file") files
+    List.foldl update tree <| List.filter (\f -> f.tag == "file") entries
 
 
 
@@ -197,8 +197,8 @@ update msg model =
             in
             ( model, cmd )
 
-        FileList files ->
-            ( { model | tree = updateTree files model.tree }, Cmd.none )
+        FileList entries ->
+            ( { model | tree = addFileEntries entries model.tree }, Cmd.none )
 
 
 
@@ -218,8 +218,9 @@ port dropboxClientID : (String -> msg) -> Sub msg
 
 type alias FileEntry =
     { tag : String
+    , key : String
     , path : String
-    , size : Int
+    , size : Maybe Int
     }
 
 
@@ -247,6 +248,7 @@ view model =
         ]
 
 
+treeView_ : number -> SizeTree -> Html msg
 treeView_ depth tree =
     -- let
     --     _ =
@@ -255,6 +257,7 @@ treeView_ depth tree =
     treeView depth tree
 
 
+treeView : number -> SizeTree -> Html msg
 treeView depth tree =
     let
         fmt name size =
