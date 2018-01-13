@@ -9,7 +9,7 @@ import Navigation
 main : Program Never Model (Dropbox.Msg Msg)
 main =
   Dropbox.program
-    { init = \location -> ( init location, requestConfig () )
+    { init = \location -> ( init location, Cmd.none )
     , update = update
     , subscriptions = subscriptions
     , view = view
@@ -40,7 +40,7 @@ type Msg
   | ClientID String
   | AuthResponse Dropbox.AuthorizeResult
   | ListFiles
-  | FileList String
+  | FileList (List FileEntry)
 
 update : Msg -> Model -> (Model, Cmd msg)
 update msg model =
@@ -86,11 +86,16 @@ subscriptions model =
     , fileList FileList
     ]
 
-port requestConfig : () -> Cmd msg
 port dropboxClientID : (String -> msg) -> Sub msg
 
+type alias FileEntry =
+  { tag : String
+  , path: String
+  , size: Int
+  }
+
 port listFiles : String -> Cmd msg
-port fileList : (String -> msg) -> Sub msg
+port fileList : (List FileEntry -> msg) -> Sub msg
 
 -- view
 
