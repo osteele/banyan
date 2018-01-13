@@ -1,5 +1,7 @@
 port module Main exposing (..)
 
+import BeautifulExample
+import Color
 import Debug
 import Dropbox
 import Html exposing (Html, button, div, text)
@@ -14,9 +16,21 @@ main =
         { init = \location -> ( init location, Cmd.none )
         , update = update
         , subscriptions = subscriptions
-        , view = view
+        , view = \model -> BeautifulExample.view config (view model)
         , onAuth = AuthResponse
         }
+
+
+config : BeautifulExample.Config
+config =
+    { title = "Banyan"
+    , details =
+        Just """Dropbox file size browser."""
+    , color = Just Color.blue
+    , maxWidth = 800
+    , githubUrl = Nothing -- Just "https://github.com/avh4/elm-beautiful-example"
+    , documentationUrl = Nothing -- Just "http://package.elm-lang.org/packages/avh4/elm-beautiful-example/latest"
+    }
 
 
 
