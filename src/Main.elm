@@ -66,6 +66,16 @@ emptySizeTree name =
     Dir name 0 Dict.empty
 
 
+itemName : SizeTree -> String
+itemName item =
+    case item of
+        Dir n _ _ ->
+            n
+
+        File n _ ->
+            n
+
+
 itemSize : SizeTree -> Int
 itemSize item =
     case item of
@@ -91,35 +101,35 @@ updateSize tree =
 
 
 addItem : List String -> Int -> SizeTree -> SizeTree
-addItem path size tree =
-    case path of
+addItem filePath fileSize tree =
+    case filePath of
         name :: [] ->
             case tree of
                 Dir n s children ->
                     let
                         ch =
-                            Dict.insert name (File name size) children
+                            Dict.insert name (File name fileSize) children
                     in
                     Dir n s ch |> updateSize
 
                 _ ->
-                    File name size
+                    File name fileSize
 
-        dir :: subpath ->
+        dir :: subdir ->
             let
                 emptyDirTree =
                     emptySizeTree dir
 
-                update : Maybe SizeTree -> Maybe SizeTree
+                update : Maybe SizeTree -> SizeTree
                 update maybeTree =
-                    Just <| addItem subpath size (Maybe.withDefault emptyDirTree maybeTree)
+                    addItem subdir fileSize (Maybe.withDefault emptyDirTree maybeTree)
             in
             case tree of
                 Dir n s children ->
-                    Dir n s (children |> Dict.update dir update) |> updateSize
+                    Dir n s (children |> Dict.update dir (Just << update)) |> updateSize
 
                 _ ->
-                    addItem subpath size emptyDirTree
+                    addItem subdir fileSize emptyDirTree
 
         [] ->
             tree
@@ -128,10 +138,13 @@ addItem path size tree =
 updateTree : List FileEntry -> SizeTree -> SizeTree
 updateTree files tree =
     let
+        components filePath =
+            filePath |> dropPrefix "/" |> Maybe.withDefault filePath |> String.split "/"
+
         update item tree =
-            addItem (item.path |> String.split "/") item.size tree
+            addItem (components item.path) item.size tree
     in
-    List.foldl update tree files
+    List.foldl update tree <| List.filter (\f -> f.tag == "file") files
 
 
 
@@ -230,15 +243,15 @@ view model =
             [ Html.Events.onClick ListFiles ]
             [ Html.text "List files" ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
-        , treeView_ 100 model.tree
+        , treeView_ 1 model.tree
         ]
 
 
 treeView_ depth tree =
-    let
-        _ =
-            Debug.log "tree" tree
-    in
+    -- let
+    --     _ =
+    --         Debug.log "tree" tree
+    -- in
     treeView depth tree
 
 
@@ -250,6 +263,7 @@ treeView depth tree =
         childViews children =
             Html.ul []
                 (Dict.values children
+                    |> List.sortBy itemName
                     |> List.map
                         (\t -> Html.li [] [ treeView (depth - 1) t ])
                 )
@@ -266,6 +280,10 @@ treeView depth tree =
                   else
                     div [] []
                 ]
+
+
+
+-- utilities
 
 
 extractAccessToken : Dropbox.UserAuth -> Maybe String
@@ -296,3 +314,11 @@ humanize n =
 
         _ ->
             toString n ++ " bytes"
+
+
+dropPrefix : String -> String -> Maybe String
+dropPrefix prefix s =
+    if String.startsWith prefix s then
+        s |> String.dropLeft (String.length prefix) |> Just
+    else
+        Nothing
