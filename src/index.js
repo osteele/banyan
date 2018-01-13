@@ -9,14 +9,19 @@ app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe((accessToken) => {
     var dbx = new Dropbox({ accessToken });
-    dbx.filesListFolder({ path: '' })
-        .then(function (response) {
-            var files = response.entries.map((entry) => {
-                return { tag: entry['.tag'], path: entry.path_display, size: entry.size || 0 };
+    var listFiles = (fn, pages) =>
+        fn
+            .then((response) => {
+                var files = response.entries.map((entry) => {
+                    return { tag: entry['.tag'], path: entry.path_display, size: entry.size || 0 };
+                })
+                app.ports.fileList.send(files);
+                if (--pages > 0 && response.has_more) {
+                    listFiles(dbx.filesListFolderContinue({ cursor: response.cursor }), pages);
+                }
             })
-            app.ports.fileList.send(files);
-        })
-        .catch(function (error) {
-            console.log(error);
-        });
+            .catch((error) => {
+                console.log(error);
+            });
+    listFiles(dbx.filesListFolder({ path: '', recursive: true }), 1);
 });
