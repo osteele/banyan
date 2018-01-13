@@ -24,12 +24,11 @@ main =
 config : BeautifulExample.Config
 config =
     { title = "Banyan"
-    , details =
-        Just """Dropbox file size browser."""
+    , details = Just "Dropbox file size browser."
     , color = Just Color.blue
     , maxWidth = 800
-    , githubUrl = Nothing -- Just "https://github.com/avh4/elm-beautiful-example"
-    , documentationUrl = Nothing -- Just "http://package.elm-lang.org/packages/avh4/elm-beautiful-example/latest"
+    , githubUrl = Nothing
+    , documentationUrl = Nothing
     }
 
 
@@ -69,6 +68,12 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
+        AuthResponse (Dropbox.AuthorizeOk auth) ->
+            ( { model | auth = Just auth.userAuth }, Cmd.none )
+
+        AuthResponse _ ->
+            ( { model | auth = Nothing }, Cmd.none )
+
         ClientID clientId ->
             ( { model | clientId = clientId }, Cmd.none )
 
@@ -85,12 +90,6 @@ update msg model =
                 }
                 model.location
             )
-
-        AuthResponse (Dropbox.AuthorizeOk auth) ->
-            ( { model | auth = Just auth.userAuth }, Cmd.none )
-
-        AuthResponse _ ->
-            ( { model | auth = Nothing }, Cmd.none )
 
         ListFiles ->
             ( model, model.auth |> Maybe.andThen extractAccessToken |> Maybe.withDefault "" |> listFiles )
