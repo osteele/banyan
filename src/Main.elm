@@ -3,6 +3,7 @@ port module Main exposing (..)
 import BeautifulExample
 import Color
 import Debug
+import Dict
 import Dropbox
 import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
@@ -37,20 +38,100 @@ config =
 
 
 type alias Model =
-    { auth : Maybe Dropbox.UserAuth
+    { location : Navigation.Location
+    , auth : Maybe Dropbox.UserAuth
     , clientId : String
     , debug : Maybe String
-    , location : Navigation.Location
+    , tree : SizeTree
     }
 
 
 init : Navigation.Location -> Model
 init location =
-    { auth = Nothing
+    { location = location
+    , auth = Nothing
     , clientId = ""
     , debug = Nothing
-    , location = location
+    , tree = emptySizeTree "/"
     }
+
+
+type SizeTree
+    = Dir String Int (Dict.Dict String SizeTree)
+    | File String Int
+
+
+emptySizeTree : String -> SizeTree
+emptySizeTree name =
+    Dir name 0 Dict.empty
+
+
+itemSize : SizeTree -> Int
+itemSize item =
+    case item of
+        Dir _ s _ ->
+            s
+
+        File _ s ->
+            s
+
+
+updateSize : SizeTree -> SizeTree
+updateSize tree =
+    case tree of
+        Dir n _ children ->
+            let
+                s =
+                    children |> Dict.values |> List.map itemSize |> List.sum
+            in
+            Dir n s children
+
+        file ->
+            file
+
+
+addItem : List String -> Int -> SizeTree -> SizeTree
+addItem path size tree =
+    case path of
+        name :: [] ->
+            case tree of
+                Dir n s children ->
+                    let
+                        ch =
+                            Dict.insert name (File name size) children
+                    in
+                    Dir n s ch |> updateSize
+
+                _ ->
+                    File name size
+
+        dir :: subpath ->
+            let
+                emptyDirTree =
+                    emptySizeTree dir
+
+                update : Maybe SizeTree -> Maybe SizeTree
+                update maybeTree =
+                    Just <| addItem subpath size (Maybe.withDefault emptyDirTree maybeTree)
+            in
+            case tree of
+                Dir n s children ->
+                    Dir n s (children |> Dict.update dir update) |> updateSize
+
+                _ ->
+                    addItem subpath size emptyDirTree
+
+        [] ->
+            tree
+
+
+updateTree : List FileEntry -> SizeTree -> SizeTree
+updateTree files tree =
+    let
+        update item tree =
+            addItem (item.path |> String.split "/") item.size tree
+    in
+    List.foldl update tree files
 
 
 
@@ -92,14 +173,19 @@ update msg model =
             )
 
         ListFiles ->
-            ( model, model.auth |> Maybe.andThen extractAccessToken |> Maybe.withDefault "" |> listFiles )
-
-        FileList s ->
             let
-                _ =
-                    Debug.log "fileList" s
+                cmd =
+                    case model.auth |> Maybe.andThen extractAccessToken of
+                        Just token ->
+                            listFiles token
+
+                        Nothing ->
+                            Cmd.none
             in
-            ( model, Cmd.none )
+            ( model, cmd )
+
+        FileList files ->
+            ( { model | tree = updateTree files model.tree }, Cmd.none )
 
 
 
@@ -137,21 +223,49 @@ port fileList : (List FileEntry -> msg) -> Sub msg
 view : Model -> Html Msg
 view model =
     div []
-        [ div []
-            [ model.auth
-                |> Maybe.andThen extractAccessToken
-                |> Maybe.map redact
-                |> Maybe.withDefault "not signed in"
-                |> text
-            ]
-        , Html.button
+        [ Html.button
             [ Html.Events.onClick SignIn ]
-            [ Html.text "Sign into Dropbox" ]
+            [ Html.text (model.auth |> Maybe.map (\_ -> "Sign out") |> Maybe.withDefault "Sign into Dropbox") ]
         , Html.button
             [ Html.Events.onClick ListFiles ]
             [ Html.text "List files" ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
+        , treeView_ 100 model.tree
         ]
+
+
+treeView_ depth tree =
+    let
+        _ =
+            Debug.log "tree" tree
+    in
+    treeView depth tree
+
+
+treeView depth tree =
+    let
+        fmt name size =
+            name ++ " (" ++ humanize size ++ ")"
+
+        childViews children =
+            Html.ul []
+                (Dict.values children
+                    |> List.map
+                        (\t -> Html.li [] [ treeView (depth - 1) t ])
+                )
+    in
+    case tree of
+        File name size ->
+            div [] [ text <| fmt name size ]
+
+        Dir name size children ->
+            div []
+                [ text <| fmt name size
+                , if depth > 0 then
+                    childViews children
+                  else
+                    div [] []
+                ]
 
 
 extractAccessToken : Dropbox.UserAuth -> Maybe String
@@ -174,9 +288,11 @@ firstMatch re s =
             Nothing
 
 
-redact : String -> String
-redact s =
-    if String.length s > 6 then
-        String.left 3 s ++ "…" ++ String.right 3 s
-    else
-        s
+humanize : Int -> String
+humanize n =
+    case List.filter (\( s, _ ) -> toFloat n > s) [ ( 1.0e12, "T" ), ( 1.0e9, "G" ), ( 1.0e6, "M" ), ( 1.0e3, "K" ) ] of
+        ( s, unit ) :: _ ->
+            toString (toFloat n / s) ++ unit
+
+        _ ->
+            toString n ++ " bytes"
