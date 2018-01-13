@@ -2,13 +2,13 @@ port module Main exposing (..)
 
 import BeautifulExample
 import Color
-import Debug
 import Dict
 import Dropbox
 import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
 import Navigation
 import Regex
+import Round
 
 
 main : Program Never Model (Dropbox.Msg Msg)
@@ -310,7 +310,7 @@ humanize : Int -> String
 humanize n =
     case List.filter (\( s, _ ) -> toFloat n > s) [ ( 1.0e12, "T" ), ( 1.0e9, "G" ), ( 1.0e6, "M" ), ( 1.0e3, "K" ) ] of
         ( s, unit ) :: _ ->
-            toString (toFloat n / s) ++ unit
+            (toFloat n / s |> Round.round 1) ++ unit
 
         _ ->
             toString n ++ " bytes"
