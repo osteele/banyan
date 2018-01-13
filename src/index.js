@@ -5,13 +5,7 @@ var Elm = require('./Main');
 var Dropbox = require('dropbox')
 
 var app = Elm.Main.embed(document.getElementById('main'));
-app.ports.dropboxClientID.send('client id (init)');
-
-app.ports.requestConfig.subscribe(() => {
-    console.info('requested client id')
-    app.ports.dropboxClientID.send('client id');
-    console.info('sent client id')
-});
+app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe((accessToken) => {
     console.info('accessToken', accessToken)

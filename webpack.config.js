@@ -1,4 +1,5 @@
-var path = require('path');
+const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   entry: './src/index.js',
@@ -10,6 +11,9 @@ module.exports = {
     extensions: ['.js', '.elm'],
     modules: [path.join(__dirname, "src"), 'node_modules']
   },
+  plugins: [
+    new webpack.EnvironmentPlugin(['DROPBOX_APP_KEY'])
+  ],
   module: {
     noParse: /\.elm$/,
     rules: [
@@ -29,8 +33,6 @@ module.exports = {
         exclude: [/elm-stuff/, /node_modules/],
         use: {
           loader: 'elm-webpack-loader',
-          // options: {}
-          // loader: './src/index.js'
         }
       }
     ]

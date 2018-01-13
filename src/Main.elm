@@ -5,8 +5,6 @@ import Debug
 import Regex
 import Dropbox
 import Navigation
-import Config
-import Time exposing (Time, second)
 
 main : Program Never Model (Dropbox.Msg Msg)
 main =
@@ -30,7 +28,7 @@ type alias Model =
 init : Navigation.Location -> Model
 init location =
   { auth = Nothing
-  , clientId = Config.dropboxClientID
+  , clientId = ""
   , debug = Nothing
   , location = location
    }
@@ -43,7 +41,6 @@ type Msg
   | AuthResponse Dropbox.AuthorizeResult
   | ListFiles
   | FileList String
-  | Tick Time
 
 update : Msg -> Model -> (Model, Cmd msg)
 update msg model =
@@ -80,10 +77,6 @@ update msg model =
       let _ = Debug.log "fileList" s
       in (model, Cmd.none)
 
-    Tick t ->
-      let _ = Debug.log "time" t
-      in ({model| debug = Just (toString t)}, Cmd.none)
-
 -- subscriptions
 
 subscriptions : Model -> Sub Msg
@@ -91,7 +84,6 @@ subscriptions model =
   Sub.batch [
       dropboxClientID ClientID
     , fileList FileList
-    , Time.every second Tick
     ]
 
 port requestConfig : () -> Cmd msg
@@ -105,9 +97,7 @@ port fileList : (String -> msg) -> Sub msg
 view : Model -> Html Msg
 view model =
   div []
-    [ div [] [ model.clientId |> redact |> text ]
-    -- [ div [] [ model.clientId |> Maybe.map toString |> Maybe.withDefault "Loading…" |> text ]
-    , div [] [
+    [ div [] [
         model.auth
         |> Maybe.andThen extractAccessToken
         |> Maybe.map redact
@@ -119,7 +109,7 @@ view model =
     , Html.button
         [ Html.Events.onClick ListFiles ]
         [ Html.text "List files" ]
-    , div [] [ model.debug |> Maybe.withDefault "-" |> text]
+    , div [] [ model.debug |> Maybe.withDefault "" |> text]
     ]
 
 extractAccessToken : Dropbox.UserAuth -> Maybe String
