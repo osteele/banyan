@@ -32,3 +32,15 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
             });
     listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages || 0);
 });
+
+app.ports.getUserInfo.subscribe((accessToken) => {
+    var dbx = new Dropbox({ accessToken });
+    dbx.usersGetCurrentAccount()
+        .then((response) => {
+            console.info(response);
+            app.ports.setUserInfo.send(response.name);
+        })
+        .catch((error) => {
+            console.log(error);
+        })
+});

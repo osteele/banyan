@@ -46,6 +46,7 @@ type alias Model =
     , fileTree : FileTree
     , loadingTree : Bool
     , loadedEntryCount : Int
+    , userInfo : Maybe UserInfo
     }
 
 
@@ -58,6 +59,7 @@ init location =
     , fileTree = FileEntry.empty
     , loadingTree = False
     , loadedEntryCount = 0
+    , userInfo = Nothing
     }
 
 
@@ -72,13 +74,21 @@ type Msg
     | ListFiles
     | FileList (List FileEntry) Bool
     | FileListError
+    | SetUserInfo UserInfo
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
         AuthResponse (Dropbox.AuthorizeOk auth) ->
-            { model | auth = Just auth.userAuth } ! []
+            { model | auth = Just auth.userAuth }
+                ! [ case auth.userAuth |> extractAccessToken of
+                        Just token ->
+                            getUserInfo token
+
+                        Nothing ->
+                            Cmd.none
+                  ]
 
         AuthResponse _ ->
             { model | auth = Nothing } ! []
@@ -133,6 +143,9 @@ update msg model =
             }
                 ! []
 
+        SetUserInfo info ->
+            { model | userInfo = Just info } ! []
+
 
 
 -- subscriptions
@@ -143,6 +156,7 @@ subscriptions model =
     Sub.batch
         [ dropboxClientID ClientID
         , fileList <| uncurry FileList
+        , setUserInfo SetUserInfo
         ]
 
 
@@ -156,6 +170,21 @@ port fileList : (( List FileEntry, Bool ) -> msg) -> Sub msg
 
 
 port fileListError : (() -> msg) -> Sub msg
+
+
+port getUserInfo : String -> Cmd msg
+
+
+type alias UserInfo =
+    { abbreviated_name : String
+    , display_name : String
+    , familiar_name : String
+    , given_name : String
+    , surname : String
+    }
+
+
+port setUserInfo : (UserInfo -> msg) -> Sub msg
 
 
 
@@ -172,7 +201,9 @@ view model =
                 model.fileTree
     in
     div []
-        [ Html.button
+        [ ifDiv (model.userInfo |> Maybe.map (always True) |> Maybe.withDefault False) <|
+            div [] [ text (model.userInfo |> Maybe.map .display_name |> Maybe.withDefault "") ]
+        , Html.button
             [ Html.Events.onClick SignIn ]
             [ Html.text (model.auth |> Maybe.map (\_ -> "Sign out") |> Maybe.withDefault "Sign into Dropbox") ]
         , ifDiv (not model.loadingTree) <|
