@@ -48,34 +48,6 @@ fromFilePaths paths =
         |> addEntries (List.map (\p -> FileEntry dirTag (String.toLower p) p Nothing) paths)
 
 
-nodeChildren : FileEntry.FileTree -> Dict.Dict String FileTree
-nodeChildren tree =
-    case tree of
-        Dir _ _ children ->
-            children
-
-        _ ->
-            Dict.empty
-
-
-get : String -> FileTree -> Maybe FileEntry
-get path tree =
-    let
-        get_ : List String -> FileTree -> Maybe FileEntry
-        get_ p t =
-            case p of
-                [] ->
-                    Just <| itemEntry t
-
-                d :: [] ->
-                    nodeChildren t |> Dict.get d |> Maybe.map itemEntry
-
-                d :: pt ->
-                    nodeChildren t |> Dict.get d |> Maybe.andThen (get_ pt)
-    in
-    get_ (splitPath <| String.toLower path) tree
-
-
 dirEntry : String -> FileEntry
 dirEntry path =
     FileEntry "folder" (String.toLower path) path Nothing

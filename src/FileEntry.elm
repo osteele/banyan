@@ -54,6 +54,29 @@ emptyNode name =
     Dir (FileEntry dirTag name name Nothing) 0 Dict.empty
 
 
+getSubtree : String -> FileTree -> Maybe FileTree
+getSubtree path tree =
+    let
+        get_ : List String -> FileTree -> Maybe FileTree
+        get_ p t =
+            case p of
+                [] ->
+                    Just <| t
+
+                d :: [] ->
+                    nodeChildren t |> Dict.get d
+
+                d :: pt ->
+                    nodeChildren t |> Dict.get d |> Maybe.andThen (get_ pt)
+    in
+    get_ (splitPath <| String.toLower path) tree
+
+
+get : String -> FileTree -> Maybe FileEntry
+get path tree =
+    getSubtree path tree |> Maybe.map itemEntry
+
+
 itemEntry : FileTree -> FileEntry
 itemEntry item =
     case item of
@@ -62,6 +85,16 @@ itemEntry item =
 
         File e ->
             e
+
+
+nodeChildren : FileTree -> Dict.Dict String FileTree
+nodeChildren tree =
+    case tree of
+        Dir _ _ children ->
+            children
+
+        _ ->
+            Dict.empty
 
 
 nodeSize : FileTree -> Int

@@ -47,6 +47,7 @@ type alias Model =
     , loadingTree : Bool
     , loadedEntryCount : Int
     , userInfo : Maybe UserInfo
+    , path : String
     }
 
 
@@ -60,6 +61,7 @@ init location =
     , loadingTree = False
     , loadedEntryCount = 0
     , userInfo = Nothing
+    , path = "/"
     }
 
 
@@ -71,10 +73,11 @@ type Msg
     = SignIn
     | ClientID String
     | AuthResponse Dropbox.AuthorizeResult
+    | SetUserInfo UserInfo
     | ListFiles
     | FileList (List FileEntry) Bool
     | FileListError
-    | SetUserInfo UserInfo
+    | Focus String
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -110,6 +113,9 @@ update msg model =
                         model.location
                   ]
 
+        SetUserInfo info ->
+            { model | userInfo = Just info } ! []
+
         ListFiles ->
             let
                 cmd =
@@ -125,6 +131,7 @@ update msg model =
                 , fileTree = FileEntry.empty
                 , loadedEntryCount = 0
                 , loadingTree = True
+                , path = "/"
             }
                 ! [ cmd ]
 
@@ -143,8 +150,8 @@ update msg model =
             }
                 ! []
 
-        SetUserInfo info ->
-            { model | userInfo = Just info } ! []
+        Focus path ->
+            { model | path = path } ! []
 
 
 
@@ -220,7 +227,8 @@ view model =
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
         , ifDiv (FileEntry.isEmpty model.fileTree |> not) <|
-            treeView fileViewDepth model.fileTree
+            treeView fileViewDepth <|
+                (getSubtree model.path model.fileTree |> Maybe.withDefault model.fileTree)
         ]
 
 
@@ -236,8 +244,32 @@ fileViewDepth =
     2
 
 
-treeView : number -> FileTree -> Html msg
+treeView : number -> FileTree -> Html Msg
 treeView depth tree =
+    let
+        breadcrumbs =
+            Html.div
+                []
+                (itemEntry tree
+                    |> .path
+                    |> String.split "/"
+                    |> List.map
+                        (\p ->
+                            Html.span
+                                [ Html.Events.onClick <| Focus "/" ]
+                                [ text <| p ++ " > " ]
+                        )
+                )
+    in
+    Html.div
+        []
+        [ breadcrumbs
+        , treeView_ depth tree
+        ]
+
+
+treeView_ : number -> FileTree -> Html Msg
+treeView_ depth tree =
     let
         label entry size =
             let
@@ -251,16 +283,21 @@ treeView depth tree =
                 (Dict.values children
                     |> List.sortBy (itemEntry >> .path >> String.toUpper)
                     |> List.map
-                        (\t -> Html.li [] [ treeView (depth - 1) t ])
+                        (\t -> Html.li [] [ treeView_ (depth - 1) t ])
                 )
     in
     case tree of
         File entry ->
-            div [] [ text <| label entry (Maybe.withDefault 0 entry.size) ]
+            Html.div
+                []
+                [ text <| label entry (Maybe.withDefault 0 entry.size) ]
 
         Dir entry size children ->
-            div []
-                [ text <| label entry size
+            Html.div
+                []
+                [ Html.a
+                    [ Html.Events.onClick <| Focus entry.key ]
+                    [ text <| label entry size ]
                 , if depth > 0 then
                     childViews children
                   else
