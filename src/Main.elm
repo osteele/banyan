@@ -160,7 +160,7 @@ type Msg
     | ClientID String
     | AuthResponse Dropbox.AuthorizeResult
     | ListFiles
-    | FileList ( List FileEntry, Bool )
+    | FileList (List FileEntry) Bool
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -201,7 +201,7 @@ update msg model =
             in
             ( model, cmd )
 
-        FileList ( entries, loading ) ->
+        FileList entries loading ->
             ( { model
                 | tree = addFileEntries entries model.tree
                 , loadingTree = loading
@@ -219,7 +219,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ dropboxClientID ClientID
-        , fileList FileList
+        , fileList <| uncurry FileList
         ]
 
 
