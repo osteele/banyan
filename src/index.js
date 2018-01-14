@@ -28,6 +28,7 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
             })
             .catch((error) => {
                 console.log(error);
+                app.ports.fileListError.send();
             });
     listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages || 0);
 });

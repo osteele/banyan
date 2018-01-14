@@ -43,7 +43,7 @@ type alias Model =
     , auth : Maybe Dropbox.UserAuth
     , clientId : String
     , debug : Maybe String
-    , tree : FileTree
+    , fileTree : FileTree
     , loadingTree : Bool
     , loadedEntryCount : Int
     }
@@ -55,7 +55,7 @@ init location =
     , auth = Nothing
     , clientId = ""
     , debug = Nothing
-    , tree = emptyFileTree "/"
+    , fileTree = emptyFileTree "/"
     , loadingTree = False
     , loadedEntryCount = 0
     }
@@ -71,6 +71,7 @@ type Msg
     | AuthResponse Dropbox.AuthorizeResult
     | ListFiles
     | FileList (List FileEntry) Bool
+    | FileListError
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -109,16 +110,19 @@ update msg model =
                         Nothing ->
                             Cmd.none
             in
-            ( model, cmd )
+            ( { model | debug = Nothing, fileTree = emptyFileTree "/", loadedEntryCount = 0, loadingTree = True }, cmd )
 
         FileList entries loading ->
             ( { model
-                | tree = addFileEntries entries model.tree
+                | fileTree = addFileEntries entries model.fileTree
                 , loadingTree = loading
                 , loadedEntryCount = model.loadedEntryCount + List.length entries
               }
             , Cmd.none
             )
+
+        FileListError ->
+            ( { model | debug = Just "Error listing files", loadingTree = False }, Cmd.none )
 
 
 
@@ -140,6 +144,9 @@ port listFiles : String -> Cmd msg
 
 
 port fileList : (( List FileEntry, Bool ) -> msg) -> Sub msg
+
+
+port fileListError : (() -> msg) -> Sub msg
 
 
 
@@ -164,7 +171,7 @@ view model =
                 )
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
-        , treeView_ 2 model.tree
+        , treeView_ 2 model.fileTree
         ]
 
 
