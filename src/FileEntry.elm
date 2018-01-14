@@ -11,6 +11,11 @@ type alias FileEntry =
     }
 
 
+dirTag : String
+dirTag =
+    "folder"
+
+
 {-| A Rose tree of FileEntry's, and cached rolled up sizes.
 
 Note: Having a separate branch for the terminals (File) makes for more code but
@@ -35,7 +40,7 @@ empty =
 
 emptyNode : String -> FileTree
 emptyNode name =
-    Dir (FileEntry "dir" name name Nothing) 0 Dict.empty
+    Dir (FileEntry dirTag name name Nothing) 0 Dict.empty
 
 
 itemEntry : FileTree -> FileEntry
@@ -90,7 +95,7 @@ updateTreeItem ks alter path tree =
                         name =
                             String.join "/" path
                     in
-                    fn (FileEntry "dir" name name Nothing) 0 Dict.empty
+                    fn (FileEntry dirTag name name Nothing) 0 Dict.empty
     in
     case ks of
         [] ->
@@ -131,7 +136,7 @@ insert ks entry =
                     Dir entry 0 Dict.empty
 
         update =
-            if entry.tag == "dir" then
+            if entry.tag == dirTag then
                 updateDir
             else
                 updateFile

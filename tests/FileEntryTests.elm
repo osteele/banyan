@@ -29,19 +29,23 @@ suite =
                 fromFilePaths [ "/dir/leaf", "/Dir" ]
                     |> get "/dir/leaf"
                     |> Expect.equal (Just <| dirEntry "/dir/leaf")
-        , skip <|
-            test "/dir/leaf + /Dir updates dir node" <|
-                \_ ->
-                    fromFilePaths [ "/dir/leaf", "/Dir" ]
-                        |> get "/dir"
-                        |> Expect.equal (Just <| dirEntry "/Dir")
+        , test "/dir/leaf + /Dir updates dir node" <|
+            \_ ->
+                fromFilePaths [ "/dir/leaf", "/Dir" ]
+                    |> get "/dir"
+                    |> Expect.equal (Just <| dirEntry "/Dir")
+        , test "/Dir + /dir/leaf + leaves dir node" <|
+            \_ ->
+                fromFilePaths [ "/Dir", "/dir/leaf" ]
+                    |> get "/dir"
+                    |> Expect.equal (Just <| dirEntry "/Dir")
         ]
 
 
 fromFilePaths : List String -> FileEntry.FileTree
 fromFilePaths paths =
     FileEntry.empty
-        |> addEntries (List.map (\p -> FileEntry "dir" p p Nothing) paths)
+        |> addEntries (List.map (\p -> FileEntry dirTag (String.toLower p) p Nothing) paths)
 
 
 nodeChildren : FileEntry.FileTree -> Dict.Dict String FileTree
@@ -69,9 +73,9 @@ get path tree =
                 d :: pt ->
                     nodeChildren t |> Dict.get d |> Maybe.andThen (get_ pt)
     in
-    get_ (splitPath path) tree
+    get_ (splitPath <| String.toLower path) tree
 
 
 dirEntry : String -> FileEntry
 dirEntry path =
-    FileEntry "dir" path path Nothing
+    FileEntry "folder" (String.toLower path) path Nothing
