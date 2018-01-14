@@ -9,6 +9,7 @@ import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
 import Navigation
 import Regex
+import Task
 import Utils exposing (..)
 
 
@@ -114,7 +115,7 @@ update msg model =
                   ]
 
         SetAccountInfo info ->
-            { model | accountInfo = Just info } ! []
+            update ListFiles { model | accountInfo = Just info }
 
         ListFiles ->
             let
