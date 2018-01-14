@@ -136,7 +136,7 @@ insertFileEntry ks entry =
          else
             updateFile
         )
-        []
+        [ "" ]
 
 
 addFileEntries : List FileEntry -> FileTree -> FileTree
