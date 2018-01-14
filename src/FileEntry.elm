@@ -11,13 +11,30 @@ type alias FileEntry =
     }
 
 
+{-| A Rose tree of FileEntry's, and cached rolled up sizes.
+
+Note: Having a separate branch for the terminals (File) makes for more code but
+less runtime data. I haven't measured whether this is worth it.
+
+-}
 type FileTree
-    = Dir FileEntry Int (Dict.Dict String FileTree)
+    = Dir FileEntry FileNodeCache (Dict.Dict String FileTree)
     | File FileEntry
 
 
-emptyFileTree : String -> FileTree
-emptyFileTree name =
+{-| The rolled up file size.
+-}
+type alias FileNodeCache =
+    Int
+
+
+empty : FileTree
+empty =
+    emptyNode ""
+
+
+emptyNode : String -> FileTree
+emptyNode name =
     Dir (FileEntry "dir" name name Nothing) 0 Dict.empty
 
 
@@ -31,8 +48,8 @@ itemEntry item =
             e
 
 
-itemSize : FileTree -> Int
-itemSize item =
+nodeSize : FileTree -> Int
+nodeSize item =
     case item of
         Dir _ n _ ->
             n
@@ -41,47 +58,39 @@ itemSize item =
             e.size |> Maybe.withDefault 0
 
 
-recalcSize : FileTree -> FileTree
-recalcSize tree =
+updateCache : FileTree -> FileTree
+updateCache tree =
     case tree of
         Dir e _ children ->
             let
                 s =
-                    children |> Dict.values |> List.map itemSize |> List.sum
+                    children |> Dict.values |> List.map nodeSize |> List.sum
             in
             Dir e s children
 
-        file ->
-            file
+        _ ->
+            tree
 
 
 updateTreeItem : List String -> (Maybe FileTree -> FileTree) -> List String -> FileTree -> FileTree
 updateTreeItem ks alter path tree =
     let
-        hereNode =
-            let
-                name =
-                    String.join "/" path
-            in
-            FileEntry "dir" name name Nothing
+        childAt k =
+            emptyNode <| String.join "/" <| path ++ [ k ]
 
-        subNode next =
-            let
-                name =
-                    String.join "/" (path ++ [ next ])
-            in
-            FileEntry "dir" name name Nothing
-
+        -- construct a directory item for the current node, if not already present
+        withDirItem : (FileEntry -> FileNodeCache -> Dict.Dict String FileTree -> a) -> a
         withDirItem fn =
             case tree of
                 Dir entry size children ->
                     fn entry size children
 
                 _ ->
-                    fn hereNode 0 Dict.empty
-
-        df k =
-            Maybe.withDefault (Dir (subNode k) 0 Dict.empty)
+                    let
+                        name =
+                            String.join "/" path
+                    in
+                    fn (FileEntry "dir" name name Nothing) 0 Dict.empty
     in
     case ks of
         [] ->
@@ -90,29 +99,36 @@ updateTreeItem ks alter path tree =
         k :: [] ->
             withDirItem <|
                 \entry _ children ->
-                    Dict.update k (Just << alter) children |> Dir entry 0 |> recalcSize
+                    Dict.update k (Just << alter) children
+                        |> Dir entry 0
+                        |> updateCache
 
         k :: ks ->
+            let
+                alt =
+                    updateTreeItem ks alter (path ++ [ k ])
+                        << Maybe.withDefault (childAt k)
+            in
             withDirItem <|
                 \entry _ children ->
-                    Dict.update k (Just << (\t -> updateTreeItem ks alter (path ++ [ k ]) (df k t))) children
+                    Dict.update k (Just << alt) children
                         |> Dir entry 0
-                        |> recalcSize
+                        |> updateCache
 
 
 insertFileEntry : List String -> FileEntry -> FileTree -> FileTree
 insertFileEntry ks entry =
     let
-        updateFile _ =
-            File entry
-
         updateDir dir =
             case dir of
-                Just (Dir e size children) ->
+                Just (Dir _ size children) ->
                     Dir entry size children
 
                 _ ->
                     Dir entry 0 Dict.empty
+
+        updateFile _ =
+            File entry
     in
     updateTreeItem ks
         (if entry.tag == "dir" then

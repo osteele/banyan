@@ -55,7 +55,7 @@ init location =
     , auth = Nothing
     , clientId = ""
     , debug = Nothing
-    , fileTree = emptyFileTree "/"
+    , fileTree = FileEntry.empty
     , loadingTree = False
     , loadedEntryCount = 0
     }
@@ -112,7 +112,7 @@ update msg model =
             in
             { model
                 | debug = Nothing
-                , fileTree = emptyFileTree "/"
+                , fileTree = FileEntry.empty
                 , loadedEntryCount = 0
                 , loadingTree = True
             }
@@ -164,6 +164,13 @@ port fileListError : (() -> msg) -> Sub msg
 
 view : Model -> Html Msg
 view model =
+    let
+        _ =
+            if True then
+                Debug.log "tree" model.fileTree
+            else
+                model.fileTree
+    in
     div []
         [ Html.button
             [ Html.Events.onClick SignIn ]
@@ -183,17 +190,8 @@ view model =
                 )
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
-        , treeView_ 2 model.fileTree
+        , treeView 2 model.fileTree
         ]
-
-
-treeView_ : number -> FileTree -> Html msg
-treeView_ depth tree =
-    -- let
-    --     _ =
-    --         Debug.log "tree" tree
-    -- in
-    treeView depth tree
 
 
 treeView : number -> FileTree -> Html msg
