@@ -78,27 +78,27 @@ update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
         AuthResponse (Dropbox.AuthorizeOk auth) ->
-            ( { model | auth = Just auth.userAuth }, Cmd.none )
+            { model | auth = Just auth.userAuth } ! []
 
         AuthResponse _ ->
-            ( { model | auth = Nothing }, Cmd.none )
+            { model | auth = Nothing } ! []
 
         ClientID clientId ->
-            ( { model | clientId = clientId }, Cmd.none )
+            { model | clientId = clientId } ! []
 
         SignIn ->
-            ( model
-            , Dropbox.authorize
-                { clientId = model.clientId
-                , state = Nothing
-                , requireRole = Nothing
-                , forceReapprove = False
-                , disableSignup = False
-                , locale = Nothing
-                , forceReauthentication = False
-                }
-                model.location
-            )
+            model
+                ! [ Dropbox.authorize
+                        { clientId = model.clientId
+                        , state = Nothing
+                        , requireRole = Nothing
+                        , forceReapprove = False
+                        , disableSignup = False
+                        , locale = Nothing
+                        , forceReauthentication = False
+                        }
+                        model.location
+                  ]
 
         ListFiles ->
             let
@@ -110,19 +110,28 @@ update msg model =
                         Nothing ->
                             Cmd.none
             in
-            ( { model | debug = Nothing, fileTree = emptyFileTree "/", loadedEntryCount = 0, loadingTree = True }, cmd )
+            { model
+                | debug = Nothing
+                , fileTree = emptyFileTree "/"
+                , loadedEntryCount = 0
+                , loadingTree = True
+            }
+                ! [ cmd ]
 
         FileList entries loading ->
-            ( { model
+            { model
                 | fileTree = addFileEntries entries model.fileTree
                 , loadingTree = loading
                 , loadedEntryCount = model.loadedEntryCount + List.length entries
-              }
-            , Cmd.none
-            )
+            }
+                ! []
 
         FileListError ->
-            ( { model | debug = Just "Error listing files", loadingTree = False }, Cmd.none )
+            { model
+                | debug = Just "Error listing files"
+                , loadingTree = False
+            }
+                ! []
 
 
 
