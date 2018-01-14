@@ -100,39 +100,39 @@ updateSize tree =
             file
 
 
-addItem : List String -> Int -> SizeTree -> SizeTree
-addItem filePath fileSize tree =
-    case filePath of
-        name :: [] ->
+addItem : List String -> List String -> Int -> SizeTree -> SizeTree
+addItem keyPath filePath fileSize tree =
+    case ( keyPath, filePath ) of
+        ( key :: [], name :: [] ) ->
             case tree of
                 Dir n s children ->
                     let
                         ch =
-                            Dict.insert name (File name fileSize) children
+                            Dict.insert key (File name fileSize) children
                     in
                     Dir n s ch |> updateSize
 
                 _ ->
                     File name fileSize
 
-        dir :: subdir ->
+        ( key :: keys, name :: names ) ->
             let
                 emptyDirTree =
-                    emptySizeTree dir
+                    emptySizeTree name
 
                 update : Maybe SizeTree -> SizeTree
                 update maybeTree =
-                    addItem subdir fileSize (Maybe.withDefault emptyDirTree maybeTree)
+                    addItem keys names fileSize (Maybe.withDefault emptyDirTree maybeTree)
             in
             case tree of
                 Dir n s children ->
-                    Dir n s (children |> Dict.update dir (Just << update)) |> updateSize
+                    Dir n s (children |> Dict.update key (Just << update)) |> updateSize
 
                 _ ->
-                    addItem subdir fileSize emptyDirTree
+                    addItem keys names fileSize emptyDirTree
 
-        [] ->
-            tree
+        _ ->
+            Debug.crash <| "addItem " ++ String.join " " [ toString keyPath, toString filePath ]
 
 
 addFileEntries : List FileEntry -> SizeTree -> SizeTree
@@ -141,10 +141,10 @@ addFileEntries entries tree =
         components filePath =
             filePath |> dropPrefix "/" |> Maybe.withDefault filePath |> String.split "/"
 
-        update entry tree =
-            addItem (components entry.path) (entry.size |> Maybe.withDefault 0) tree
+        addEntry entry =
+            addItem (components entry.key) (components entry.path) (entry.size |> Maybe.withDefault 0)
     in
-    List.foldl update tree <| List.filter (\f -> f.tag == "file") entries
+    List.foldl addEntry tree <| List.filter (\f -> f.tag == "file") entries
 
 
 
@@ -244,7 +244,7 @@ view model =
             [ Html.Events.onClick ListFiles ]
             [ Html.text "List files" ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
-        , treeView_ 1 model.tree
+        , treeView_ 2 model.tree
         ]
 
 
@@ -266,7 +266,7 @@ treeView depth tree =
         childViews children =
             Html.ul []
                 (Dict.values children
-                    |> List.sortBy itemName
+                    |> List.sortBy (itemName >> String.toUpper)
                     |> List.map
                         (\t -> Html.li [] [ treeView (depth - 1) t ])
                 )
