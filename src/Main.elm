@@ -6,10 +6,11 @@ import Dict
 import Dropbox
 import FileEntry exposing (..)
 import Html exposing (Html, button, div, text)
+import Html.Attributes
 import Html.Events exposing (onClick)
+import Json.Encode as Encode
 import Navigation
 import Regex
-import Task
 import Utils exposing (..)
 
 
@@ -241,6 +242,14 @@ view model =
         ]
 
 
+folderClass =
+    cssClass "folder"
+
+
+cssClass name =
+    Html.Attributes.property "className" (Encode.string name)
+
+
 ifDiv test html =
     if test then
         html
@@ -258,14 +267,16 @@ treeView teamName depth tree =
     let
         breadcrumbs =
             Html.div
-                []
+                [ cssClass "breadcrumb" ]
                 (itemEntry tree
                     |> .path
                     |> String.split "/"
                     |> List.map
                         (\p ->
                             Html.span
-                                [ Html.Events.onClick <| Focus "/" ]
+                                [ Html.Events.onClick <| Focus "/"
+                                , folderClass
+                                ]
                                 [ text <|
                                     (if p == "" then
                                         teamName
@@ -312,7 +323,9 @@ treeView_ depth tree =
             Html.div
                 []
                 [ Html.a
-                    [ Html.Events.onClick <| Focus entry.key ]
+                    [ Html.Events.onClick <| Focus entry.key
+                    , folderClass
+                    ]
                     [ text <| label entry size ]
                 , if depth > 0 then
                     childViews children
