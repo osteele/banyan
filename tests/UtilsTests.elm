@@ -32,11 +32,14 @@ suite =
                     humanize 123
                         |> Expect.equal "123 bytes"
             ]
-        , skip <|
-            describe "takeFileName"
-                [ test "returns the last components" <|
-                    \_ ->
-                        takeFileName "/a/b/base.ext"
-                            |> Expect.equal "base.ext"
-                ]
+        , describe "takeFileName"
+            [ test "returns the final component" <|
+                \_ ->
+                    takeFileName "/a/b/base.ext"
+                        |> Expect.equal "base.ext"
+            , test "returns the only component" <|
+                \_ ->
+                    takeFileName "base.ext"
+                        |> Expect.equal "base.ext"
+            ]
         ]

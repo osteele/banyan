@@ -39,4 +39,4 @@ humanize n =
 
 takeFileName : String -> String
 takeFileName path =
-    path |> String.split "/" |> List.foldl (\a b -> b) path
+    path |> String.split "/" |> List.foldl always path
