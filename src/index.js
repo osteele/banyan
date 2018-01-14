@@ -21,8 +21,9 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
                     };
                 })
                 // console.info(files)
-                app.ports.fileList.send([files, Boolean(response.has_more)]);
-                if (pages == 0 || --pages > 0 && response.has_more) {
+                var more = (pages == null || --pages > 0) && response.has_more;
+                app.ports.fileList.send([files, Boolean(more)]);
+                if (more) {
                     listFiles(dbx.filesListFolderContinue({ cursor: response.cursor }), pages);
                 }
             })
@@ -30,15 +31,19 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
                 console.log(error);
                 app.ports.fileListError.send();
             });
-    listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages || 0);
+    listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages || null);
 });
 
-app.ports.getUserInfo.subscribe((accessToken) => {
+app.ports.getAccountInfo.subscribe((accessToken) => {
     var dbx = new Dropbox({ accessToken });
     dbx.usersGetCurrentAccount()
         .then((response) => {
-            console.info(response);
-            app.ports.setUserInfo.send(response.name);
+            // console.info(response);
+            var teamName = response.team ? response.team.name : "Personal";
+            app.ports.setAccountInfo.send({
+                teamName,
+                name: response.name
+            });
         })
         .catch((error) => {
             console.log(error);

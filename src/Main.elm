@@ -46,7 +46,7 @@ type alias Model =
     , fileTree : FileTree
     , loadingTree : Bool
     , loadedEntryCount : Int
-    , userInfo : Maybe UserInfo
+    , accountInfo : Maybe AccountInfo
     , path : String
     }
 
@@ -60,7 +60,7 @@ init location =
     , fileTree = FileEntry.empty
     , loadingTree = False
     , loadedEntryCount = 0
-    , userInfo = Nothing
+    , accountInfo = Nothing
     , path = "/"
     }
 
@@ -73,7 +73,7 @@ type Msg
     = SignIn
     | ClientID String
     | AuthResponse Dropbox.AuthorizeResult
-    | SetUserInfo UserInfo
+    | SetAccountInfo AccountInfo
     | ListFiles
     | FileList (List FileEntry) Bool
     | FileListError
@@ -87,7 +87,7 @@ update msg model =
             { model | auth = Just auth.userAuth }
                 ! [ case auth.userAuth |> extractAccessToken of
                         Just token ->
-                            getUserInfo token
+                            getAccountInfo token
 
                         Nothing ->
                             Cmd.none
@@ -113,8 +113,8 @@ update msg model =
                         model.location
                   ]
 
-        SetUserInfo info ->
-            { model | userInfo = Just info } ! []
+        SetAccountInfo info ->
+            { model | accountInfo = Just info } ! []
 
         ListFiles ->
             let
@@ -163,7 +163,7 @@ subscriptions model =
     Sub.batch
         [ dropboxClientID ClientID
         , fileList <| uncurry FileList
-        , setUserInfo SetUserInfo
+        , setAccountInfo SetAccountInfo
         ]
 
 
@@ -179,7 +179,7 @@ port fileList : (( List FileEntry, Bool ) -> msg) -> Sub msg
 port fileListError : (() -> msg) -> Sub msg
 
 
-port getUserInfo : String -> Cmd msg
+port getAccountInfo : String -> Cmd msg
 
 
 type alias UserInfo =
@@ -191,7 +191,13 @@ type alias UserInfo =
     }
 
 
-port setUserInfo : (UserInfo -> msg) -> Sub msg
+type alias AccountInfo =
+    { name : UserInfo
+    , teamName : String
+    }
+
+
+port setAccountInfo : (AccountInfo -> msg) -> Sub msg
 
 
 
@@ -208,8 +214,8 @@ view model =
                 model.fileTree
     in
     div []
-        [ ifDiv (model.userInfo |> Maybe.map (always True) |> Maybe.withDefault False) <|
-            div [] [ text (model.userInfo |> Maybe.map .display_name |> Maybe.withDefault "") ]
+        [ ifDiv (model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False) <|
+            div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
         , Html.button
             [ Html.Events.onClick SignIn ]
             [ Html.text (model.auth |> Maybe.map (\_ -> "Sign out") |> Maybe.withDefault "Sign into Dropbox") ]
@@ -227,7 +233,9 @@ view model =
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
         , ifDiv (FileEntry.isEmpty model.fileTree |> not) <|
-            treeView fileViewDepth <|
+            treeView (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
+                fileViewDepth
+            <|
                 (getSubtree model.path model.fileTree |> Maybe.withDefault model.fileTree)
         ]
 
@@ -244,8 +252,8 @@ fileViewDepth =
     2
 
 
-treeView : number -> FileTree -> Html Msg
-treeView depth tree =
+treeView : String -> Int -> FileTree -> Html Msg
+treeView teamName depth tree =
     let
         breadcrumbs =
             Html.div
@@ -257,7 +265,14 @@ treeView depth tree =
                         (\p ->
                             Html.span
                                 [ Html.Events.onClick <| Focus "/" ]
-                                [ text <| p ++ " > " ]
+                                [ text <|
+                                    (if p == "" then
+                                        teamName
+                                     else
+                                        p
+                                    )
+                                        ++ " > "
+                                ]
                         )
                 )
     in
