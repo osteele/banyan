@@ -42,7 +42,7 @@ type alias Model =
     , auth : Maybe Dropbox.UserAuth
     , clientId : String
     , debug : Maybe String
-    , tree : SizeTree
+    , tree : FileTree
     , loadingTree : Bool
     , loadedEntryCount : Int
     }
@@ -54,101 +54,134 @@ init location =
     , auth = Nothing
     , clientId = ""
     , debug = Nothing
-    , tree = emptySizeTree "/"
+    , tree = emptyFileTree "/"
     , loadingTree = False
     , loadedEntryCount = 0
     }
 
 
-type SizeTree
-    = Dir String Int (Dict.Dict String SizeTree)
-    | File String Int
+type FileTree
+    = Dir FileEntry Int (Dict.Dict String FileTree)
+    | File FileEntry
 
 
-emptySizeTree : String -> SizeTree
-emptySizeTree name =
-    Dir name 0 Dict.empty
+emptyFileTree : String -> FileTree
+emptyFileTree name =
+    Dir (FileEntry "dir" name name Nothing) 0 Dict.empty
 
 
-itemName : SizeTree -> String
-itemName item =
+itemEntry : FileTree -> FileEntry
+itemEntry item =
     case item of
-        Dir n _ _ ->
-            n
+        Dir e _ _ ->
+            e
 
-        File n _ ->
-            n
+        File e ->
+            e
 
 
-itemSize : SizeTree -> Int
+itemSize : FileTree -> Int
 itemSize item =
     case item of
-        Dir _ s _ ->
-            s
+        Dir _ n _ ->
+            n
 
-        File _ s ->
-            s
+        File e ->
+            e.size |> Maybe.withDefault 0
 
 
-updateSize : SizeTree -> SizeTree
-updateSize tree =
+recalcSize : FileTree -> FileTree
+recalcSize tree =
     case tree of
-        Dir n _ children ->
+        Dir e _ children ->
             let
                 s =
                     children |> Dict.values |> List.map itemSize |> List.sum
             in
-            Dir n s children
+            Dir e s children
 
         file ->
             file
 
 
-addItem : List String -> List String -> Int -> SizeTree -> SizeTree
-addItem keyPath filePath fileSize tree =
-    case ( keyPath, filePath ) of
-        ( key :: [], name :: [] ) ->
-            case tree of
-                Dir n s children ->
-                    let
-                        ch =
-                            Dict.insert key (File name fileSize) children
-                    in
-                    Dir n s ch |> updateSize
-
-                _ ->
-                    File name fileSize
-
-        ( key :: keys, name :: names ) ->
+updateTreeItem : List String -> (Maybe FileTree -> FileTree) -> List String -> FileTree -> FileTree
+updateTreeItem ks alter path tree =
+    let
+        hereNode =
             let
-                emptyDirTree =
-                    emptySizeTree name
-
-                update : Maybe SizeTree -> SizeTree
-                update maybeTree =
-                    addItem keys names fileSize (Maybe.withDefault emptyDirTree maybeTree)
+                name =
+                    String.join "/" path
             in
+            FileEntry "dir" name name Nothing
+
+        subNode next =
+            let
+                name =
+                    String.join "/" (path ++ [ next ])
+            in
+            FileEntry "dir" name name Nothing
+
+        withDirItem fn =
             case tree of
-                Dir n s children ->
-                    Dir n s (children |> Dict.update key (Just << update)) |> updateSize
+                Dir entry size children ->
+                    fn entry size children
 
                 _ ->
-                    addItem keys names fileSize emptyDirTree
+                    fn hereNode 0 Dict.empty
 
-        _ ->
-            Debug.crash <| "addItem " ++ String.join " " [ toString keyPath, toString filePath ]
+        df k =
+            Maybe.withDefault (Dir (subNode k) 0 Dict.empty)
+    in
+    case ks of
+        [] ->
+            alter <| Just tree
+
+        k :: [] ->
+            withDirItem <|
+                \entry _ children ->
+                    Dict.update k (Just << alter) children |> Dir entry 0 |> recalcSize
+
+        k :: ks ->
+            withDirItem <|
+                \entry _ children ->
+                    Dict.update k (Just << (\t -> updateTreeItem ks alter (path ++ [ k ]) (df k t))) children
+                        |> Dir entry 0
+                        |> recalcSize
 
 
-addFileEntries : List FileEntry -> SizeTree -> SizeTree
+insertFileEntry : List String -> FileEntry -> FileTree -> FileTree
+insertFileEntry ks entry =
+    let
+        updateFile _ =
+            File entry
+
+        updateDir dir =
+            case dir of
+                Just (Dir e size children) ->
+                    Dir entry size children
+
+                _ ->
+                    Dir entry 0 Dict.empty
+    in
+    updateTreeItem ks
+        (if entry.tag == "dir" then
+            updateDir
+         else
+            updateFile
+        )
+        []
+
+
+addFileEntries : List FileEntry -> FileTree -> FileTree
 addFileEntries entries tree =
     let
-        components filePath =
-            filePath |> dropPrefix "/" |> Maybe.withDefault filePath |> String.split "/"
+        components path =
+            path |> dropPrefix "/" |> Maybe.withDefault path |> String.split "/"
 
         addEntry entry =
-            addItem (components entry.key) (components entry.path) (entry.size |> Maybe.withDefault 0)
+            insertFileEntry (components entry.key) entry
     in
-    List.foldl addEntry tree <| List.filter (\f -> f.tag == "file") entries
+    List.foldl addEntry tree entries
 
 
 
@@ -266,7 +299,7 @@ view model =
         ]
 
 
-treeView_ : number -> SizeTree -> Html msg
+treeView_ : number -> FileTree -> Html msg
 treeView_ depth tree =
     -- let
     --     _ =
@@ -275,27 +308,27 @@ treeView_ depth tree =
     treeView depth tree
 
 
-treeView : number -> SizeTree -> Html msg
+treeView : number -> FileTree -> Html msg
 treeView depth tree =
     let
-        fmt name size =
-            name ++ " (" ++ humanize size ++ ")"
+        label entry size =
+            entry.path ++ " (" ++ humanize size ++ ")"
 
         childViews children =
             Html.ul []
                 (Dict.values children
-                    |> List.sortBy (itemName >> String.toUpper)
+                    |> List.sortBy (itemEntry >> .path >> String.toUpper)
                     |> List.map
                         (\t -> Html.li [] [ treeView (depth - 1) t ])
                 )
     in
     case tree of
-        File name size ->
-            div [] [ text <| fmt name size ]
+        File entry ->
+            div [] [ text <| label entry (Maybe.withDefault 0 entry.size) ]
 
-        Dir name size children ->
+        Dir entry size children ->
             div []
-                [ text <| fmt name size
+                [ text <| label entry size
                 , if depth > 0 then
                     childViews children
                   else
@@ -343,3 +376,9 @@ dropPrefix prefix s =
         s |> String.dropLeft (String.length prefix) |> Just
     else
         Nothing
+
+
+fileBase : String -> String
+fileBase path =
+    -- path |> String.split "/" |> List.foldl (Just |> always) Nothing |> Maybe.withDefault "a"
+    path |> String.split "/" |> List.foldl (\a b -> b) path
