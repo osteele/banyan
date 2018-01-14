@@ -1,12 +1,17 @@
 {
   "name": "banyan",
   "version": "0.1.0",
+  "description": "Dropbox file size browser",
+  "homepage": "https://github.com/osteele/banyan",
+  "author": "Oliver Steele <steele@osteele.com>",
+  "repository": "github:osteele/banyan",
   "license": "UNLICENSED",
   "scripts": {
     "start": "webpack-dev-server --hot --inline",
     "prebuild": "rimraf dist",
     "build": "webpack",
-    "reinstall": "npm i rimraf && rimraf node_modules && npm uninstall -g elm && npm i -g elm && npm i && elm package install"
+    "reinstall": "npm i rimraf && rimraf node_modules && npm uninstall -g elm && npm i -g elm && npm i && elm package install",
+    "test": "elm-test"
   },
   "devDependencies": {
     "css-loader": "^0.28.8",

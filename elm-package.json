@@ -2,7 +2,7 @@
     "version": "0.1.0",
     "summary": "Display file sizes on Dropbox account",
     "repository": "https://github.com/osteele/banyan.git",
-    "license": "MIT",
+    "license": "UNLICENSED",
     "source-directories": [
         "src",
         "../elm-dropbox/src"
