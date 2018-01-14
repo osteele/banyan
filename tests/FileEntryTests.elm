@@ -41,7 +41,7 @@ suite =
 fromFilePaths : List String -> FileEntry.FileTree
 fromFilePaths paths =
     FileEntry.empty
-        |> addFileEntries (List.map (\p -> FileEntry "dir" p p Nothing) paths)
+        |> addEntries (List.map (\p -> FileEntry "dir" p p Nothing) paths)
 
 
 nodeChildren : FileEntry.FileTree -> Dict.Dict String FileTree
@@ -57,8 +57,8 @@ nodeChildren tree =
 get : String -> FileTree -> Maybe FileEntry
 get path tree =
     let
-        f : List String -> FileTree -> Maybe FileEntry
-        f p t =
+        get_ : List String -> FileTree -> Maybe FileEntry
+        get_ p t =
             case p of
                 [] ->
                     Just <| itemEntry t
@@ -67,9 +67,9 @@ get path tree =
                     nodeChildren t |> Dict.get d |> Maybe.map itemEntry
 
                 d :: pt ->
-                    nodeChildren t |> Dict.get d |> Maybe.andThen (f pt)
+                    nodeChildren t |> Dict.get d |> Maybe.andThen (get_ pt)
     in
-    f (dropPrefix "/" path |> Maybe.withDefault path |> String.split "/") tree
+    get_ (splitPath path) tree
 
 
 dirEntry : String -> FileEntry

@@ -22,7 +22,7 @@ type FileTree
     | File FileEntry
 
 
-{-| The rolled up file size.
+{-| The rolled-up file size.
 -}
 type alias FileNodeCache =
     Int
@@ -116,9 +116,12 @@ updateTreeItem ks alter path tree =
                         |> updateCache
 
 
-insertFileEntry : List String -> FileEntry -> FileTree -> FileTree
-insertFileEntry ks entry =
+insert : String -> FileEntry -> FileTree -> FileTree
+insert ks entry =
     let
+        updateFile _ =
+            File entry
+
         updateDir dir =
             case dir of
                 Just (Dir _ size children) ->
@@ -127,28 +130,26 @@ insertFileEntry ks entry =
                 _ ->
                     Dir entry 0 Dict.empty
 
-        updateFile _ =
-            File entry
+        update =
+            if entry.tag == "dir" then
+                updateDir
+            else
+                updateFile
     in
-    updateTreeItem ks
-        (if entry.tag == "dir" then
-            updateDir
-         else
-            updateFile
-        )
-        [ "" ]
+    updateTreeItem (splitPath entry.key) update [ "" ]
 
 
-addFileEntries : List FileEntry -> FileTree -> FileTree
-addFileEntries entries tree =
-    let
-        components path =
-            path |> dropPrefix "/" |> Maybe.withDefault path |> String.split "/"
+addEntries : List FileEntry -> FileTree -> FileTree
+addEntries entries tree =
+    List.foldl (\e -> insert e.key e) tree entries
 
-        addEntry entry =
-            insertFileEntry (components entry.key) entry
-    in
-    List.foldl addEntry tree entries
+
+splitPath : String -> List String
+splitPath path =
+    path
+        |> dropPrefix "/"
+        |> Maybe.withDefault path
+        |> String.split "/"
 
 
 

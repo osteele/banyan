@@ -120,7 +120,7 @@ update msg model =
 
         FileList entries loading ->
             { model
-                | fileTree = addFileEntries entries model.fileTree
+                | fileTree = addEntries entries model.fileTree
                 , loadingTree = loading
                 , loadedEntryCount = model.loadedEntryCount + List.length entries
             }
@@ -190,8 +190,13 @@ view model =
                 )
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
-        , treeView 2 model.fileTree
+        , treeView fileViewDepth model.fileTree
         ]
+
+
+fileViewDepth : Int
+fileViewDepth =
+    2
 
 
 treeView : number -> FileTree -> Html msg
