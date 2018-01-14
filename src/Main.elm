@@ -168,15 +168,18 @@ view model =
         [ Html.button
             [ Html.Events.onClick SignIn ]
             [ Html.text (model.auth |> Maybe.map (\_ -> "Sign out") |> Maybe.withDefault "Sign into Dropbox") ]
-        , Html.button
-            [ Html.Events.onClick ListFiles ]
-            [ Html.text "List files" ]
+        , if model.loadingTree then
+            div [] []
+          else
+            Html.button
+                [ Html.Events.onClick ListFiles ]
+                [ Html.text "Sync" ]
         , div []
             [ text
                 (if model.loadingTree then
-                    "Loading… (" ++ toString model.loadedEntryCount ++ " entries loaded)"
+                    "Syncing (" ++ toString model.loadedEntryCount ++ " entries synced)"
                  else
-                    toString model.loadedEntryCount ++ " entries loaded"
+                    toString model.loadedEntryCount ++ " entries synced"
                 )
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
@@ -227,6 +230,7 @@ treeView depth tree =
 
 extractAccessToken : Dropbox.UserAuth -> Maybe String
 extractAccessToken auth =
+    -- TODO extract from JSON instead?
     auth |> toString |> firstMatch (Regex.regex "Bearer \"(.+)\"")
 
 
@@ -257,5 +261,4 @@ humanize n =
 
 fileBase : String -> String
 fileBase path =
-    -- path |> String.split "/" |> List.foldl (Just |> always) Nothing |> Maybe.withDefault "a"
     path |> String.split "/" |> List.foldl (\a b -> b) path
