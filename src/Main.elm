@@ -43,6 +43,8 @@ type alias Model =
     , clientId : String
     , debug : Maybe String
     , tree : SizeTree
+    , loadingTree : Bool
+    , loadedEntryCount : Int
     }
 
 
@@ -53,6 +55,8 @@ init location =
     , clientId = ""
     , debug = Nothing
     , tree = emptySizeTree "/"
+    , loadingTree = False
+    , loadedEntryCount = 0
     }
 
 
@@ -156,7 +160,7 @@ type Msg
     | ClientID String
     | AuthResponse Dropbox.AuthorizeResult
     | ListFiles
-    | FileList (List FileEntry)
+    | FileList ( List FileEntry, Bool )
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -197,8 +201,14 @@ update msg model =
             in
             ( model, cmd )
 
-        FileList entries ->
-            ( { model | tree = addFileEntries entries model.tree }, Cmd.none )
+        FileList ( entries, loading ) ->
+            ( { model
+                | tree = addFileEntries entries model.tree
+                , loadingTree = loading
+                , loadedEntryCount = model.loadedEntryCount + List.length entries
+              }
+            , Cmd.none
+            )
 
 
 
@@ -227,7 +237,7 @@ type alias FileEntry =
 port listFiles : String -> Cmd msg
 
 
-port fileList : (List FileEntry -> msg) -> Sub msg
+port fileList : (( List FileEntry, Bool ) -> msg) -> Sub msg
 
 
 
@@ -243,6 +253,14 @@ view model =
         , Html.button
             [ Html.Events.onClick ListFiles ]
             [ Html.text "List files" ]
+        , div []
+            [ text
+                (if model.loadingTree then
+                    "Loading… (" ++ toString model.loadedEntryCount ++ " entries loaded)"
+                 else
+                    toString model.loadedEntryCount ++ " entries loaded"
+                )
+            ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
         , treeView_ 2 model.tree
         ]
