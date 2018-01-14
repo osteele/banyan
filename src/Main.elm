@@ -29,7 +29,7 @@ config =
     , details = Just "Dropbox file size browser."
     , color = Just Color.blue
     , maxWidth = 800
-    , githubUrl = Nothing
+    , githubUrl = Just "https://github.com/osteele/banyan"
     , documentationUrl = Nothing
     }
 
