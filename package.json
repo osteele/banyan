@@ -11,7 +11,8 @@
     "prebuild": "rimraf dist",
     "build": "webpack",
     "reinstall": "npm i rimraf && rimraf node_modules && npm uninstall -g elm && npm i -g elm && npm i && elm package install",
-    "test": "elm-test"
+    "test": "elm-test",
+    "deploy": "webpack && netlify deploy"
   },
   "devDependencies": {
     "css-loader": "^0.28.8",
