@@ -9,7 +9,7 @@ import Html exposing (Html, button, div, text)
 import Html.Events exposing (onClick)
 import Navigation
 import Regex
-import Round
+import Utils exposing (..)
 
 
 main : Program Never Model (Dropbox.Msg Msg)
@@ -166,7 +166,7 @@ view : Model -> Html Msg
 view model =
     let
         _ =
-            if True then
+            if False then
                 Debug.log "tree" model.fileTree
             else
                 model.fileTree
@@ -203,7 +203,11 @@ treeView : number -> FileTree -> Html msg
 treeView depth tree =
     let
         label entry size =
-            entry.path ++ " (" ++ humanize size ++ ")"
+            let
+                name =
+                    entry.path |> takeFileName
+            in
+            name ++ " (" ++ humanize size ++ ")"
 
         childViews children =
             Html.ul []
@@ -235,33 +239,3 @@ extractAccessToken : Dropbox.UserAuth -> Maybe String
 extractAccessToken auth =
     -- TODO extract from JSON instead?
     auth |> toString |> firstMatch (Regex.regex "Bearer \"(.+)\"")
-
-
-firstMatch : Regex.Regex -> String -> Maybe String
-firstMatch re s =
-    case Regex.find Regex.All re s of
-        { submatches } :: _ ->
-            case submatches of
-                [ s ] ->
-                    s
-
-                _ ->
-                    Nothing
-
-        _ ->
-            Nothing
-
-
-humanize : Int -> String
-humanize n =
-    case List.filter (\( s, _ ) -> toFloat n > s) [ ( 1.0e12, "T" ), ( 1.0e9, "G" ), ( 1.0e6, "M" ), ( 1.0e3, "K" ) ] of
-        ( s, unit ) :: _ ->
-            (toFloat n / s |> Round.round 1) ++ unit
-
-        _ ->
-            toString n ++ " bytes"
-
-
-fileBase : String -> String
-fileBase path =
-    path |> String.split "/" |> List.foldl (\a b -> b) path

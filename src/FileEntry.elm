@@ -1,6 +1,7 @@
 module FileEntry exposing (..)
 
 import Dict
+import Utils exposing (..)
 
 
 type alias FileEntry =
@@ -155,15 +156,3 @@ splitPath path =
         |> dropPrefix "/"
         |> Maybe.withDefault path
         |> String.split "/"
-
-
-
--- utilities
-
-
-dropPrefix : String -> String -> Maybe String
-dropPrefix prefix s =
-    if String.startsWith prefix s then
-        s |> String.dropLeft (String.length prefix) |> Just
-    else
-        Nothing
