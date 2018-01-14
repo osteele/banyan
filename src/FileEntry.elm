@@ -39,6 +39,16 @@ empty =
     emptyNode ""
 
 
+isEmpty : FileTree -> Bool
+isEmpty tree =
+    case tree of
+        Dir _ _ children ->
+            Dict.isEmpty children
+
+        _ ->
+            False
+
+
 emptyNode : String -> FileTree
 emptyNode name =
     Dir (FileEntry dirTag name name Nothing) 0 Dict.empty

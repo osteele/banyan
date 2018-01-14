@@ -175,23 +175,29 @@ view model =
         [ Html.button
             [ Html.Events.onClick SignIn ]
             [ Html.text (model.auth |> Maybe.map (\_ -> "Sign out") |> Maybe.withDefault "Sign into Dropbox") ]
-        , if model.loadingTree then
-            div [] []
-          else
+        , ifDiv (not model.loadingTree) <|
             Html.button
                 [ Html.Events.onClick ListFiles ]
                 [ Html.text "Sync" ]
         , div []
             [ text
                 (if model.loadingTree then
-                    "Syncing (" ++ toString model.loadedEntryCount ++ " entries synced)"
+                    "Syncing… " ++ toString model.loadedEntryCount ++ " entries synced"
                  else
                     toString model.loadedEntryCount ++ " entries synced"
                 )
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
-        , treeView fileViewDepth model.fileTree
+        , ifDiv (FileEntry.isEmpty model.fileTree |> not) <|
+            treeView fileViewDepth model.fileTree
         ]
+
+
+ifDiv test html =
+    if test then
+        html
+    else
+        div [] []
 
 
 fileViewDepth : Int
