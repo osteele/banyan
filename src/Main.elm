@@ -228,9 +228,9 @@ view model =
         , div []
             [ text
                 (if model.loadingTree then
-                    "Syncing… " ++ toString model.loadedEntryCount ++ " entries synced"
+                    toString model.loadedEntryCount ++ " entries synced…"
                  else
-                    toString model.loadedEntryCount ++ " entries synced"
+                    toString model.loadedEntryCount ++ " entries synced."
                 )
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
@@ -242,21 +242,6 @@ view model =
         ]
 
 
-folderClass =
-    cssClass "folder"
-
-
-cssClass name =
-    Html.Attributes.property "className" (Encode.string name)
-
-
-ifDiv test html =
-    if test then
-        html
-    else
-        div [] []
-
-
 fileViewDepth : Int
 fileViewDepth =
     2
@@ -266,7 +251,7 @@ treeView : String -> Int -> FileTree -> Html Msg
 treeView teamName depth tree =
     let
         breadcrumbs =
-            Html.div
+            Html.span
                 [ cssClass "breadcrumb" ]
                 (itemEntry tree
                     |> .path
@@ -288,45 +273,36 @@ treeView teamName depth tree =
                         )
                 )
     in
-    Html.div
-        []
-        [ breadcrumbs
-        , treeView_ depth tree
-        ]
+    treeView_ (Just breadcrumbs) depth tree
 
 
-treeView_ : number -> FileTree -> Html Msg
-treeView_ depth tree =
+treeView_ : Maybe (Html Msg) -> Int -> FileTree -> Html Msg
+treeView_ title depth tree =
     let
-        label entry size =
-            let
-                name =
-                    entry.path |> takeFileName
-            in
-            name ++ " (" ++ humanize size ++ ")"
-
         childViews children =
             Html.ul []
                 (Dict.values children
                     |> List.sortBy (itemEntry >> .path >> String.toUpper)
                     |> List.map
-                        (\t -> Html.li [] [ treeView_ (depth - 1) t ])
+                        (\t -> Html.li [] [ treeView_ Nothing (depth - 1) t ])
                 )
     in
     case tree of
         File entry ->
             Html.div
-                []
-                [ text <| label entry (Maybe.withDefault 0 entry.size) ]
+                [ cssClass "file-item" ]
+                [ text <| takeFileName <| entry.path
+                , Html.span [ cssClass "size" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
+                ]
 
         Dir entry size children ->
             Html.div
                 []
                 [ Html.a
-                    [ Html.Events.onClick <| Focus entry.key
-                    , folderClass
+                    [ cssClass "folder file-item" ]
+                    [ Maybe.withDefault (Html.a [ Html.Events.onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]) title
+                    , Html.span [ cssClass "size" ] [ text <| humanize size ]
                     ]
-                    [ text <| label entry size ]
                 , if depth > 0 then
                     childViews children
                   else
@@ -342,3 +318,18 @@ extractAccessToken : Dropbox.UserAuth -> Maybe String
 extractAccessToken auth =
     -- TODO extract from JSON instead?
     auth |> toString |> firstMatch (Regex.regex "Bearer \"(.+)\"")
+
+
+folderClass =
+    cssClass "folder"
+
+
+cssClass name =
+    Html.Attributes.property "className" (Encode.string name)
+
+
+ifDiv test html =
+    if test then
+        html
+    else
+        div [] []
