@@ -49,3 +49,17 @@ app.ports.getAccountInfo.subscribe((accessToken) => {
             console.log(error);
         })
 });
+
+app.ports.setLocalStore.subscribe(([key, value]) => {
+    console.info('store', key, value);
+    if (value) {
+        localStorage[key] = value;
+    } else {
+        localStorage.removeItem(key)
+    }
+});
+
+app.ports.getLocalStore.subscribe((key) => {
+    console.info('fetch', key, localStorage[key]);
+    app.ports.receiveLocalStore.send([key, localStorage[key]])
+});

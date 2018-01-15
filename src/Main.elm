@@ -17,7 +17,7 @@ import Utils exposing (..)
 main : Program Never Model (Dropbox.Msg Msg)
 main =
     Dropbox.program
-        { init = \location -> ( init location, Cmd.none )
+        { init = \location -> init location ! []
         , update = update
         , subscriptions = subscriptions
         , view = \model -> BeautifulExample.view config (view model)
@@ -67,15 +67,29 @@ init location =
     }
 
 
+clearAccountFields : Model -> Model
+clearAccountFields model =
+    { model
+        | auth = Nothing
+        , fileTree = FileEntry.empty
+        , loadingTree = False
+        , loadedEntryCount = 0
+        , accountInfo = Nothing
+        , path = "/"
+    }
+
+
 
 -- messages
 
 
 type Msg
     = SignIn
+    | SignOut
     | ClientID String
     | AuthResponse Dropbox.AuthorizeResult
     | SetAccountInfo AccountInfo
+    | ReceiveLocalStore String (Maybe String)
     | ListFiles
     | FileList (List FileEntry) Bool
     | FileListError
@@ -87,13 +101,16 @@ update msg model =
     case msg of
         AuthResponse (Dropbox.AuthorizeOk auth) ->
             { model | auth = Just auth.userAuth }
-                ! [ case auth.userAuth |> extractAccessToken of
-                        Just token ->
-                            getAccountInfo token
+                ! (case auth.userAuth |> extractAccessToken of
+                    Just token ->
+                        [ getAccountInfo token
+                        , storeAccessToken <| Just token
+                        , clearLocationHash model
+                        ]
 
-                        Nothing ->
-                            Cmd.none
-                  ]
+                    Nothing ->
+                        []
+                  )
 
         AuthResponse _ ->
             { model | auth = Nothing } ! []
@@ -103,7 +120,8 @@ update msg model =
 
         SignIn ->
             model
-                ! [ Dropbox.authorize
+                ! [ --
+                    Dropbox.authorize
                         { clientId = model.clientId
                         , state = Nothing
                         , requireRole = Nothing
@@ -115,8 +133,35 @@ update msg model =
                         model.location
                   ]
 
+        SignOut ->
+            clearAccountFields model
+                ! [ storeAccessToken Nothing
+                  , clearLocationHash model
+                  ]
+
         SetAccountInfo info ->
             update ListFiles { model | accountInfo = Just info }
+
+        ReceiveLocalStore key value ->
+            let
+                _ =
+                    Debug.log "receive" ( key, value )
+            in
+            case
+                if key == accessTokenKey then
+                    value
+                else
+                    Nothing
+            of
+                Just tokenString ->
+                    let
+                        token =
+                            Dropbox.authorizationFromAccessToken tokenString
+                    in
+                    { model | auth = Just token } ! [ getAccountInfo tokenString ]
+
+                _ ->
+                    model ! []
 
         ListFiles ->
             let
@@ -156,6 +201,18 @@ update msg model =
             { model | path = path } ! []
 
 
+clearLocationHash : Model -> Cmd msg
+clearLocationHash model =
+    let
+        location =
+            model.location
+
+        url =
+            String.join "" [ location.protocol, "//", location.host, location.pathname ]
+    in
+    Navigation.modifyUrl url
+
+
 
 -- subscriptions
 
@@ -166,6 +223,7 @@ subscriptions model =
         [ dropboxClientID ClientID
         , fileList <| uncurry FileList
         , setAccountInfo SetAccountInfo
+        , receiveLocalStore <| uncurry ReceiveLocalStore
         ]
 
 
@@ -182,6 +240,15 @@ port fileListError : (() -> msg) -> Sub msg
 
 
 port getAccountInfo : String -> Cmd msg
+
+
+port setLocalStore : ( String, Maybe String ) -> Cmd msg
+
+
+port getLocalStore : String -> Cmd msg
+
+
+port receiveLocalStore : (( String, Maybe String ) -> msg) -> Sub msg
 
 
 type alias UserInfo =
@@ -203,6 +270,25 @@ port setAccountInfo : (AccountInfo -> msg) -> Sub msg
 
 
 
+--- access tokens
+
+
+accessTokenKey : String
+accessTokenKey =
+    "accessToken"
+
+
+storeAccessToken : Maybe String -> Cmd msg
+storeAccessToken token =
+    setLocalStore ( accessTokenKey, token )
+
+
+requestAccessToken : Cmd msg
+requestAccessToken =
+    getLocalStore accessTokenKey
+
+
+
 -- view
 
 
@@ -212,8 +298,18 @@ view model =
         [ ifDiv (isSignedIn model) <|
             div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
         , Html.button
-            [ Html.Events.onClick SignIn ]
-            [ Html.text (model.auth |> Maybe.map (\_ -> "Sign out") |> Maybe.withDefault "Sign into Dropbox") ]
+            [ Html.Events.onClick <|
+                if isSignedIn model then
+                    SignOut
+                else
+                    SignIn
+            ]
+            [ Html.text <|
+                if isSignedIn model then
+                    "Sign out"
+                else
+                    "Sign into Dropbox"
+            ]
         , ifDiv (isSignedIn model && not model.loadingTree) <|
             Html.button
                 [ Html.Events.onClick ListFiles ]
