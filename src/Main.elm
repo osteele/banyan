@@ -50,6 +50,7 @@ type alias Model =
     , fileTree : FileTree
     , loadingTree : Bool
     , loadedEntryCount : Int
+    , requestCount : Int
     , accountInfo : Maybe AccountInfo
     , path : String
     }
@@ -64,6 +65,7 @@ init location =
     , fileTree = FileEntry.empty
     , loadingTree = False
     , loadedEntryCount = 0
+    , requestCount = 0
     , accountInfo = Nothing
     , path = "/"
     }
@@ -73,10 +75,11 @@ clearAccountFields : Model -> Model
 clearAccountFields model =
     { model
         | auth = Nothing
+        , accountInfo = Nothing
         , fileTree = FileEntry.empty
         , loadingTree = False
         , loadedEntryCount = 0
-        , accountInfo = Nothing
+        , requestCount = 0
         , path = "/"
     }
 
@@ -189,6 +192,7 @@ update msg model =
                 | fileTree = addEntries entries model.fileTree
                 , loadingTree = loading
                 , loadedEntryCount = model.loadedEntryCount + List.length entries
+                , requestCount = model.requestCount + 1
             }
                 ! []
 
@@ -275,12 +279,19 @@ view model =
                 [ Html.Events.onClick ListFiles ]
                 [ Html.text "Sync" ]
         , div []
-            [ text
-                (if model.loadingTree then
-                    toString model.loadedEntryCount ++ " entries synced…"
-                 else
-                    toString model.loadedEntryCount ++ " entries synced."
-                )
+            [ text <|
+                String.join ""
+                    [ toStringWithCommas model.loadedEntryCount
+                    , " entries totalling "
+                    , humanize <| nodeSize model.fileTree
+                    , " loaded in "
+                    , toString model.requestCount
+                    , " requests"
+                    , if model.loadingTree then
+                        "…"
+                      else
+                        "."
+                    ]
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
         , ifDiv (FileEntry.isEmpty model.fileTree |> not) <|

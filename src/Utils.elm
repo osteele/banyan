@@ -2,6 +2,17 @@ module Utils exposing (..)
 
 import Regex
 import Round
+import String
+
+
+toStringWithCommas : num -> String
+toStringWithCommas =
+    toString
+        >> String.reverse
+        >> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}-?")
+        >> List.map .match
+        >> String.join ","
+        >> String.reverse
 
 
 dropPrefix : String -> String -> Maybe String
