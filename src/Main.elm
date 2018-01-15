@@ -1,7 +1,8 @@
-port module Main exposing (..)
+module Main exposing (..)
 
 import BeautifulExample
 import Color
+import Data exposing (..)
 import Dict
 import Dropbox
 import FileEntry exposing (..)
@@ -10,6 +11,7 @@ import Html.Attributes
 import Html.Events exposing (onClick)
 import Json.Encode as Encode
 import Navigation
+import Ports exposing (..)
 import Regex
 import Utils exposing (..)
 
@@ -225,48 +227,6 @@ subscriptions model =
         , setAccountInfo SetAccountInfo
         , receiveLocalStore <| uncurry ReceiveLocalStore
         ]
-
-
-port dropboxClientID : (String -> msg) -> Sub msg
-
-
-port listFiles : String -> Cmd msg
-
-
-port fileList : (( List FileEntry, Bool ) -> msg) -> Sub msg
-
-
-port fileListError : (() -> msg) -> Sub msg
-
-
-port getAccountInfo : String -> Cmd msg
-
-
-port setLocalStore : ( String, Maybe String ) -> Cmd msg
-
-
-port getLocalStore : String -> Cmd msg
-
-
-port receiveLocalStore : (( String, Maybe String ) -> msg) -> Sub msg
-
-
-type alias UserInfo =
-    { abbreviated_name : String
-    , display_name : String
-    , familiar_name : String
-    , given_name : String
-    , surname : String
-    }
-
-
-type alias AccountInfo =
-    { name : UserInfo
-    , teamName : String
-    }
-
-
-port setAccountInfo : (AccountInfo -> msg) -> Sub msg
 
 
 
