@@ -1,7 +1,9 @@
 module UtilsTests exposing (..)
 
 import Expect exposing (Expectation)
+import Regex
 import Test exposing (..)
+import Tuple exposing (mapFirst)
 import Utils exposing (..)
 
 
@@ -22,6 +24,19 @@ suite =
                     dropPrefix "/" ""
                         |> Expect.equal Nothing
             ]
+        , test "firstMatch" <|
+            \_ ->
+                [ ( "(\\d)", "a1b" )
+                , ( "(\\d)", "a1b2c" )
+                , ( "(\\d)", "abc" )
+                ]
+                    |> List.map (mapFirst Regex.regex)
+                    |> List.map (uncurry firstMatch)
+                    |> Expect.equal
+                        [ Just "1"
+                        , Just "1"
+                        , Nothing
+                        ]
         , describe "humanize"
             [ test "gigabytes" <|
                 \_ ->

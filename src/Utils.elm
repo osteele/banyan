@@ -14,17 +14,10 @@ dropPrefix prefix s =
 
 firstMatch : Regex.Regex -> String -> Maybe String
 firstMatch re s =
-    case Regex.find Regex.All re s of
-        { submatches } :: _ ->
-            case submatches of
-                [ s ] ->
-                    s
-
-                _ ->
-                    Nothing
-
-        _ ->
-            Nothing
+    Regex.find Regex.All re s
+        |> List.head
+        |> Maybe.map .submatches
+        |> Maybe.andThen (List.head >> Maybe.withDefault Nothing)
 
 
 humanize : Int -> String
