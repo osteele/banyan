@@ -208,20 +208,13 @@ port setAccountInfo : (AccountInfo -> msg) -> Sub msg
 
 view : Model -> Html Msg
 view model =
-    let
-        _ =
-            if False then
-                Debug.log "tree" model.fileTree
-            else
-                model.fileTree
-    in
     div []
-        [ ifDiv (model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False) <|
+        [ ifDiv (isSignedIn model) <|
             div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
         , Html.button
             [ Html.Events.onClick SignIn ]
             [ Html.text (model.auth |> Maybe.map (\_ -> "Sign out") |> Maybe.withDefault "Sign into Dropbox") ]
-        , ifDiv (not model.loadingTree) <|
+        , ifDiv (isSignedIn model && not model.loadingTree) <|
             Html.button
                 [ Html.Events.onClick ListFiles ]
                 [ Html.text "Sync" ]
@@ -250,30 +243,34 @@ fileViewDepth =
 treeView : String -> Int -> FileTree -> Html Msg
 treeView teamName depth tree =
     let
-        breadcrumbs =
+        breadcrumbs path =
             Html.span
-                [ cssClass "breadcrumb" ]
-                (itemEntry tree
-                    |> .path
+                [ cssClass "breadcrumbs" ]
+                (path
                     |> String.split "/"
+                    |> (\dirs ->
+                            prefixes dirs
+                                |> List.map (String.join "/")
+                                |> zip dirs
+                       )
                     |> List.map
-                        (\p ->
+                        (\( dir, prefix ) ->
                             Html.span
-                                [ Html.Events.onClick <| Focus "/"
+                                [ Html.Events.onClick <| Focus prefix
                                 , folderClass
                                 ]
                                 [ text <|
-                                    (if p == "" then
+                                    (if dir == "" then
                                         teamName
                                      else
-                                        p
+                                        dir
                                     )
                                         ++ " > "
                                 ]
                         )
                 )
     in
-    treeView_ (Just breadcrumbs) depth tree
+    treeView_ (Just <| breadcrumbs <| .path <| itemEntry tree) depth tree
 
 
 treeView_ : Maybe (Html Msg) -> Int -> FileTree -> Html Msg
@@ -333,3 +330,7 @@ ifDiv test html =
         html
     else
         div [] []
+
+
+isSignedIn model =
+    model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False

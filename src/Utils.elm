@@ -30,6 +30,21 @@ humanize n =
             toString n ++ " bytes"
 
 
+prefixes : List a -> List (List a)
+prefixes xs =
+    case xs of
+        h :: t ->
+            [ h ] :: List.map ((::) h) (prefixes t)
+
+        [] ->
+            []
+
+
 takeFileName : String -> String
 takeFileName path =
     path |> String.split "/" |> List.foldl always path
+
+
+zip : List a -> List b -> List ( a, b )
+zip =
+    List.map2 (,)

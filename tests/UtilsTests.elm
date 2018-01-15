@@ -47,6 +47,14 @@ suite =
                     humanize 123
                         |> Expect.equal "123 bytes"
             ]
+        , test "prefixes" <|
+            \_ ->
+                prefixes [ "a", "b", "c" ]
+                    |> Expect.equal
+                        [ [ "a" ]
+                        , [ "a", "b" ]
+                        , [ "a", "b", "c" ]
+                        ]
         , describe "takeFileName"
             [ test "returns the final component" <|
                 \_ ->
