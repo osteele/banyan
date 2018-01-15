@@ -4,6 +4,9 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style type="text/css">
+        .breadcrumb { list-style: none; }
+        .breadcrumb li { float: left; }
+        .breadcrumb li::after { content: " > "; }
         .folder { cursor: pointer }
         .folder:hover { text-decoration: underline}
         .size { float: right; }

@@ -244,8 +244,8 @@ treeView : String -> Int -> FileTree -> Html Msg
 treeView teamName depth tree =
     let
         breadcrumbs path =
-            Html.span
-                [ cssClass "breadcrumbs" ]
+            Html.ul
+                [ cssClass "breadcrumb" ]
                 (path
                     |> String.split "/"
                     |> (\dirs ->
@@ -255,17 +255,15 @@ treeView teamName depth tree =
                        )
                     |> List.map
                         (\( dir, prefix ) ->
-                            Html.span
+                            Html.li
                                 [ Html.Events.onClick <| Focus prefix
                                 , folderClass
                                 ]
                                 [ text <|
-                                    (if dir == "" then
+                                    if dir == "" then
                                         teamName
-                                     else
+                                    else
                                         dir
-                                    )
-                                        ++ " > "
                                 ]
                         )
                 )
