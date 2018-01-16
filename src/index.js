@@ -9,6 +9,7 @@ app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe((accessToken, pages) => {
     var dbx = new Dropbox({ accessToken });
+    var cache = localStorage['fileTree'] && JSON.parse(localStorage['fileTree']);
     var listFiles = (fn, pages) =>
         fn
             .then((response) => {
@@ -19,10 +20,17 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
                         , path: entry.path_display
                         , size: entry.size || null
                     };
-                })
-                // console.info(files)
+                });
+
+                cache.cursor = response.cursor;
+                files.forEach((entry) => {
+                    cache.entries[entry.key] = entry;
+                });
+                localStorage['fileTree'] = JSON.stringify(cache);
+
                 var more = (pages == null || --pages > 0) && response.has_more;
                 app.ports.fileList.send([files, Boolean(more)]);
+
                 if (more) {
                     listFiles(dbx.filesListFolderContinue({ cursor: response.cursor }), pages);
                 }
@@ -31,7 +39,13 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
                 console.log(error);
                 app.ports.fileListError.send();
             });
-    listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages || null);
+    if (cache) { // && cache.accessToken === accessToken) {
+        app.ports.fileList.send([Object.values(cache.entries), true]);
+        listFiles(dbx.filesListFolderContinue({ cursor: cache.cursor }), pages || null);
+    } else {
+        cache = { accessToken, entries: {} }
+        listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages || null);
+    }
 });
 
 app.ports.getAccountInfo.subscribe((accessToken) => {
