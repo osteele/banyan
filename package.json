@@ -21,6 +21,7 @@
     "poi-preset-elm": "^1.1.1"
   },
   "dependencies": {
-    "dropbox": "^2.5.13"
+    "dropbox": "^2.5.13",
+    "highcharts": "^6.0.4"
   }
 }

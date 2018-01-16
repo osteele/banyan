@@ -2,6 +2,7 @@ import './src/Main.css';
 
 import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';
+import treeMap from './src/treeMap.js';
 
 const app = Elm.Main.embed(document.getElementById('app'));
 app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
@@ -49,7 +50,7 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
     }
 });
 
-app.ports.getAccountInfo.subscribe((accessToken) => {
+app.ports.getAccountInfo.subscribe(accessToken => {
     const dbx = new Dropbox({ accessToken });
     dbx.usersGetCurrentAccount()
         .then((response) => {
@@ -73,7 +74,11 @@ app.ports.setLocalStore.subscribe(([key, value]) => {
     }
 });
 
-app.ports.getLocalStore.subscribe((key) => {
+app.ports.getLocalStore.subscribe(key => {
     console.info('fetch', key, localStorage[key]);
     app.ports.receiveLocalStore.send([key, localStorage[key]])
 });
+
+app.ports.drawTreeMap.subscribe(([title, data]) =>
+    requestAnimationFrame(() => treeMap(title, data))
+);

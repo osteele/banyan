@@ -7,12 +7,13 @@ import Dict
 import Dropbox
 import FileEntry exposing (..)
 import Html exposing (Html, button, div, text)
-import Html.Attributes
+import Html.Attributes exposing (id)
 import Html.Events exposing (onClick)
 import Json.Encode as Encode
 import Navigation
 import Ports exposing (..)
 import Regex
+import TreeMap exposing (fileTreeMap)
 import Utils exposing (..)
 
 
@@ -102,6 +103,7 @@ type Msg
     | FileListError
     | Focus String
     | TreeDepth Int
+    | RenderFileTreeMap
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -191,13 +193,16 @@ update msg model =
                 ! [ cmd ]
 
         FileList entries loading ->
-            { model
-                | fileTree = addEntries entries model.fileTree
-                , loadingTree = loading
-                , loadedEntryCount = model.loadedEntryCount + List.length entries
-                , requestCount = model.requestCount + 1
-            }
-                ! []
+            let
+                model2 =
+                    { model
+                        | fileTree = addEntries entries model.fileTree
+                        , loadingTree = loading
+                        , loadedEntryCount = model.loadedEntryCount + List.length entries
+                        , requestCount = model.requestCount + 1
+                    }
+            in
+            update RenderFileTreeMap model2
 
         FileListError ->
             { model
@@ -207,10 +212,17 @@ update msg model =
                 ! []
 
         Focus path ->
-            { model | path = path } ! []
+            update RenderFileTreeMap { model | path = path }
 
         TreeDepth n ->
-            { model | depth = n } ! []
+            update RenderFileTreeMap { model | depth = n }
+
+        RenderFileTreeMap ->
+            model
+                ! [ getSubtree model.path model.fileTree
+                        |> Maybe.map (fileTreeMap 1)
+                        |> Maybe.withDefault Cmd.none
+                  ]
 
 
 clearLocationHash : Model -> Cmd msg
@@ -279,6 +291,7 @@ view model =
             Html.button
                 [ Html.Events.onClick ListFiles ]
                 [ Html.text "Sync" ]
+        , div [ id "treeMap" ] []
         , Html.button [ Html.Events.onClick <| TreeDepth 1 ] [ text "1" ]
         , Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
         , Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
