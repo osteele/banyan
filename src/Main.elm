@@ -261,19 +261,14 @@ view model =
     div []
         [ ifDiv (isSignedIn model) <|
             div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
-        , Html.button
-            [ Html.Events.onClick <|
-                if isSignedIn model then
-                    SignOut
-                else
-                    SignIn
-            ]
-            [ Html.text <|
-                if isSignedIn model then
-                    "Sign out"
-                else
-                    "Sign into Dropbox"
-            ]
+        , ifDiv (isSignedIn model) <|
+            Html.button
+                [ Html.Events.onClick <| SignOut ]
+                [ Html.text <| "Sign out" ]
+        , ifDiv (not <| isSignedIn model) <|
+            Html.button
+                [ Html.Events.onClick <| SignIn ]
+                [ Html.text <| "Sign into Dropbox" ]
         , ifDiv (isSignedIn model && not model.loadingTree) <|
             Html.button
                 [ Html.Events.onClick ListFiles ]
@@ -335,7 +330,7 @@ treeView teamName depth tree =
                         )
                 )
     in
-    treeView_ (Just <| breadcrumbs <| .path <| itemEntry tree) depth tree
+    treeView_ (Just <| Html.h2 [] <| List.singleton <| breadcrumbs <| .path <| itemEntry tree) depth tree
 
 
 treeView_ : Maybe (Html Msg) -> Int -> FileTree -> Html Msg
