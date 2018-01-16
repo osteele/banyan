@@ -7,21 +7,18 @@
   "repository": "github:osteele/banyan",
   "license": "UNLICENSED",
   "scripts": {
-    "start": "webpack-dev-server --hot --inline",
+    "start": "poi",
     "prebuild": "rimraf dist",
     "build": "webpack",
     "reinstall": "npm i rimraf && rimraf node_modules && npm uninstall -g elm && npm i -g elm && npm i && elm package install",
     "test": "elm-test",
-    "deploy": "webpack && netlify deploy"
+    "deploy": "poi build && netlify deploy"
   },
   "devDependencies": {
-    "css-loader": "^0.28.8",
+    "elm": "^0.18.0",
     "elm-webpack-loader": "^4.4.0",
-    "file-loader": "^1.1.6",
-    "style-loader": "^0.19.1",
-    "url-loader": "^0.6.2",
-    "webpack": "^3.10.0",
-    "webpack-dev-server": "^2.10.1"
+    "poi": "^9.6.12",
+    "poi-preset-elm": "^1.1.1"
   },
   "dependencies": {
     "dropbox": "^2.5.13"

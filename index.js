@@ -1,10 +1,10 @@
 'use strict';
 
-require('./index.html');
-var Elm = require('./Main');
+require('./src/Main.css');
+var Elm = require('./src/Main.elm');
 var Dropbox = require('dropbox')
 
-var app = Elm.Main.embed(document.getElementById('main'));
+var app = Elm.Main.embed(document.getElementById('app'));
 app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe((accessToken, pages) => {

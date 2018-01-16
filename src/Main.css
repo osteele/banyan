@@ -1,0 +1,11 @@
+.breadcrumb { list-style: none; }
+.breadcrumb li { float: left; }
+.breadcrumb li::after { content: " > "; }
+.folder { cursor: pointer }
+.folder:hover { text-decoration: underline}
+.size { float: right; }
+.file-item:after, .file-item:after {
+    content: "";
+    display: table;
+    clear: both;
+}
