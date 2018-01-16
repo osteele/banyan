@@ -53,6 +53,7 @@ type alias Model =
     , requestCount : Int
     , accountInfo : Maybe AccountInfo
     , path : String
+    , depth : Int
     }
 
 
@@ -68,6 +69,7 @@ init location =
     , requestCount = 0
     , accountInfo = Nothing
     , path = "/"
+    , depth = 2
     }
 
 
@@ -99,6 +101,7 @@ type Msg
     | FileList (List FileEntry) Bool
     | FileListError
     | Focus String
+    | TreeDepth Int
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -206,6 +209,9 @@ update msg model =
         Focus path ->
             { model | path = path } ! []
 
+        TreeDepth n ->
+            { model | depth = n } ! []
+
 
 clearLocationHash : Model -> Cmd msg
 clearLocationHash model =
@@ -273,6 +279,9 @@ view model =
             Html.button
                 [ Html.Events.onClick ListFiles ]
                 [ Html.text "Sync" ]
+        , Html.button [ Html.Events.onClick <| TreeDepth 1 ] [ text "1" ]
+        , Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
+        , Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
         , div []
             [ text <|
                 String.join ""
@@ -290,16 +299,12 @@ view model =
             ]
         , div [] [ model.debug |> Maybe.withDefault "" |> text ]
         , ifDiv (FileEntry.isEmpty model.fileTree |> not) <|
-            treeView (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
-                fileViewDepth
+            treeView
+                (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
+                model.depth
             <|
                 (getSubtree model.path model.fileTree |> Maybe.withDefault model.fileTree)
         ]
-
-
-fileViewDepth : Int
-fileViewDepth =
-    2
 
 
 treeView : String -> Int -> FileTree -> Html Msg
