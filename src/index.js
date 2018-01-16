@@ -8,6 +8,7 @@ var app = Elm.Main.embed(document.getElementById('main'));
 app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe((accessToken, pages) => {
+    pages = pages || null;
     var dbx = new Dropbox({ accessToken });
     var cache = localStorage['fileTree'] && JSON.parse(localStorage['fileTree']);
     var listFiles = (fn, pages) =>
@@ -35,16 +36,16 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
                     listFiles(dbx.filesListFolderContinue({ cursor: response.cursor }), pages);
                 }
             })
-            .catch((error) => {
-                console.log(error);
-                app.ports.fileListError.send();
+            .catch((error, response) => {
+                console.error(error);
+                app.ports.fileListError.send(); // error.name, error.message
             });
     if (cache) { // && cache.accessToken === accessToken) {
         app.ports.fileList.send([Object.values(cache.entries), true]);
-        listFiles(dbx.filesListFolderContinue({ cursor: cache.cursor }), pages || null);
+        listFiles(dbx.filesListFolderContinue({ cursor: cache.cursor }), pages);
     } else {
         cache = { accessToken, entries: {} }
-        listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages || null);
+        listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages);
     }
 });
 
@@ -52,7 +53,6 @@ app.ports.getAccountInfo.subscribe((accessToken) => {
     var dbx = new Dropbox({ accessToken });
     dbx.usersGetCurrentAccount()
         .then((response) => {
-            // console.info(response);
             var teamName = response.team ? response.team.name : "Personal";
             app.ports.setAccountInfo.send({
                 teamName,
