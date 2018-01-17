@@ -11,7 +11,7 @@ type Msg
     | ClientID String
     | AuthResponse Dropbox.AuthorizeResult
     | SetAccountInfo AccountInfo
-    | ReceiveLocalStore String (Maybe String)
+    | AccessToken (Maybe String)
     | ListFiles
     | FileList (List FileEntry) Bool
     | FileListError

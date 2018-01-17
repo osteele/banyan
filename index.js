@@ -4,8 +4,9 @@ import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';
 import treeMap from './src/treeMap.js';
 
+const accessTokenKey = "accessToken";
 const app = Elm.Main.embed(document.getElementById('app'), {
-    accessToken: localStorage["accessToken"] || null
+    accessToken: localStorage[accessTokenKey] || null
 });
 app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
@@ -13,9 +14,9 @@ app.ports.listFiles.subscribe(async (accessToken) => {
     const path = '';
     const dbx = new Dropbox({ accessToken });
     let cache = localStorage['fileTree'] && JSON.parse(localStorage['fileTree']);
-    if (cache.accessToken !== accessToken) {
+    if (cache && cache.accessToken !== accessToken) {
         console.info('reset cache')
-        // cache = null;
+        cache = null;
     }
     cache = cache || { accessToken, entries: {} };
     let entries = Object.values(cache.entries);
@@ -73,12 +74,13 @@ app.ports.getAccountInfo.subscribe(accessToken => {
         })
 });
 
-app.ports.setLocalStore.subscribe(([key, value]) => {
-    console.info('store', key, value);
+app.ports.storeAccessToken.subscribe((value) => {
+    const key = accessTokenKey;
     if (value) {
         localStorage[key] = value;
     } else {
-        localStorage.removeItem(key)
+        localStorage.clear();
+        // localStorage.removeItem(key)
     }
 });
 

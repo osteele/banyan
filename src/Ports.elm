@@ -19,7 +19,7 @@ port fileListError : (() -> msg) -> Sub msg
 port getAccountInfo : String -> Cmd msg
 
 
-port setLocalStore : ( String, Maybe String ) -> Cmd msg
+port storeAccessToken : Maybe String -> Cmd msg
 
 
 port setAccountInfo : (AccountInfo -> msg) -> Sub msg

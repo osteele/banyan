@@ -26,7 +26,7 @@ main =
             \flags location ->
                 let
                     cmd =
-                        ReceiveLocalStore accessTokenKey flags.accessToken
+                        AccessToken flags.accessToken
                             |> Task.succeed
                             |> Task.perform identity
                 in
@@ -99,13 +99,8 @@ update msg model =
         SetAccountInfo info ->
             update ListFiles { model | accountInfo = Just info }
 
-        ReceiveLocalStore key value ->
-            case
-                if key == accessTokenKey then
-                    value
-                else
-                    Nothing
-            of
+        AccessToken accessToken ->
+            case accessToken of
                 Just tokenString ->
                     let
                         token =
@@ -191,20 +186,6 @@ subscriptions model =
         , fileList <| uncurry FileList
         , setAccountInfo SetAccountInfo
         ]
-
-
-
---- access tokens
-
-
-accessTokenKey : String
-accessTokenKey =
-    "accessToken"
-
-
-storeAccessToken : Maybe String -> Cmd msg
-storeAccessToken token =
-    setLocalStore ( accessTokenKey, token )
 
 
 
