@@ -6,12 +6,11 @@ import FileEntry exposing (..)
 
 
 type Msg
-    = SignIn
-    | SignOut
-    | ClientID String
+    = AccessToken (Maybe String)
     | AuthResponse Dropbox.AuthorizeResult
+    | SignIn
+    | SignOut
     | SetAccountInfo AccountInfo
-    | AccessToken (Maybe String)
     | ListFiles
     | FileList (List FileEntry) Bool
     | FileListError

@@ -16,21 +16,16 @@ import View exposing (..)
 
 
 type alias Flags =
-    { accessToken : Maybe String }
+    { accessToken : Maybe String
+    , clientId : String
+    }
 
 
 main : Program Flags Model (Dropbox.Msg Msg)
 main =
     Dropbox.programWithFlags
         { init =
-            \flags location ->
-                let
-                    cmd =
-                        AccessToken flags.accessToken
-                            |> Task.succeed
-                            |> Task.perform identity
-                in
-                init location ! [ cmd ]
+            \flags location -> init flags.clientId location ! [ initialCmd flags ]
         , update = update
         , subscriptions = subscriptions
         , view = \model -> BeautifulExample.view config (view model)
@@ -49,6 +44,13 @@ config =
     }
 
 
+initialCmd : Flags -> Cmd Msg
+initialCmd flags =
+    AccessToken flags.accessToken
+        |> Task.succeed
+        |> Task.perform identity
+
+
 
 -- messages
 
@@ -56,6 +58,17 @@ config =
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
+        AccessToken accessToken ->
+            case accessToken of
+                Just tokenString ->
+                    { model
+                        | auth = Just <| Dropbox.authorizationFromAccessToken tokenString
+                    }
+                        ! [ getAccountInfo tokenString ]
+
+                Nothing ->
+                    model ! []
+
         AuthResponse (Dropbox.AuthorizeOk auth) ->
             { model | auth = Just auth.userAuth }
                 ! (case auth.userAuth |> extractAccessToken of
@@ -71,9 +84,6 @@ update msg model =
 
         AuthResponse _ ->
             { model | auth = Nothing } ! []
-
-        ClientID clientId ->
-            { model | clientId = clientId } ! []
 
         SignIn ->
             model
@@ -98,18 +108,6 @@ update msg model =
 
         SetAccountInfo info ->
             update ListFiles { model | accountInfo = Just info }
-
-        AccessToken accessToken ->
-            case accessToken of
-                Just tokenString ->
-                    let
-                        token =
-                            Dropbox.authorizationFromAccessToken tokenString
-                    in
-                    { model | auth = Just token } ! [ getAccountInfo tokenString ]
-
-                _ ->
-                    model ! []
 
         ListFiles ->
             { model
@@ -178,8 +176,7 @@ clearLocationHash model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ dropboxClientID ClientID
-        , fileList <| uncurry FileList
+        [ fileList <| uncurry FileList
         , setAccountInfo SetAccountInfo
         ]
 

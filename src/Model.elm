@@ -21,11 +21,11 @@ type alias Model =
     }
 
 
-init : Navigation.Location -> Model
-init location =
+init : String -> Navigation.Location -> Model
+init clientId location =
     { location = location
     , auth = Nothing
-    , clientId = ""
+    , clientId = clientId
     , debug = Nothing
     , fileTree = FileEntry.empty
     , loadingTree = False

@@ -6,9 +6,9 @@ import treeMap from './src/treeMap.js';
 
 const accessTokenKey = "accessToken";
 const app = Elm.Main.embed(document.getElementById('app'), {
-    accessToken: localStorage[accessTokenKey] || null
+    accessToken: localStorage[accessTokenKey] || null,
+    clientId: process.env.DROPBOX_APP_KEY
 });
-app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe(async (accessToken) => {
     const path = '';

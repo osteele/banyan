@@ -4,9 +4,6 @@ import Data exposing (..)
 import FileEntry exposing (..)
 
 
-port dropboxClientID : (String -> msg) -> Sub msg
-
-
 port listFiles : String -> Cmd msg
 
 
