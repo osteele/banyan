@@ -8,6 +8,7 @@ const app = Elm.Main.embed(document.getElementById('app'));
 app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe((accessToken, pages) => {
+    const path = '';
     pages = pages || null;
     const dbx = new Dropbox({ accessToken });
     let cache = localStorage['fileTree'] && JSON.parse(localStorage['fileTree']);
@@ -47,6 +48,7 @@ app.ports.listFiles.subscribe((accessToken, pages) => {
     } else {
         cache = { accessToken, entries: {} }
         listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages);
+        listFiles(dbx.filesListFolder({ path, recursive: true }), pages);
     }
 });
 
