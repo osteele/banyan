@@ -9,7 +9,7 @@ import FileEntry exposing (..)
 import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
-import Json.Encode as Encode
+import Model exposing (..)
 import Navigation
 import Ports exposing (..)
 import Regex
@@ -36,59 +36,6 @@ config =
     , maxWidth = 800
     , githubUrl = Just "https://github.com/osteele/banyan"
     , documentationUrl = Nothing
-    }
-
-
-clearAccountFields : Model -> Model
-clearAccountFields model =
-    { model
-        | auth = Nothing
-        , accountInfo = Nothing
-        , fileTree = FileEntry.empty
-        , loadingTree = False
-        , loadedEntryCount = 0
-        , requestCount = 0
-        , path = "/"
-    }
-
-
-isSignedIn : Model -> Bool
-isSignedIn model =
-    model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False
-
-
-
--- model
-
-
-type alias Model =
-    { location : Navigation.Location
-    , auth : Maybe Dropbox.UserAuth
-    , clientId : String
-    , debug : Maybe String
-    , fileTree : FileTree
-    , loadingTree : Bool
-    , loadedEntryCount : Int
-    , requestCount : Int
-    , accountInfo : Maybe AccountInfo
-    , path : String
-    , depth : Int
-    }
-
-
-init : Navigation.Location -> Model
-init location =
-    { location = location
-    , auth = Nothing
-    , clientId = ""
-    , debug = Nothing
-    , fileTree = FileEntry.empty
-    , loadingTree = False
-    , loadedEntryCount = 0
-    , requestCount = 0
-    , accountInfo = Nothing
-    , path = "/"
-    , depth = 2
     }
 
 
