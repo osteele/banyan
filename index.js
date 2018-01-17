@@ -4,7 +4,9 @@ import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';
 import treeMap from './src/treeMap.js';
 
-const app = Elm.Main.embed(document.getElementById('app'));
+const app = Elm.Main.embed(document.getElementById('app'), {
+    accessToken: localStorage["accessToken"] || null
+});
 app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
 app.ports.listFiles.subscribe(async (accessToken) => {
@@ -78,11 +80,6 @@ app.ports.setLocalStore.subscribe(([key, value]) => {
     } else {
         localStorage.removeItem(key)
     }
-});
-
-app.ports.getLocalStore.subscribe(key => {
-    console.info('fetch', key, localStorage[key]);
-    app.ports.receiveLocalStore.send([key, localStorage[key]])
 });
 
 app.ports.drawTreeMap.subscribe(([title, data]) =>

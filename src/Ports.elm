@@ -22,10 +22,4 @@ port getAccountInfo : String -> Cmd msg
 port setLocalStore : ( String, Maybe String ) -> Cmd msg
 
 
-port getLocalStore : String -> Cmd msg
-
-
-port receiveLocalStore : (( String, Maybe String ) -> msg) -> Sub msg
-
-
 port setAccountInfo : (AccountInfo -> msg) -> Sub msg

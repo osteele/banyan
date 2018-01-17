@@ -9,15 +9,28 @@ import Model exposing (..)
 import Navigation
 import Ports exposing (..)
 import Regex
+import Task
 import TreeMap exposing (fileTreeMap)
 import Utils exposing (..)
 import View exposing (..)
 
 
-main : Program Never Model (Dropbox.Msg Msg)
+type alias Flags =
+    { accessToken : Maybe String }
+
+
+main : Program Flags Model (Dropbox.Msg Msg)
 main =
-    Dropbox.program
-        { init = \location -> init location ! []
+    Dropbox.programWithFlags
+        { init =
+            \flags location ->
+                let
+                    cmd =
+                        ReceiveLocalStore accessTokenKey flags.accessToken
+                            |> Task.succeed
+                            |> Task.perform identity
+                in
+                init location ! [ cmd ]
         , update = update
         , subscriptions = subscriptions
         , view = \model -> BeautifulExample.view config (view model)
@@ -87,10 +100,6 @@ update msg model =
             update ListFiles { model | accountInfo = Just info }
 
         ReceiveLocalStore key value ->
-            let
-                _ =
-                    Debug.log "receive" ( key, value )
-            in
             case
                 if key == accessTokenKey then
                     value
@@ -161,11 +170,6 @@ update msg model =
 
 clearLocationHash : Model -> Cmd msg
 clearLocationHash model =
-    Cmd.none
-
-
-clearLocationHash_ : Model -> Cmd msg
-clearLocationHash_ model =
     let
         location =
             model.location
@@ -186,7 +190,6 @@ subscriptions model =
         [ dropboxClientID ClientID
         , fileList <| uncurry FileList
         , setAccountInfo SetAccountInfo
-        , receiveLocalStore <| uncurry ReceiveLocalStore
         ]
 
 
@@ -202,11 +205,6 @@ accessTokenKey =
 storeAccessToken : Maybe String -> Cmd msg
 storeAccessToken token =
     setLocalStore ( accessTokenKey, token )
-
-
-requestAccessToken : Cmd msg
-requestAccessToken =
-    getLocalStore accessTokenKey
 
 
 
