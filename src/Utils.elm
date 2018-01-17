@@ -41,6 +41,14 @@ humanize n =
             toString n ++ " bytes"
 
 
+ifJust : Bool -> a -> Maybe a
+ifJust flag a =
+    if flag then
+        Just a
+    else
+        Nothing
+
+
 prefixes : List a -> List (List a)
 prefixes xs =
     case xs of
