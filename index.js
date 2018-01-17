@@ -7,48 +7,52 @@ import treeMap from './src/treeMap.js';
 const app = Elm.Main.embed(document.getElementById('app'));
 app.ports.dropboxClientID.send(process.env.DROPBOX_APP_KEY);
 
-app.ports.listFiles.subscribe((accessToken, pages) => {
+app.ports.listFiles.subscribe(async (accessToken) => {
     const path = '';
-    pages = pages || null;
     const dbx = new Dropbox({ accessToken });
     let cache = localStorage['fileTree'] && JSON.parse(localStorage['fileTree']);
-    function listFiles(fn, pages) {
-        fn
-            .then((response) => {
-                var files = response.entries.map((entry) => {
-                    return {
-                        tag: entry['.tag']
-                        , key: entry.path_lower
-                        , path: entry.path_display
-                        , size: entry.size || null
-                    };
-                });
-
-                cache.cursor = response.cursor;
-                files.forEach((entry) => {
-                    cache.entries[entry.key] = entry;
-                });
-                localStorage['fileTree'] = JSON.stringify(cache);
-
-                var more = (pages == null || --pages > 0) && response.has_more;
-                app.ports.fileList.send([files, Boolean(more)]);
-
-                if (more) {
-                    listFiles(dbx.filesListFolderContinue({ cursor: response.cursor }), pages);
-                }
-            })
-            .catch((error, response) => {
-                console.error(error);
-                app.ports.fileListError.send(); // error.name, error.message
-            });
+    if (cache.accessToken !== accessToken) {
+        console.info('reset cache')
+        // cache = null;
     }
-    if (cache) { // && cache.accessToken === accessToken) {
-        app.ports.fileList.send([Object.values(cache.entries), true]);
-        listFiles(dbx.filesListFolderContinue({ cursor: cache.cursor }), pages);
-    } else {
-        cache = { accessToken, entries: {} }
-        listFiles(dbx.filesListFolder({ path: '', recursive: true }), pages);
-        listFiles(dbx.filesListFolder({ path, recursive: true }), pages);
+    cache = cache || { accessToken, entries: {} };
+    let entries = Object.values(cache.entries);
+    if (entries.length) {
+        console.info('initial send', entries.length, 'entries');
+        app.ports.fileList.send([entries, true]);
+    }
+    let query = cache.cursor
+        ? dbx.filesListFolderContinue({ cursor: cache.cursor })
+        : dbx.filesListFolder({ path, recursive: true });
+    while (query) {
+        var response
+        try {
+            response = await query;
+        } catch (error) {
+            console.error(error);
+            app.ports.fileListError.send(); // error.name, error.message
+        }
+
+        let entries = response.entries.map((entry) => {
+            return {
+                tag: entry['.tag']
+                , key: entry.path_lower
+                , path: entry.path_display
+                , size: entry.size || null
+            };
+        });
+
+        // update the cache
+        cache.cursor = response.cursor;
+        entries.forEach((entry) => {
+            cache.entries[entry.key] = entry;
+        });
+        localStorage['fileTree'] = JSON.stringify(cache);
+
+        const more = Boolean(response.has_more);
+        app.ports.fileList.send([entries, more]);
+
+        query = more && dbx.filesListFolderContinue({ cursor: response.cursor });
     }
 });
 
