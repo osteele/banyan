@@ -286,48 +286,50 @@ requestAccessToken =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ ifDiv (isSignedIn model) <|
-            div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
-        , ifDiv (isSignedIn model) <|
-            Html.button
-                [ Html.Events.onClick <| SignOut ]
-                [ Html.text <| "Sign out" ]
-        , ifDiv (not <| isSignedIn model) <|
-            Html.button
-                [ Html.Events.onClick <| SignIn ]
-                [ Html.text <| "Sign into Dropbox" ]
-        , ifDiv (isSignedIn model && not model.loadingTree) <|
-            Html.button
-                [ Html.Events.onClick ListFiles ]
-                [ Html.text "Sync" ]
-        , div [ id "treeMap" ] []
-        , Html.button [ Html.Events.onClick <| TreeDepth 1 ] [ text "1" ]
-        , Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
-        , Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
-        , div []
-            [ text <|
-                String.join ""
-                    [ toStringWithCommas model.loadedEntryCount
-                    , " entries totalling "
-                    , humanize <| nodeSize model.fileTree
-                    , " loaded in "
-                    , toString model.requestCount
-                    , " requests"
-                    , if model.loadingTree then
-                        "…"
-                      else
-                        "."
+    div [] <|
+        List.filterMap identity <|
+            [ ifJust (isSignedIn model) <|
+                div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
+            , ifJust (isSignedIn model) <|
+                Html.button
+                    [ Html.Events.onClick <| SignOut ]
+                    [ Html.text <| "Sign out" ]
+            , ifJust (not <| isSignedIn model) <|
+                Html.button
+                    [ Html.Events.onClick <| SignIn ]
+                    [ Html.text <| "Sign into Dropbox" ]
+            , ifJust (isSignedIn model && not model.loadingTree) <|
+                Html.button
+                    [ Html.Events.onClick ListFiles ]
+                    [ Html.text "Sync" ]
+            , Just <| div [ id "treeMap" ] []
+            , Just <| Html.button [ Html.Events.onClick <| TreeDepth 1 ] [ text "1" ]
+            , Just <| Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
+            , Just <| Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
+            , Just <|
+                div []
+                    [ text <|
+                        String.join ""
+                            [ toStringWithCommas model.loadedEntryCount
+                            , " entries totalling "
+                            , humanize <| nodeSize model.fileTree
+                            , " loaded in "
+                            , toString model.requestCount
+                            , " requests"
+                            , if model.loadingTree then
+                                "…"
+                              else
+                                "."
+                            ]
                     ]
+            , Just <| div [] [ model.debug |> Maybe.withDefault "" |> text ]
+            , ifJust (FileEntry.isEmpty model.fileTree |> not) <|
+                treeView
+                    (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
+                    model.depth
+                <|
+                    (getSubtree model.path model.fileTree |> Maybe.withDefault model.fileTree)
             ]
-        , div [] [ model.debug |> Maybe.withDefault "" |> text ]
-        , ifDiv (FileEntry.isEmpty model.fileTree |> not) <|
-            treeView
-                (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
-                model.depth
-            <|
-                (getSubtree model.path model.fileTree |> Maybe.withDefault model.fileTree)
-        ]
 
 
 treeView : String -> Int -> FileTree -> Html Msg
@@ -405,8 +407,9 @@ extractAccessToken auth =
     auth |> toString |> firstMatch (Regex.regex "Bearer \"(.+)\"")
 
 
-ifDiv test html =
-    if test then
-        html
+ifJust : Bool -> a -> Maybe a
+ifJust flag a =
+    if flag then
+        Just a
     else
-        div [] []
+        Nothing
