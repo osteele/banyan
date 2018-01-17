@@ -7,7 +7,7 @@ import Dict
 import Dropbox
 import FileEntry exposing (..)
 import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (id)
+import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
 import Json.Encode as Encode
 import Navigation
@@ -37,6 +37,24 @@ config =
     , githubUrl = Just "https://github.com/osteele/banyan"
     , documentationUrl = Nothing
     }
+
+
+clearAccountFields : Model -> Model
+clearAccountFields model =
+    { model
+        | auth = Nothing
+        , accountInfo = Nothing
+        , fileTree = FileEntry.empty
+        , loadingTree = False
+        , loadedEntryCount = 0
+        , requestCount = 0
+        , path = "/"
+    }
+
+
+isSignedIn : Model -> Bool
+isSignedIn model =
+    model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False
 
 
 
@@ -71,19 +89,6 @@ init location =
     , accountInfo = Nothing
     , path = "/"
     , depth = 2
-    }
-
-
-clearAccountFields : Model -> Model
-clearAccountFields model =
-    { model
-        | auth = Nothing
-        , accountInfo = Nothing
-        , fileTree = FileEntry.empty
-        , loadingTree = False
-        , loadedEntryCount = 0
-        , requestCount = 0
-        , path = "/"
     }
 
 
@@ -227,6 +232,11 @@ update msg model =
 
 clearLocationHash : Model -> Cmd msg
 clearLocationHash model =
+    Cmd.none
+
+
+clearLocationHash_ : Model -> Cmd msg
+clearLocationHash_ model =
     let
         location =
             model.location
@@ -325,7 +335,7 @@ treeView teamName depth tree =
     let
         breadcrumbs path =
             Html.ul
-                [ cssClass "breadcrumb" ]
+                [ class "breadcrumb" ]
                 (path
                     |> String.split "/"
                     |> (\dirs ->
@@ -337,7 +347,7 @@ treeView teamName depth tree =
                         (\( dir, prefix ) ->
                             Html.li
                                 [ Html.Events.onClick <| Focus prefix
-                                , folderClass
+                                , class "folder"
                                 ]
                                 [ text <|
                                     if dir == "" then
@@ -365,18 +375,18 @@ treeView_ title depth tree =
     case tree of
         File entry ->
             Html.div
-                [ cssClass "file-item" ]
+                [ class "file-item" ]
                 [ text <| takeFileName <| entry.path
-                , Html.span [ cssClass "size" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
+                , Html.span [ class "size" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
                 ]
 
         Dir entry size children ->
             Html.div
                 []
                 [ Html.a
-                    [ cssClass "folder file-item" ]
+                    [ class "folder file-item" ]
                     [ Maybe.withDefault (Html.a [ Html.Events.onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]) title
-                    , Html.span [ cssClass "size" ] [ text <| humanize size ]
+                    , Html.span [ class "size" ] [ text <| humanize size ]
                     ]
                 , if depth > 0 then
                     childViews children
@@ -395,20 +405,8 @@ extractAccessToken auth =
     auth |> toString |> firstMatch (Regex.regex "Bearer \"(.+)\"")
 
 
-folderClass =
-    cssClass "folder"
-
-
-cssClass name =
-    Html.Attributes.property "className" (Encode.string name)
-
-
 ifDiv test html =
     if test then
         html
     else
         div [] []
-
-
-isSignedIn model =
-    model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False
