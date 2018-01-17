@@ -33,7 +33,7 @@ init location =
     , requestCount = 0
     , accountInfo = Nothing
     , path = "/"
-    , depth = 2
+    , depth = 1
     }
 
 

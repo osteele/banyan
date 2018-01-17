@@ -29,9 +29,13 @@ view model =
                     [ Html.Events.onClick ListFiles ]
                     [ Html.text "Sync" ]
             , Just <| div [ id "treeMap" ] []
-            , Just <| Html.button [ Html.Events.onClick <| TreeDepth 1 ] [ text "1" ]
-            , Just <| Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
-            , Just <| Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
+            , ifJust (isSignedIn model) <|
+                div []
+                    [ Html.span [] [ text "Levels:" ]
+                    , Html.button [ Html.Events.onClick <| TreeDepth 1 ] [ text "1" ]
+                    , Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
+                    , Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
+                    ]
             , Just <|
                 div []
                     [ text <|

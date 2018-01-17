@@ -2,8 +2,6 @@ module Main exposing (..)
 
 import BeautifulExample
 import Color
-import Data exposing (..)
-import Dict
 import Dropbox
 import FileEntry exposing (..)
 import Message exposing (..)
