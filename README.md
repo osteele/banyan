@@ -17,7 +17,7 @@ $ yarn start
 
 ## Acknowledgements
 
-Build with Elm, elm-beautiful-example elm-dropbox, and elm-round.
+Build with Elm, [elm-beautiful-example](http://package.elm-lang.org/packages/avh4/elm-beautiful-example/latest) [elm-dropbox](http://package.elm-lang.org/packages/avh4/elm-dropbox/latest), and [elm-round](http://package.elm-lang.org/packages/myrho/elm-round/latest).
 
 The [Banyan tree
 image](https://commons.wikimedia.org/wiki/File:Banyan_tree_(PSF).png) was
