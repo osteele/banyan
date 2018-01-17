@@ -112,15 +112,6 @@ update msg model =
                     model ! []
 
         ListFiles ->
-            let
-                cmd =
-                    case model.auth |> Maybe.andThen extractAccessToken of
-                        Just token ->
-                            listFiles token
-
-                        Nothing ->
-                            Cmd.none
-            in
             { model
                 | debug = Nothing
                 , fileTree = FileEntry.empty
@@ -128,7 +119,11 @@ update msg model =
                 , loadingTree = True
                 , path = "/"
             }
-                ! [ cmd ]
+                ! [ model.auth
+                        |> Maybe.andThen extractAccessToken
+                        |> Maybe.map listFiles
+                        |> Maybe.withDefault Cmd.none
+                  ]
 
         FileList entries loading ->
             let
@@ -157,9 +152,10 @@ update msg model =
 
         RenderFileTreeMap ->
             model
-                ! [ getSubtree model.path model.fileTree
-                        |> Maybe.map (fileTreeMap 1)
-                        |> Maybe.withDefault Cmd.none
+                ! [ model.fileTree
+                        |> getSubtree model.path
+                        |> Maybe.withDefault model.fileTree
+                        |> fileTreeMap 1
                   ]
 
 

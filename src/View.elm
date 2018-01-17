@@ -36,7 +36,7 @@ view model =
                     , Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
                     , Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
                     ]
-            , Just <|
+            , ifJust (model.requestCount > 0) <|
                 div []
                     [ text <|
                         String.join ""
@@ -57,8 +57,7 @@ view model =
                 treeView
                     (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
                     model.depth
-                <|
-                    (getSubtree model.path model.fileTree |> Maybe.withDefault model.fileTree)
+                    (model.fileTree |> getSubtree model.path |> Maybe.withDefault model.fileTree)
             ]
 
 
