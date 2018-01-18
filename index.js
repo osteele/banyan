@@ -2,7 +2,7 @@ import './src/Main.css';
 
 import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';
-import treeMap from './src/treeMap.js';
+import chart from './src/chart.js';
 
 const accessTokenKey = "accessToken";
 const app = Elm.Main.embed(document.getElementById('app'), {
@@ -79,6 +79,6 @@ app.ports.storeAccessToken.subscribe((value) => {
     }
 });
 
-app.ports.drawTreeMap.subscribe(([title, data]) =>
-    requestAnimationFrame(() => treeMap(title, data))
+app.ports.chart.subscribe(([title, data]) =>
+    requestAnimationFrame(() => chart(title, data))
 );

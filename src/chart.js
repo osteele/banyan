@@ -5,7 +5,7 @@ import addTreemap from 'highcharts/modules/treemap';
 addTreemap(Highcharts);
 addHeatmap(Highcharts);
 
-export default function treeMap(title, data) {
+export default function chart(title, data) {
     data.forEach(item => {
         item.name = item.name.replace(/.*\//, '');
     })

@@ -12,7 +12,7 @@ type alias Node =
     }
 
 
-port drawTreeMap : ( String, List Node ) -> Cmd msg
+port chart : ( String, List Node ) -> Cmd msg
 
 
 fileTreeMap : Int -> FileTree -> Cmd msg
@@ -21,7 +21,7 @@ fileTreeMap depth fileTree =
         title =
             itemEntry fileTree |> .path
     in
-    curry drawTreeMap title <| toNodes <| trimTree depth fileTree
+    curry chart title <| toNodes <| trimTree depth fileTree
 
 
 toNodes : FileTree -> List Node
