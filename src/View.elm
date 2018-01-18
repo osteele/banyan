@@ -53,7 +53,7 @@ view model =
                             ]
                     ]
             , Just <| div [] [ model.debug |> Maybe.withDefault "" |> text ]
-            , ifJust (FileEntry.isEmpty model.fileTree |> not) <|
+            , ifJust (not <| FileEntry.isEmpty model.fileTree) <|
                 treeView
                     (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
                     model.depth
@@ -88,8 +88,13 @@ treeView teamName depth tree =
                                 ]
                         )
                 )
+
+        header =
+            Html.h2 [] [ breadcrumbs <| .path <| itemEntry tree ]
     in
-    treeView_ (Just <| Html.h2 [] <| List.singleton <| breadcrumbs <| .path <| itemEntry tree) depth tree
+    treeView_ (Just header) depth tree
+        |> List.singleton
+        |> div [ class "tree" ]
 
 
 treeView_ : Maybe (Html Msg) -> Int -> FileTree -> Html Msg
