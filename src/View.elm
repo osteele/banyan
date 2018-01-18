@@ -61,52 +61,67 @@ view model =
             ]
 
 
+breadcrumbs : String -> FileTree -> Html Msg
+breadcrumbs teamName tree =
+    let
+        withPrefixes dirs =
+            prefixes dirs
+                |> List.map (String.join "/")
+                |> zip dirs
+    in
+    tree
+        |> itemEntry
+        |> .path
+        |> String.split "/"
+        |> withPrefixes
+        |> List.map
+            (\( dir, prefix ) ->
+                Html.li
+                    [ Html.Events.onClick <| Focus prefix
+                    , class "folder"
+                    ]
+                    [ text <|
+                        if dir == "" then
+                            teamName
+                        else
+                            dir
+                    ]
+            )
+        |> Html.ul [ class "breadcrumb" ]
+
+
 treeView : String -> Int -> FileTree -> Html Msg
 treeView teamName depth tree =
     let
-        breadcrumbs path =
-            Html.ul
-                [ class "breadcrumb" ]
-                (path
-                    |> String.split "/"
-                    |> (\dirs ->
-                            prefixes dirs
-                                |> List.map (String.join "/")
-                                |> zip dirs
-                       )
-                    |> List.map
-                        (\( dir, prefix ) ->
-                            Html.li
-                                [ Html.Events.onClick <| Focus prefix
-                                , class "folder"
-                                ]
-                                [ text <|
-                                    if dir == "" then
-                                        teamName
-                                    else
-                                        dir
-                                ]
-                        )
-                )
-
         header =
-            Html.h2 [] [ breadcrumbs <| .path <| itemEntry tree ]
+            Html.h2 [] [ breadcrumbs teamName tree ]
     in
-    treeView_ (Just header) depth tree
+    treeView_ Nothing depth tree
         |> List.singleton
         |> div [ class "tree" ]
+        |> (\v -> div [] [ header, v ])
 
 
 treeView_ : Maybe (Html Msg) -> Int -> FileTree -> Html Msg
 treeView_ title depth tree =
     let
-        childViews children =
-            Html.ul []
-                (Dict.values children
-                    |> List.sortBy (itemEntry >> .path >> String.toUpper)
-                    |> List.map
-                        (\t -> Html.li [] [ treeView_ Nothing (depth - 1) t ])
-                )
+        children =
+            if depth > 0 then
+                nodeChildren tree |> Dict.values
+            else
+                []
+
+        childViews =
+            if List.isEmpty children then
+                []
+            else
+                [ Html.ul []
+                    (children
+                        |> List.sortBy (itemEntry >> .path >> String.toUpper)
+                        |> List.map
+                            (\t -> Html.li [] [ treeView_ Nothing (depth - 1) t ])
+                    )
+                ]
     in
     case tree of
         File entry ->
@@ -119,13 +134,10 @@ treeView_ title depth tree =
         Dir entry size children ->
             Html.div
                 []
-                [ Html.a
+                (Html.a
                     [ class "folder file-item" ]
                     [ Maybe.withDefault (Html.a [ Html.Events.onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]) title
                     , Html.span [ class "size" ] [ text <| humanize size ]
                     ]
-                , if depth > 0 then
-                    childViews children
-                  else
-                    div [] []
-                ]
+                    :: childViews
+                )
