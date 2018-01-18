@@ -20,7 +20,7 @@ export default function treeMap(title, data) {
         series: [{
             type: 'treemap',
             layoutAlgorithm: 'squarified',
-            allowDrillToNode: true,
+            animation: false,
             data
         }]
 
