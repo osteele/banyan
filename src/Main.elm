@@ -1,7 +1,5 @@
 module Main exposing (..)
 
-import BeautifulExample
-import Color
 import Dropbox
 import FileEntry exposing (..)
 import Message exposing (..)
@@ -28,20 +26,9 @@ main =
             \flags location -> init flags.clientId location ! [ initialCmd flags ]
         , update = update
         , subscriptions = subscriptions
-        , view = \model -> BeautifulExample.view config (view model)
+        , view = view
         , onAuth = AuthResponse
         }
-
-
-config : BeautifulExample.Config
-config =
-    { title = "Banyan"
-    , details = Just "Dropbox file size browser."
-    , color = Just Color.blue
-    , maxWidth = 800
-    , githubUrl = Just "https://github.com/osteele/banyan"
-    , documentationUrl = Nothing
-    }
 
 
 initialCmd : Flags -> Cmd Msg

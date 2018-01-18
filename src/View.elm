@@ -1,9 +1,9 @@
 module View exposing (..)
 
+import BeautifulExample
 import Bootstrap.Button as Button
-import Bootstrap.ButtonGroup as ButtonGroup
 import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Col as Col
+import Color
 import Dict
 import FileEntry exposing (..)
 import Html exposing (Html, button, div, text)
@@ -16,31 +16,37 @@ import Utils exposing (..)
 
 view : Model -> Html Msg
 view model =
-    Grid.container []
-        [ Grid.row [] [ Grid.col [] [ headerStuff model ] ]
-        , Grid.row []
-            [ Grid.col []
-                [ listView model ]
-            , Grid.col []
-                [ treeMap model ]
-            ]
+    Html.div []
+        [ banner model
+        , BeautifulExample.view config <|
+            Grid.container []
+                [ Grid.row [] [ Grid.col [] [ headerStuff model ] ]
+                , Grid.row []
+                    [ Grid.col []
+                        [ listView model ]
+                    , Grid.col []
+                        [ treeMap model ]
+                    ]
+                ]
         ]
 
 
-button a =
-    Button.button [ Button.primary, Button.attrs a ]
+config : BeautifulExample.Config
+config =
+    { title = "Banyan"
+    , details = Just "Dropbox file size browser."
+    , color = Just Color.blue
+    , maxWidth = 1200
+    , githubUrl = Just "https://github.com/osteele/banyan"
+    , documentationUrl = Nothing
+    }
 
 
-teamName model =
-    model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal"
-
-
-headerStuff model =
+banner : Model -> Html Msg
+banner model =
     div [] <|
         List.filterMap identity <|
             [ ifJust (isSignedIn model) <|
-                div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
-            , ifJust (isSignedIn model) <|
                 button
                     [ Html.Events.onClick <| SignOut ]
                     [ Html.text <| "Sign out" ]
@@ -48,19 +54,27 @@ headerStuff model =
                 button
                     [ Html.Events.onClick <| SignIn ]
                     [ Html.text <| "Sign into Dropbox" ]
-            , ifJust (isSignedIn model && not model.loadingTree) <|
+            ]
+
+
+headerStuff : Model -> Html Msg
+headerStuff model =
+    div [] <|
+        List.filterMap identity <|
+            [ ifJust (isSignedIn model && not model.loadingTree) <|
                 button
                     [ Html.Events.onClick ListFiles ]
                     [ Html.text "Sync" ]
             , ifJust (model.requestCount > 0) <|
                 statsView model
             , ifJust (isSignedIn model) <|
-                breadcrumb (teamName model) (subtree model)
+                Html.h1 [] [ breadcrumb model ]
             ]
 
 
+statsView : Model -> Html msg
 statsView model =
-    div []
+    div [ class "alert alert-primary" ]
         [ text <|
             String.join ""
                 [ toStringWithCommas model.loadedEntryCount
@@ -110,20 +124,16 @@ listView model =
             ]
 
 
-subtree : Model -> FileTree
-subtree model =
-    model.fileTree |> getSubtree model.path |> Maybe.withDefault model.fileTree
-
-
-breadcrumb : String -> FileTree -> Html Msg
-breadcrumb teamName tree =
+breadcrumb : Model -> Html Msg
+breadcrumb model =
     let
         withPrefixes dirs =
             prefixes dirs
                 |> List.map (String.join "/")
                 |> zip dirs
     in
-    tree
+    model
+        |> subtree
         |> itemEntry
         |> .path
         |> String.split "/"
@@ -136,7 +146,7 @@ breadcrumb teamName tree =
                         [ Html.Events.onClick <| Focus prefix ]
                         [ text <|
                             if dir == "" then
-                                teamName
+                                teamName model
                             else
                                 dir
                         ]
@@ -147,13 +157,13 @@ breadcrumb teamName tree =
 
 treeView : Int -> FileTree -> Html Msg
 treeView depth tree =
-    treeView_ Nothing depth tree
+    treeView_ depth tree
         |> List.singleton
         |> div [ class "tree" ]
 
 
-treeView_ : Maybe (Html Msg) -> Int -> FileTree -> Html Msg
-treeView_ title depth tree =
+treeView_ : Int -> FileTree -> Html Msg
+treeView_ depth tree =
     let
         children =
             if depth > 0 then
@@ -169,7 +179,7 @@ treeView_ title depth tree =
                     (children
                         |> List.sortBy (itemEntry >> .path >> String.toUpper)
                         |> List.map
-                            (\t -> Html.li [] [ treeView_ Nothing (depth - 1) t ])
+                            (\t -> Html.li [] [ treeView_ (depth - 1) t ])
                     )
                 ]
     in
@@ -186,8 +196,13 @@ treeView_ title depth tree =
                 []
                 (Html.div
                     [ class "clearfix text-primary" ]
-                    [ Maybe.withDefault (Html.a [ Html.Events.onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]) title
+                    [ Html.a [ Html.Events.onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]
                     , Html.span [ class "float-right" ] [ text <| humanize size ]
                     ]
                     :: childViews
                 )
+
+
+button : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+button a =
+    Button.button [ Button.primary, Button.attrs a ]

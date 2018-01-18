@@ -53,3 +53,13 @@ clearAccountFields model =
 isSignedIn : Model -> Bool
 isSignedIn model =
     model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False
+
+
+subtree : Model -> FileTree
+subtree model =
+    model.fileTree |> getSubtree model.path |> Maybe.withDefault model.fileTree
+
+
+teamName : Model -> String
+teamName model =
+    model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal"
