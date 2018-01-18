@@ -2,6 +2,7 @@ port module TreeMap exposing (..)
 
 import Dict
 import FileEntry exposing (..)
+import Utils exposing (..)
 
 
 type alias Node =
@@ -18,8 +19,11 @@ port chart : ( String, List Node ) -> Cmd msg
 fileTreeMap : Int -> FileTree -> Cmd msg
 fileTreeMap depth fileTree =
     let
-        title =
+        path =
             itemEntry fileTree |> .path
+
+        title =
+            dropPrefix "/" path |> Maybe.withDefault path
     in
     curry chart title <| toNodes <| trimTree depth fileTree
 
@@ -37,7 +41,7 @@ toNodes fileTree =
                     toString nextId
 
                 node =
-                    { name = entry.path
+                    { name = entry.path |> Utils.takeFileName
                     , id = nodeId
                     , parent = parent
                     , value = nodeSize item

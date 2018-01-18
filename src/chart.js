@@ -6,9 +6,6 @@ addTreemap(Highcharts);
 addHeatmap(Highcharts);
 
 export default function chart(title, data) {
-    data.forEach(item => {
-        item.name = item.name.replace(/.*\//, '');
-    })
     data = data.filter(({ value }) => value > 0);
     data.forEach((item, i) => item.colorValue = i + 1);
     Highcharts.chart('treeMap', {
