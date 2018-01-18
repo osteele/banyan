@@ -2091,7 +2091,7 @@ elm-hot-loader@^0.5.4:
   dependencies:
     loader-utils "^0.2.12"
 
-elm-webpack-loader@^4.3.1, elm-webpack-loader@^4.4.0:
+elm-webpack-loader@^4.3.1:
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/elm-webpack-loader/-/elm-webpack-loader-4.4.0.tgz#dd7a3b628b7abc4fac38e3045d3ab6e57187e9b6"
   dependencies:

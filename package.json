@@ -16,7 +16,6 @@
   },
   "devDependencies": {
     "elm": "^0.18.0",
-    "elm-webpack-loader": "^4.4.0",
     "poi": "^9.6.12",
     "poi-preset-elm": "^1.1.1"
   },
