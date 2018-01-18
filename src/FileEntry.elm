@@ -17,6 +17,11 @@ dirTag =
     "folder"
 
 
+isDir : FileEntry -> Bool
+isDir entry =
+    entry.tag == dirTag
+
+
 {-| A Rose tree of FileEntry's, and cached rolled up sizes.
 
 Note: Having a separate branch for the terminals (File) makes for more code but

@@ -81,6 +81,6 @@ app.ports.signOut.subscribe(() => {
 });
 
 app.ports.chart.subscribe(([title, data]) => {
-    const onClick = ({ key }) => app.ports.setPath.send(key);
+    const onClick = ({ key }) => key && app.ports.setPath.send(key);
     requestAnimationFrame(() => chart(title, data, onClick))
 });

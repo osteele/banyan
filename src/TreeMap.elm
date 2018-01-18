@@ -44,7 +44,7 @@ toNodes fileTree =
                 node =
                     { name = entry.path |> Utils.takeFileName
                     , id = nodeId
-                    , key = Just entry.key
+                    , key = ifJust (isDir entry) entry.key
                     , parent = parent
                     , value = nodeSize item
                     }
