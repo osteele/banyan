@@ -17,9 +17,12 @@ import Utils exposing (..)
 view : Model -> Html Msg
 view model =
     Grid.container []
-        [ Grid.row []
+        [ Grid.row [] [ Grid.col [] [ headerStuff model ] ]
+        , Grid.row []
             [ Grid.col []
-                [ view_ model ]
+                [ listView model ]
+            , Grid.col []
+                [ treeMap model ]
             ]
         ]
 
@@ -28,12 +31,11 @@ button a =
     Button.button [ Button.primary, Button.attrs a ]
 
 
-button2 a =
-    Button.button [ Button.secondary, Button.attrs a ]
+teamName model =
+    model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal"
 
 
-view_ : Model -> Html Msg
-view_ model =
+headerStuff model =
     div [] <|
         List.filterMap identity <|
             [ ifJust (isSignedIn model) <|
@@ -50,8 +52,41 @@ view_ model =
                 button
                     [ Html.Events.onClick ListFiles ]
                     [ Html.text "Sync" ]
-            , Just <| div [ id "treeMap" ] []
+            , ifJust (model.requestCount > 0) <|
+                statsView model
             , ifJust (isSignedIn model) <|
+                breadcrumb (teamName model) (subtree model)
+            ]
+
+
+statsView model =
+    div []
+        [ text <|
+            String.join ""
+                [ toStringWithCommas model.loadedEntryCount
+                , " entries totalling "
+                , humanize <| nodeSize model.fileTree
+                , " loaded in "
+                , toString model.requestCount
+                , " requests"
+                , if model.loadingTree then
+                    "…"
+                  else
+                    "."
+                ]
+        ]
+
+
+treeMap : Model -> Html Msg
+treeMap model =
+    div [ id "treeMap" ] []
+
+
+listView : Model -> Html Msg
+listView model =
+    div [] <|
+        List.filterMap identity <|
+            [ ifJust (isSignedIn model) <|
                 div []
                     [ Html.span [] [ text "Levels:" ]
                     , div [ class "btn-group" ] <|
@@ -69,29 +104,15 @@ view_ model =
                         <|
                             [ 1, 2, 3 ]
                     ]
-            , ifJust (model.requestCount > 0) <|
-                div []
-                    [ text <|
-                        String.join ""
-                            [ toStringWithCommas model.loadedEntryCount
-                            , " entries totalling "
-                            , humanize <| nodeSize model.fileTree
-                            , " loaded in "
-                            , toString model.requestCount
-                            , " requests"
-                            , if model.loadingTree then
-                                "…"
-                              else
-                                "."
-                            ]
-                    ]
             , Just <| div [] [ model.debug |> Maybe.withDefault "" |> text ]
             , ifJust (not <| FileEntry.isEmpty model.fileTree) <|
-                treeView
-                    (model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal")
-                    model.depth
-                    (model.fileTree |> getSubtree model.path |> Maybe.withDefault model.fileTree)
+                treeView model.depth (subtree model)
             ]
+
+
+subtree : Model -> FileTree
+subtree model =
+    model.fileTree |> getSubtree model.path |> Maybe.withDefault model.fileTree
 
 
 breadcrumb : String -> FileTree -> Html Msg
@@ -124,16 +145,11 @@ breadcrumb teamName tree =
         |> Html.ul [ class "breadcrumb" ]
 
 
-treeView : String -> Int -> FileTree -> Html Msg
-treeView teamName depth tree =
-    let
-        header =
-            Html.h2 [] [ breadcrumb teamName tree ]
-    in
+treeView : Int -> FileTree -> Html Msg
+treeView depth tree =
     treeView_ Nothing depth tree
         |> List.singleton
         |> div [ class "tree" ]
-        |> (\v -> div [] [ header, v ])
 
 
 treeView_ : Maybe (Html Msg) -> Int -> FileTree -> Html Msg
