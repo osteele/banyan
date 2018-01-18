@@ -36,14 +36,14 @@ app.ports.listFiles.subscribe(async (accessToken) => {
             app.ports.fileListError.send(); // error.name, error.message
         }
 
-        let entries = response.entries.map((entry) => {
-            return {
+        let entries = response.entries.map((entry) => (
+            {
                 tag: entry['.tag']
                 , key: entry.path_lower
                 , path: entry.path_display
                 , size: entry.size || null
-            };
-        });
+            }
+        ));
 
         // update the cache
         cache.cursor = response.cursor;
@@ -59,19 +59,14 @@ app.ports.listFiles.subscribe(async (accessToken) => {
     }
 });
 
-app.ports.getAccountInfo.subscribe(accessToken => {
+app.ports.getAccountInfo.subscribe(async accessToken => {
     const dbx = new Dropbox({ accessToken });
-    dbx.usersGetCurrentAccount()
-        .then((response) => {
-            const teamName = response.team ? response.team.name : "Personal";
-            app.ports.setAccountInfo.send({
-                teamName,
-                name: response.name
-            });
-        })
-        .catch((error) => {
-            console.log(error);
-        })
+    const { name, team } = await dbx.usersGetCurrentAccount();
+    const teamName = team ? team.name : "Personal";
+    app.ports.setAccountInfo.send({
+        teamName,
+        name
+    });
 });
 
 app.ports.storeAccessToken.subscribe((value) => {
