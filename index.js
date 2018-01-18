@@ -22,7 +22,7 @@ app.ports.listFiles.subscribe(async (accessToken) => {
     let entries = Object.values(cache.entries);
     if (entries.length) {
         console.info('initial send', entries.length, 'entries');
-        app.ports.fileList.send([entries, true]);
+        app.ports.receiveFileList.send([entries, true]);
     }
     let query = cache.cursor
         ? dbx.filesListFolderContinue({ cursor: cache.cursor })
@@ -33,7 +33,7 @@ app.ports.listFiles.subscribe(async (accessToken) => {
             response = await query;
         } catch (error) {
             console.error(error);
-            app.ports.fileListError.send(); // error.name, error.message
+            app.ports.receiveFileListError.send(); // error.name, error.message
         }
 
         let entries = response.entries.map((entry) => (
@@ -53,7 +53,7 @@ app.ports.listFiles.subscribe(async (accessToken) => {
         localStorage['fileTree'] = JSON.stringify(cache);
 
         const more = Boolean(response.has_more);
-        app.ports.fileList.send([entries, more]);
+        app.ports.receiveFileList.send([entries, more]);
 
         query = more && dbx.filesListFolderContinue({ cursor: response.cursor });
     }
@@ -63,10 +63,7 @@ app.ports.getAccountInfo.subscribe(async accessToken => {
     const dbx = new Dropbox({ accessToken });
     const { name, team } = await dbx.usersGetCurrentAccount();
     const teamName = team ? team.name : "Personal";
-    app.ports.setAccountInfo.send({
-        teamName,
-        name
-    });
+    app.ports.receiveAccountInfo.send({ teamName, name });
 });
 
 app.ports.storeAccessToken.subscribe((value) => {
@@ -79,6 +76,11 @@ app.ports.storeAccessToken.subscribe((value) => {
     }
 });
 
-app.ports.chart.subscribe(([title, data]) =>
-    requestAnimationFrame(() => chart(title, data))
-);
+app.ports.signOut.subscribe(() => {
+    localStorage.clear();
+});
+
+app.ports.chart.subscribe(([title, data]) => {
+    const onClick = ({ key }) => app.ports.setPath.send(key);
+    requestAnimationFrame(() => chart(title, data, onClick))
+});

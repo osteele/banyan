@@ -8,6 +8,7 @@ import Utils exposing (..)
 type alias Node =
     { name : String
     , id : String
+    , key : Maybe String
     , parent : Maybe String
     , value : Int
     }
@@ -43,6 +44,7 @@ toNodes fileTree =
                 node =
                     { name = entry.path |> Utils.takeFileName
                     , id = nodeId
+                    , key = Just entry.key
                     , parent = parent
                     , value = nodeSize item
                     }

@@ -175,8 +175,9 @@ clearLocationHash model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ fileList <| uncurry FileList
-        , setAccountInfo SetAccountInfo
+        [ receiveFileList <| uncurry FileList
+        , receiveAccountInfo SetAccountInfo
+        , setPath Focus
         ]
 
 

@@ -5,7 +5,7 @@ import addTreemap from 'highcharts/modules/treemap';
 addTreemap(Highcharts);
 addHeatmap(Highcharts);
 
-export default function chart(title, data) {
+export default function chart(title, data, onClick) {
     data = data.filter(({ value }) => value > 0);
     data.forEach((item, i) => item.colorValue = i + 1);
     Highcharts.chart('treeMap', {
@@ -18,6 +18,8 @@ export default function chart(title, data) {
             type: 'treemap',
             layoutAlgorithm: 'squarified',
             animation: false,
+            cursor: 'pointer',
+            events: { click: ({ point }) => onClick(point) },
             data
         }]
 
