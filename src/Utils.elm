@@ -38,6 +38,23 @@ dropPrefix prefix s =
         Nothing
 
 
+flatMapM : (s -> a -> ( List b, s )) -> s -> List a -> ( List b, s )
+flatMapM f s xs =
+    case xs of
+        [] ->
+            ( [], s )
+
+        h :: t ->
+            let
+                ( r1, s2 ) =
+                    f s h
+
+                ( r2, s3 ) =
+                    flatMapM f s2 t
+            in
+            ( r1 ++ r2, s3 )
+
+
 {-| Find the first matching substring.
 
     firstMatch (Regex) == Just "sled"

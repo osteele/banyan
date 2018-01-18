@@ -32,8 +32,8 @@ fileTreeMap depth fileTree =
 toNodes : FileTree -> List Node
 toNodes fileTree =
     let
-        f : Maybe String -> Int -> FileTree -> ( List Node, Int )
-        f parent nextId item =
+        f : ( Maybe String, Int ) -> FileTree -> ( List Node, ( Maybe String, Int ) )
+        f ( parent, nextId ) item =
             let
                 entry =
                     itemEntry item
@@ -49,44 +49,58 @@ toNodes fileTree =
                     , value = nodeSize item
                     }
 
-                ( childNodes, nextId2 ) =
-                    flatMapM (f <| Just nodeId) nextId <| Dict.values <| nodeChildren item
+                ( childNodes, ( _, nextId2 ) ) =
+                    flatMapM f ( Just nodeId, nextId ) <| Dict.values <| nodeChildren item
             in
-            ( node :: childNodes, nextId2 )
+            ( node :: childNodes, ( parent, nextId2 ) )
     in
-    Tuple.first <| flatMapM (f Nothing) 0 (Dict.values <| nodeChildren fileTree)
+    Tuple.first <| flatMapM f ( Nothing, 0 ) <| Dict.values <| nodeChildren fileTree
 
 
 
--- flatMapM (f Nothing) 0 (Dict.values <| nodeChildren tt) |> Tuple.first
--- flatMap : (a -> List b) -> List a -> List b
--- flatMap f list =
---     List.map f list
---         |> List.foldr (++) []
--- flatTreeMapM :
--- flatTreeMapM =
--- flatTreeMapM : ( Maybe String, Int ) -> FileTree -> ( List Node, ( Maybe String, Int ) )
--- flatTreeMapM f s item =
+-- toNodes : FileTree -> List Node
+-- toNodes fileTree =
 --     let
---         (h, s2) = f s item
---         ( t, s3 ) =
---             flatMapM (flatTreeMapM f) ( Just nodeId, nextId + 1 ) <| Dict.values <| nodeChildren item
+--         f : ( Maybe String, Int ) -> FileTree -> ( List Node, ( Maybe String, Int ) )
+--         f ( parent, nextId ) item =
+--             let
+--                 ( node, s2 ) =
+--                     g ( parent, nextId ) item
+--                 ( childNodes, ( _, nextId3 ) ) =
+--                     flatMapM f s2 <| Dict.values <| nodeChildren item
+--             in
+--             ( node :: childNodes, ( parent, nextId3 ) )
+--         g : ( Maybe String, Int ) -> FileTree -> ( Node, ( Maybe String, Int ) )
+--         g ( parent, nextId ) item =
+--             let
+--                 entry =
+--                     itemEntry item
+--                 nodeId =
+--                     toString nextId
+--                 node =
+--                     { name = entry.path |> Utils.takeFileName
+--                     , id = nodeId
+--                     , key = ifJust (isDir entry) entry.key
+--                     , parent = parent
+--                     , value = nodeSize item
+--                     }
+--             in
+--             ( node, ( parent, nextId + 1 ) )
 --     in
---     ( node :: childNodes, ( parent, nextId2 ) )
+--     Tuple.first <| flatMapM f ( Nothing, 0 ) <| Dict.values <| nodeChildren fileTree
 
 
-flatMapM : (s -> a -> ( List b, s )) -> s -> List a -> ( List b, s )
-flatMapM f s xs =
-    case xs of
-        [] ->
-            ( [], s )
+flatTreeMapM :
+    (s -> FileTree -> ( Node, s ))
+    -> s
+    -> FileTree
+    -> ( List Node, s )
+flatTreeMapM f s item =
+    let
+        ( h, s2 ) =
+            f s item
 
-        h :: t ->
-            let
-                ( r1, s2 ) =
-                    f s h
-
-                ( r2, s3 ) =
-                    flatMapM f s2 t
-            in
-            ( r1 ++ r2, s3 )
+        ( t, s3 ) =
+            flatMapM (flatTreeMapM f) s <| Dict.values <| nodeChildren item
+    in
+    ( h :: t, s3 )
