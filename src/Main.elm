@@ -142,11 +142,11 @@ update msg model =
             }
                 ! []
 
-        Focus path ->
-            update RenderFileTreeMap { model | path = path }
+        Focus p ->
+            update RenderFileTreeMap { model | path = p }
 
         TreeDepth n ->
-            update RenderFileTreeMap { model | depth = n }
+            { model | depth = n } ! []
 
         RenderFileTreeMap ->
             model
@@ -162,11 +162,10 @@ clearLocationHash model =
     let
         location =
             model.location
-
-        url =
-            String.join "" [ location.protocol, "//", location.host, location.pathname ]
     in
-    Navigation.modifyUrl url
+    Navigation.modifyUrl <|
+        String.join ""
+            [ location.protocol, "//", location.host, location.pathname ]
 
 
 
