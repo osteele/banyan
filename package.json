@@ -9,10 +9,10 @@
   "scripts": {
     "start": "poi",
     "prebuild": "rimraf dist",
-    "build": "webpack",
-    "reinstall": "npm i rimraf && rimraf node_modules && npm uninstall -g elm && npm i -g elm && npm i && elm package install",
-    "test": "elm-test",
-    "deploy": "poi build && netlify deploy"
+    "build": "poi build",
+    "reinstall": "rimraf node_modules && yarn install && elm package install",
+    "test": "elm test",
+    "deploy": "yarn build && netlify deploy"
   },
   "devDependencies": {
     "elm": "^0.18.0",
