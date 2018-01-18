@@ -41,11 +41,11 @@ suite =
             [ test "gigabytes" <|
                 \_ ->
                     humanize 1234567890
-                        |> Expect.equal "1.2G"
+                        |> Expect.equal "1.2GB"
             , test "small sizes" <|
                 \_ ->
                     humanize 123
-                        |> Expect.equal "123 bytes"
+                        |> Expect.equal "123B"
             ]
         , test "prefixes" <|
             \_ ->
@@ -64,5 +64,10 @@ suite =
                 \_ ->
                     takeFileName "base.ext"
                         |> Expect.equal "base.ext"
+            , skip <|
+                test "matches the built-in function" <|
+                    \_ ->
+                        takeFileName "test/"
+                            |> Expect.equal "test/"
             ]
         ]

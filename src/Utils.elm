@@ -1,10 +1,18 @@
 module Utils exposing (..)
 
+import Dict
 import Regex
 import Round
 import String
 
 
+{-| Insert commas into a sequence of digits.
+
+    toStringWithCommas "123" == "123"
+    toStringWithCommas "1234" == "1,234"
+    toStringWithCommas "$1234.5" == "$1,234.5"
+
+-}
 toStringWithCommas : num -> String
 toStringWithCommas =
     toString
@@ -15,6 +23,13 @@ toStringWithCommas =
         >> String.reverse
 
 
+{-| Remove the prefix, if present.
+
+    dropPrefix "bob" "bobsled" == Just "sled"
+    dropPrefix "rob" "bobsled" == Nothing
+    (dropPrefix "rob" "bobsled" |> Maybe.withDefault "bobsled") == "bobsled"
+
+-}
 dropPrefix : String -> String -> Maybe String
 dropPrefix prefix s =
     if String.startsWith prefix s then
@@ -23,6 +38,11 @@ dropPrefix prefix s =
         Nothing
 
 
+{-| Find the first matching substring.
+
+    firstMatch (Regex) == Just "sled"
+
+-}
 firstMatch : Regex.Regex -> String -> Maybe String
 firstMatch re s =
     Regex.find Regex.All re s
@@ -31,14 +51,33 @@ firstMatch re s =
         |> Maybe.andThen (List.head >> Maybe.withDefault Nothing)
 
 
+{-| Turn a byte count into a string with units.
+
+    humanize 1000000 == "1GB"
+    humanize 1000000 == "1GB"
+
+-}
 humanize : Int -> String
 humanize n =
-    case List.filter (\( s, _ ) -> toFloat n > s) [ ( 1.0e12, "T" ), ( 1.0e9, "G" ), ( 1.0e6, "M" ), ( 1.0e3, "K" ) ] of
+    case List.filter (\( s, _ ) -> toFloat n > s) byteUnits of
         ( s, unit ) :: _ ->
             (toFloat n / s |> Round.round 1) ++ unit
 
         _ ->
-            toString n ++ " bytes"
+            toString n ++ "B"
+
+
+byteUnits : List ( Float, String )
+byteUnits =
+    [ ( 1.0e24, "YB" )
+    , ( 1.0e21, "ZB" )
+    , ( 1.0e18, "EB" )
+    , ( 1.0e15, "PB" )
+    , ( 1.0e12, "TB" )
+    , ( 1.0e9, "GB" )
+    , ( 1.0e6, "MB" )
+    , ( 1.0e3, "kB" )
+    ]
 
 
 ifJust : Bool -> a -> Maybe a
@@ -59,11 +98,22 @@ prefixes xs =
             []
 
 
+{-| Get the POSIX filename.
+
+    takeFileName "/directory/file.ext" == "file.ext"
+    takeFileName "test/" == ""
+
+-}
 takeFileName : String -> String
 takeFileName path =
     path |> String.split "/" |> List.foldl always path
 
 
+{-| Get a list of tuples from a tuple of lists.
+
+    zip [1, 2, 3] ["one", "two", "three"] == [(1, "one"), (2, "two"), (3, "three")]
+
+-}
 zip : List a -> List b -> List ( a, b )
 zip =
     List.map2 (,)
