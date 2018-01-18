@@ -1,4 +1,5 @@
 import './src/Main.scss';
+import './src/bootstrap.css'
 
 import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';

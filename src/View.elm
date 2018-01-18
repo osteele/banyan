@@ -1,5 +1,9 @@
 module View exposing (..)
 
+import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as ButtonGroup
+import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Col as Col
 import Dict
 import FileEntry exposing (..)
 import Html exposing (Html, button, div, text)
@@ -12,29 +16,58 @@ import Utils exposing (..)
 
 view : Model -> Html Msg
 view model =
+    Grid.container []
+        [ Grid.row []
+            [ Grid.col []
+                [ view_ model ]
+            ]
+        ]
+
+
+button a =
+    Button.button [ Button.primary, Button.attrs a ]
+
+
+button2 a =
+    Button.button [ Button.secondary, Button.attrs a ]
+
+
+view_ : Model -> Html Msg
+view_ model =
     div [] <|
         List.filterMap identity <|
             [ ifJust (isSignedIn model) <|
                 div [] [ text (model.accountInfo |> Maybe.map .name |> Maybe.map .display_name |> Maybe.withDefault "") ]
             , ifJust (isSignedIn model) <|
-                Html.button
+                button
                     [ Html.Events.onClick <| SignOut ]
                     [ Html.text <| "Sign out" ]
             , ifJust (not <| isSignedIn model) <|
-                Html.button
+                button
                     [ Html.Events.onClick <| SignIn ]
                     [ Html.text <| "Sign into Dropbox" ]
             , ifJust (isSignedIn model && not model.loadingTree) <|
-                Html.button
+                button
                     [ Html.Events.onClick ListFiles ]
                     [ Html.text "Sync" ]
             , Just <| div [ id "treeMap" ] []
             , ifJust (isSignedIn model) <|
                 div []
                     [ Html.span [] [ text "Levels:" ]
-                    , Html.button [ Html.Events.onClick <| TreeDepth 1 ] [ text "1" ]
-                    , Html.button [ Html.Events.onClick <| TreeDepth 2 ] [ text "2" ]
-                    , Html.button [ Html.Events.onClick <| TreeDepth 3 ] [ text "3" ]
+                    , div [ class "btn-group" ] <|
+                        List.map
+                            (\n ->
+                                Button.button
+                                    [ if n == model.depth then
+                                        Button.primary
+                                      else
+                                        Button.secondary
+                                    , Button.attrs [ Html.Events.onClick <| TreeDepth n ]
+                                    ]
+                                    [ text <| toString n ]
+                            )
+                        <|
+                            [ 1, 2, 3 ]
                     ]
             , ifJust (model.requestCount > 0) <|
                 div []
@@ -61,8 +94,8 @@ view model =
             ]
 
 
-breadcrumbs : String -> FileTree -> Html Msg
-breadcrumbs teamName tree =
+breadcrumb : String -> FileTree -> Html Msg
+breadcrumb teamName tree =
     let
         withPrefixes dirs =
             prefixes dirs
@@ -77,14 +110,15 @@ breadcrumbs teamName tree =
         |> List.map
             (\( dir, prefix ) ->
                 Html.li
-                    [ Html.Events.onClick <| Focus prefix
-                    , class "folder"
-                    ]
-                    [ text <|
-                        if dir == "" then
-                            teamName
-                        else
-                            dir
+                    [ class "breadcrumb-item" ]
+                    [ Html.a
+                        [ Html.Events.onClick <| Focus prefix ]
+                        [ text <|
+                            if dir == "" then
+                                teamName
+                            else
+                                dir
+                        ]
                     ]
             )
         |> Html.ul [ class "breadcrumb" ]
@@ -94,7 +128,7 @@ treeView : String -> Int -> FileTree -> Html Msg
 treeView teamName depth tree =
     let
         header =
-            Html.h2 [] [ breadcrumbs teamName tree ]
+            Html.h2 [] [ breadcrumb teamName tree ]
     in
     treeView_ Nothing depth tree
         |> List.singleton
@@ -126,18 +160,18 @@ treeView_ title depth tree =
     case tree of
         File entry ->
             Html.div
-                [ class "file-item" ]
+                [ class "clearfix" ]
                 [ text <| takeFileName <| entry.path
-                , Html.span [ class "size" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
+                , Html.span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
                 ]
 
         Dir entry size children ->
             Html.div
                 []
-                (Html.a
-                    [ class "folder file-item" ]
+                (Html.div
+                    [ class "clearfix text-primary" ]
                     [ Maybe.withDefault (Html.a [ Html.Events.onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]) title
-                    , Html.span [ class "size" ] [ text <| humanize size ]
+                    , Html.span [ class "float-right" ] [ text <| humanize size ]
                     ]
                     :: childViews
                 )

@@ -1,33 +1,8 @@
-.breadcrumb {
-    list-style: none;
-}
-
-.breadcrumb li {
-    float: left;
-}
-
-.breadcrumb li::after {
-    content: " > ";
-    text-decoration: none !important;
-}
-
-.folder {
+a {
+    text-decoration: underline !important;
     cursor: pointer;
-    text-decoration: underline
 }
 
-.size {
-    float: right;
-}
-
-.file-item:after,
-.file-item:after {
-    content: "";
-    display: table;
-    clear: both;
-}
-
-// Source:
 .tree {
     margin-top: 20px;
     ul {
