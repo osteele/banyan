@@ -1,4 +1,4 @@
-import './src/Main.css';
+import './src/Main.scss';
 
 import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';
