@@ -88,6 +88,18 @@ ifJust flag a =
         Nothing
 
 
+mapValues : (a -> b) -> Dict.Dict comparable a -> Dict.Dict comparable b
+mapValues f d =
+    Dict.toList d
+        |> List.map (Tuple.mapSecond f)
+        |> Dict.fromList
+
+
+{-| Get the non-null prefixes of a list.
+
+    prefixes "abc" == ["a", "ab", "abc"]
+
+-}
 prefixes : List a -> List (List a)
 prefixes xs =
     case xs of

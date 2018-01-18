@@ -107,6 +107,24 @@ nodeSize item =
             e.size |> Maybe.withDefault 0
 
 
+{-| Trim the tree to a maximum depth.
+-}
+trimTree : Int -> FileTree -> FileTree
+trimTree depth tree =
+    case tree of
+        Dir data cache children ->
+            Dir data cache <|
+                if depth > 0 then
+                    mapValues (trimTree <| depth - 1) children
+                else
+                    Dict.empty
+
+        _ ->
+            tree
+
+
+{-| Recompute a node's cache fields.
+-}
 updateCache : FileTree -> FileTree
 updateCache tree =
     case tree of

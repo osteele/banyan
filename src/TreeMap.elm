@@ -21,14 +21,14 @@ fileTreeMap depth fileTree =
         title =
             itemEntry fileTree |> .path
     in
-    curry drawTreeMap title <| toNodes depth fileTree
+    curry drawTreeMap title <| toNodes <| trimTree depth fileTree
 
 
-toNodes : Int -> FileTree -> List Node
-toNodes depth fileTree =
+toNodes : FileTree -> List Node
+toNodes fileTree =
     let
-        f : Maybe String -> ( Int, Int ) -> FileTree -> ( List Node, ( Int, Int ) )
-        f parent ( nextId, depth ) item =
+        f : Maybe String -> Int -> FileTree -> ( List Node, Int )
+        f parent nextId item =
             let
                 entry =
                     itemEntry item
@@ -43,15 +43,12 @@ toNodes depth fileTree =
                     , value = nodeSize item
                     }
 
-                ( childNodes, ( nextId2, _ ) ) =
-                    flatMapM (f <| Just nodeId) ( nextId, depth - 1 ) <| Dict.values <| nodeChildren item
+                ( childNodes, nextId2 ) =
+                    flatMapM (f <| Just nodeId) nextId <| Dict.values <| nodeChildren item
             in
-            if depth > 0 then
-                ( node :: childNodes, ( nextId2, depth ) )
-            else
-                ( [], ( nextId, depth ) )
+            ( node :: childNodes, nextId2 )
     in
-    Tuple.first <| flatMapM (f Nothing) ( 0, depth ) (Dict.values <| nodeChildren fileTree)
+    Tuple.first <| flatMapM (f Nothing) 0 (Dict.values <| nodeChildren fileTree)
 
 
 
