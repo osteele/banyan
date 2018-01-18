@@ -1,5 +1,30 @@
 module Utils exposing (..)
 
+{-| This library fills a bunch of important niches in Elm. A `Maybe` can help
+you with optional arguments, error handling, and records with optional fields.
+
+
+# Dict helpers
+
+@docs mapValues
+
+
+# String Helpers
+
+@docs dropPrefix, toStringWithCommas, firstMatch, humanize, prefixes, takeFileName
+
+
+# List Helpers
+
+@docs flatMapM, zip
+
+
+# Maybe Helpers
+
+@docs ifJust
+
+-}
+
 import Dict
 import Regex
 import Round
