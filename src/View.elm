@@ -120,7 +120,7 @@ listView model =
                     ]
             , Just <| div [] [ model.debug |> Maybe.withDefault "" |> text ]
             , ifJust (not <| FileEntry.isEmpty model.fileTree) <|
-                treeView model.depth (subtree model)
+                treeView model
             ]
 
 
@@ -155,9 +155,9 @@ breadcrumb model =
         |> Html.ul [ class "breadcrumb" ]
 
 
-treeView : Int -> FileTree -> Html Msg
-treeView depth tree =
-    treeView_ depth tree
+treeView : Model -> Html Msg
+treeView model =
+    treeView_ model.depth (subtree model)
         |> List.singleton
         |> div [ class "tree" ]
 
