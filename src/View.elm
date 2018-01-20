@@ -4,7 +4,7 @@ import BeautifulExample
 import Color
 import Dict
 import FileEntry exposing (..)
-import Html exposing (Html, button, div, text)
+import Html exposing (Html, button, div, span, text)
 import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
 import Message exposing (..)
@@ -14,18 +14,27 @@ import Utils exposing (..)
 
 view : Model -> Html Msg
 view model =
-    Html.div []
-        [ banner model
+    div []
+        [ header config model
         , BeautifulExample.view config <|
-            div []
-                [ headerStuff model
-                , div [ class "ui two column grid" ]
-                    [ div [ class "column" ]
-                        [ listView model ]
-                    , div [ class "column" ]
-                        [ treeMap model ]
+            div [ class "ui main container" ] <|
+                List.filterMap identity <|
+                    [ Just <|
+                        div [ class "ui message" ]
+                            [ Html.p [ class "lead" ] [ text <| Maybe.withDefault "" config.details ]
+                            ]
+                    , ifJust (isSignedIn model) <|
+                        Html.h1 [] [ breadcrumb model ]
+                    , Just <|
+                        div [ class "ui two column grid" ]
+                            [ div [ class "column" ]
+                                [ listView model ]
+                            , div [ class "column" ]
+                                [ treeMap model ]
+                            ]
+                    , ifJust (model.requestCount > 0) <|
+                        progress model
                     ]
-                ]
         ]
 
 
@@ -40,53 +49,60 @@ config =
     }
 
 
-banner : Model -> Html Msg
-banner model =
-    div [] <|
-        List.filterMap identity <|
-            [ ifJust (isSignedIn model) <|
-                button
-                    [ Html.Events.onClick <| SignOut ]
-                    [ Html.text <| "Sign out" ]
-            , ifJust (not <| isSignedIn model) <|
-                button
-                    [ Html.Events.onClick <| SignIn ]
-                    [ Html.text <| "Sign into Dropbox" ]
-            ]
-
-
-headerStuff : Model -> Html Msg
-headerStuff model =
-    div [] <|
-        List.filterMap identity <|
-            [ ifJust (isSignedIn model && not model.loadingTree) <|
-                button
-                    [ Html.Events.onClick ListFiles ]
-                    [ Html.text "Sync" ]
-            , ifJust (model.requestCount > 0) <|
-                statsView model
-            , ifJust (isSignedIn model) <|
-                Html.h1 [] [ breadcrumb model ]
-            ]
-
-
-statsView : Model -> Html msg
-statsView model =
-    div [ class "ui segment" ]
-        [ text <|
-            String.join ""
-                [ toStringWithCommas model.loadedEntryCount
-                , " entries totalling "
-                , humanize <| nodeSize model.fileTree
-                , " loaded in "
-                , toString model.requestCount
-                , " requests"
-                , if model.loadingTree then
-                    "…"
-                  else
-                    "."
-                ]
+header : BeautifulExample.Config -> Model -> Html Msg
+header config model =
+    div [ class "ui top fixed huge borderless inverted menu" ]
+        [ div [ class "ui container grid" ] <|
+            List.singleton <|
+                div [ class "row" ]
+                    [ div [ class "header item" ] [ text config.title ]
+                    , div [ class "right menu" ] <|
+                        List.filterMap identity <|
+                            [ ifJust (isSignedIn model) <|
+                                toolbar model
+                            , ifJust (isSignedIn model && not model.loadingTree) <|
+                                button
+                                    [ class "item", onClick ListFiles ]
+                                    [ text "Sync" ]
+                            , Just <| signInOut model
+                            ]
+                    ]
         ]
+
+
+signInOut : Model -> Html Msg
+signInOut model =
+    if isSignedIn model then
+        Html.button
+            [ class "link item", onClick SignOut ]
+            [ Html.i [ class "link sign out icon " ] []
+            , text "Sign out"
+            ]
+    else
+        Html.button
+            [ class "link item", onClick SignIn ]
+            [ Html.i [ class "link sign in icon " ] []
+            , text "Sign into Dropbox"
+            ]
+
+
+progress : Model -> Html Msg
+progress model =
+    div [ class "ui message" ] <|
+        List.singleton <|
+            text <|
+                String.join ""
+                    [ toStringWithCommas model.loadedEntryCount
+                    , " entries totalling "
+                    , humanize <| nodeSize model.fileTree
+                    , " loaded in "
+                    , toString model.requestCount
+                    , " requests"
+                    , if model.loadingTree then
+                        "…"
+                      else
+                        "."
+                    ]
 
 
 treeMap : Model -> Html Msg
@@ -94,29 +110,32 @@ treeMap model =
     div [ id "treeMap" ] []
 
 
+toolbar : Model -> Html Msg
+toolbar model =
+    div []
+        [ span [] [ text "Levels:" ]
+        , div [ class "ui buttons" ] <|
+            List.map
+                (\n ->
+                    Html.button
+                        [ if n == model.depth then
+                            class "ui active button"
+                          else
+                            class "ui button"
+                        , onClick <| TreeDepth n
+                        ]
+                        [ text <| toString n ]
+                )
+            <|
+                [ 1, 2, 3 ]
+        ]
+
+
 listView : Model -> Html Msg
 listView model =
     div [] <|
         List.filterMap identity <|
-            [ ifJust (isSignedIn model) <|
-                div []
-                    [ Html.span [] [ text "Levels:" ]
-                    , div [ class "ui buttons" ] <|
-                        List.map
-                            (\n ->
-                                Html.button
-                                    [ if n == model.depth then
-                                        class "ui active button"
-                                      else
-                                        class "ui button"
-                                    , Html.Events.onClick <| TreeDepth n
-                                    ]
-                                    [ text <| toString n ]
-                            )
-                        <|
-                            [ 1, 2, 3 ]
-                    ]
-            , Just <| div [] [ model.debug |> Maybe.withDefault "" |> text ]
+            [ Just <| div [] [ model.debug |> Maybe.withDefault "" |> text ]
             , ifJust (not <| FileEntry.isEmpty model.fileTree) <|
                 treeView model
             ]
@@ -141,7 +160,7 @@ breadcrumb model =
                 div
                     [ class "section" ]
                     [ Html.a
-                        [ Html.Events.onClick <| Focus prefix ]
+                        [ onClick <| Focus prefix ]
                         [ text <|
                             if dir == "" then
                                 teamName model
@@ -151,7 +170,7 @@ breadcrumb model =
                     ]
             )
         |> List.intersperse (Html.i [ class "right angle icon divider" ] [])
-        |> div [ class "ui breadcrumb" ]
+        |> Html.h1 [ class "ui breadcrumb header" ]
 
 
 treeView : Model -> Html Msg
@@ -184,19 +203,19 @@ treeView_ depth tree =
     in
     case tree of
         File entry ->
-            Html.div
+            div
                 [ class "clearfix" ]
                 [ text <| takeFileName <| entry.path
-                , Html.span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
+                , span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
                 ]
 
         Dir entry size children ->
-            Html.div
+            div
                 []
-                (Html.div
+                (div
                     [ class "clearfix text-primary" ]
-                    [ Html.a [ Html.Events.onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]
-                    , Html.span [ class "float-right" ] [ text <| humanize size ]
+                    [ Html.a [ onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]
+                    , span [ class "float-right" ] [ text <| humanize size ]
                     ]
                     :: childViews
                 )
