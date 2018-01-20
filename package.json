@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "dropbox": "^2.5.13",
-    "highcharts": "^6.0.4"
+    "highcharts": "^6.0.4",
+    "semantic-ui-css": "^2.2.12"
   }
 }

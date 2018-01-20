@@ -1,8 +1,6 @@
 module View exposing (..)
 
 import BeautifulExample
-import Bootstrap.Button as Button
-import Bootstrap.Grid as Grid
 import Color
 import Dict
 import FileEntry exposing (..)
@@ -19,12 +17,12 @@ view model =
     Html.div []
         [ banner model
         , BeautifulExample.view config <|
-            Grid.container []
-                [ Grid.row [] [ Grid.col [] [ headerStuff model ] ]
-                , Grid.row []
-                    [ Grid.col []
+            div []
+                [ headerStuff model
+                , div [ class "ui two column grid" ]
+                    [ div [ class "column" ]
                         [ listView model ]
-                    , Grid.col []
+                    , div [ class "column" ]
                         [ treeMap model ]
                     ]
                 ]
@@ -74,7 +72,7 @@ headerStuff model =
 
 statsView : Model -> Html msg
 statsView model =
-    div [ class "alert alert-primary" ]
+    div [ class "ui segment" ]
         [ text <|
             String.join ""
                 [ toStringWithCommas model.loadedEntryCount
@@ -103,15 +101,15 @@ listView model =
             [ ifJust (isSignedIn model) <|
                 div []
                     [ Html.span [] [ text "Levels:" ]
-                    , div [ class "btn-group" ] <|
+                    , div [ class "ui buttons" ] <|
                         List.map
                             (\n ->
-                                Button.button
+                                Html.button
                                     [ if n == model.depth then
-                                        Button.primary
+                                        class "ui active button"
                                       else
-                                        Button.secondary
-                                    , Button.attrs [ Html.Events.onClick <| TreeDepth n ]
+                                        class "ui button"
+                                    , Html.Events.onClick <| TreeDepth n
                                     ]
                                     [ text <| toString n ]
                             )
@@ -140,8 +138,8 @@ breadcrumb model =
         |> withPrefixes
         |> List.map
             (\( dir, prefix ) ->
-                Html.li
-                    [ class "breadcrumb-item" ]
+                div
+                    [ class "section" ]
                     [ Html.a
                         [ Html.Events.onClick <| Focus prefix ]
                         [ text <|
@@ -152,7 +150,8 @@ breadcrumb model =
                         ]
                     ]
             )
-        |> Html.ul [ class "breadcrumb" ]
+        |> List.intersperse (Html.i [ class "right angle icon divider" ] [])
+        |> div [ class "ui breadcrumb" ]
 
 
 treeView : Model -> Html Msg
@@ -204,5 +203,5 @@ treeView_ depth tree =
 
 
 button : List (Html.Attribute msg) -> List (Html msg) -> Html msg
-button a =
-    Button.button [ Button.primary, Button.attrs a ]
+button attrs =
+    Html.button (class "ui button" :: attrs)

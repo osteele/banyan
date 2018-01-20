@@ -1,5 +1,5 @@
 import './src/Main.scss';
-import './src/bootstrap.css'
+import 'semantic-ui-css/semantic.min.css'
 
 import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';

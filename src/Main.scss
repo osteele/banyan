@@ -3,6 +3,16 @@ a {
     cursor: pointer;
 }
 
+.clearfix:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.float-right {
+    float: right
+}
+
 .tree {
     margin-top: 20px;
     ul {
