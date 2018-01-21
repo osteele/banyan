@@ -1,6 +1,5 @@
 module View exposing (..)
 
-import BeautifulExample
 import Color
 import Dict
 import FileEntry exposing (..)
@@ -15,52 +14,56 @@ import Utils exposing (..)
 view : Model -> Html Msg
 view model =
     div []
-        [ header config model
-        , BeautifulExample.view config <|
-            div [ class "ui main container" ] <|
-                List.filterMap identity <|
-                    [ Just <|
-                        div [ class "ui message" ]
-                            [ Html.p [ class "lead" ] [ text <| Maybe.withDefault "" config.details ]
-                            ]
-                    , ifJust (isSignedIn model) <|
-                        Html.h1 [] [ breadcrumb model ]
-                    , Just <|
-                        div [ class "ui two column grid" ]
-                            [ div [ class "column" ]
-                                [ listView model ]
-                            , div [ class "column" ]
-                                [ treeMap model ]
-                            ]
-                    , ifJust (model.requestCount > 0) <|
-                        progress model
-                    ]
+        [ header model
+        , content model
         ]
 
 
-config : BeautifulExample.Config
+content : Model -> Html Msg
+content model =
+    div [ class "ui main container" ] <|
+        List.filterMap identity <|
+            [ model.debug
+                |> Maybe.map
+                    (\message ->
+                        div [ class "ui message" ]
+                            [ Html.p [ class "lead" ] [ text message ]
+                            ]
+                    )
+            , ifJust (isSignedIn model) <|
+                Html.h1 [] [ breadcrumb model ]
+            , Just <|
+                div [ class "ui two column grid" ]
+                    [ div [ class "column" ]
+                        [ listView model ]
+                    , div [ class "column" ]
+                        [ treeMap model ]
+                    ]
+            , ifJust (model.requestCount > 0) <|
+                progress model
+            ]
+
+
 config =
     { title = "Banyan"
-    , details = Just "Dropbox file size browser."
+    , description = "A dropbox file size browser."
     , color = Just Color.blue
     , maxWidth = 1200
-    , githubUrl = Just "https://github.com/osteele/banyan"
-    , documentationUrl = Nothing
+    , githubUrl = "https://github.com/osteele/banyan"
     }
 
 
-header : BeautifulExample.Config -> Model -> Html Msg
-header config model =
-    div [ class "ui top fixed huge borderless inverted menu" ]
+header : Model -> Html Msg
+header model =
+    div [ class "ui top  huge borderless inverted menu" ]
         [ div [ class "ui container grid" ] <|
             List.singleton <|
                 div [ class "row" ]
-                    [ div [ class "header item" ] [ text config.title ]
+                    [ Html.h1 [ class "header item" ] [ text config.title ]
+                    , span [ class " item" ] [ text config.description ]
                     , div [ class "right menu" ] <|
                         List.filterMap identity <|
-                            [ ifJust (isSignedIn model) <|
-                                toolbar model
-                            , ifJust (isSignedIn model && not model.loadingTree) <|
+                            [ ifJust (isSignedIn model && not model.loadingTree) <|
                                 button
                                     [ class "item", onClick ListFiles ]
                                     [ text "Sync" ]
@@ -135,7 +138,8 @@ listView : Model -> Html Msg
 listView model =
     div [] <|
         List.filterMap identity <|
-            [ Just <| div [] [ model.debug |> Maybe.withDefault "" |> text ]
+            [ ifJust (isSignedIn model) <|
+                toolbar model
             , ifJust (not <| FileEntry.isEmpty model.fileTree) <|
                 treeView model
             ]
