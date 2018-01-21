@@ -4,7 +4,7 @@ import Color
 import Dict
 import FileTree exposing (FileTree)
 import Html exposing (Html, button, div, span, text)
-import Html.Attributes exposing (class, id)
+import Html.Attributes exposing (attribute, class, href, id)
 import Html.Events exposing (onClick)
 import Message exposing (..)
 import Model exposing (..)
@@ -34,12 +34,12 @@ view model =
 
 header : Model -> Html Msg
 header model =
-    div [ class "ui top  huge borderless inverted menu" ]
+    div [ class "ui top borderless inverted menu" ]
         [ div [ class "ui container grid" ] <|
             List.singleton <|
                 row []
                     [ Html.h1 [ class "header item" ] [ text config.title ]
-                    , span [ class " item" ] [ text config.description ]
+                    , span [ class "item" ] [ text config.description ]
                     , div [ class "right menu" ] <|
                         List.filterMap identity <|
                             [ ifJust (isSignedIn model && not model.loadingTree) <|
@@ -48,6 +48,12 @@ header model =
                                     [ text "Sync" ]
                             , Just <| signInOut model
                             ]
+                    , Html.a
+                        [ class "link item"
+                        , href config.githubUrl
+                        , attribute "target" "_"
+                        ]
+                        [ icon [ class "large github" ] [] ]
                     ]
         ]
 
@@ -55,15 +61,15 @@ header model =
 signInOut : Model -> Html Msg
 signInOut model =
     if isSignedIn model then
-        Html.button
+        div
             [ class "link item", onClick SignOut ]
-            [ icon [ class "link sign out icon" ] []
+            [ icon [ class "large link sign out" ] []
             , text "Sign out"
             ]
     else
-        Html.button
+        div
             [ class "link item", onClick SignIn ]
-            [ icon [ class "link sign in icon " ] []
+            [ icon [ class "large link sign in" ] []
             , text "Sign into Dropbox"
             ]
 
