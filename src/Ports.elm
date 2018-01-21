@@ -10,7 +10,7 @@ port listFiles : String -> Cmd msg
 port receiveFileList : (( List FileEntry, Bool ) -> msg) -> Sub msg
 
 
-port receiveFileListError : (() -> msg) -> Sub msg
+port receiveFileListError : (Maybe String -> msg) -> Sub msg
 
 
 port getAccountInfo : String -> Cmd msg

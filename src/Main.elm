@@ -1,10 +1,6 @@
 module Main exposing (..)
 
---exposing (..)
--- exposing (..)
-
 import Dropbox
-import FileEntry
 import FileTree
 import Message exposing (..)
 import Model exposing (..)
@@ -49,6 +45,7 @@ initialCmd flags =
 update : Msg -> Model -> ( Model, Cmd msg )
 update msg model =
     case msg of
+        -- account
         AccessToken accessToken ->
             case accessToken of
                 Just tokenString ->
@@ -100,6 +97,7 @@ update msg model =
         SetAccountInfo info ->
             update ListFiles { model | accountInfo = Just info }
 
+        -- list files
         ListFiles ->
             { model
                 | debug = Nothing
@@ -126,18 +124,16 @@ update msg model =
             in
             update RenderFileTreeMap model2
 
-        FileListError ->
+        FileListError msg ->
             { model
-                | debug = Just "Error listing files"
+                | debug = Just <| Maybe.withDefault "Error listing files" <| msg
                 , loadingTree = False
             }
                 ! []
 
         RenderFileTreeMap ->
             model
-                ! [ Model.subtree model
-                        |> fileTreeMap 1
-                  ]
+                ! [ Model.subtree model |> fileTreeMap 1 ]
 
         -- view commands
         Focus p ->
@@ -168,8 +164,9 @@ clearLocationHash model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ receiveFileList <| uncurry FileList
-        , receiveAccountInfo SetAccountInfo
+        [ receiveAccountInfo SetAccountInfo
+        , receiveFileList <| uncurry FileList
+        , receiveFileListError FileListError
         , setPath Focus
         ]
 

@@ -14,7 +14,10 @@ const app = Elm.Main.embed(document.getElementById('app'), {
 app.ports.listFiles.subscribe(async (accessToken) => {
     const path = '';
     const dbx = new Dropbox({ accessToken });
-    let cache = localStorage['fileTree'] && JSON.parse(localStorage['fileTree']);
+    let cache = null;
+    if (!reload && localStorage['fileTree']) {
+        cache = JSON.parse(localStorage['fileTree']);
+    }
     if (cache && cache.accessToken !== accessToken) {
         console.info('reset cache')
         cache = null;
@@ -33,11 +36,11 @@ app.ports.listFiles.subscribe(async (accessToken) => {
         try {
             response = await query;
         } catch (error) {
-            console.error(error);
-            app.ports.receiveFileListError.send(); // error.name, error.message
+            console.error('listFiles:', error);
+            app.ports.receiveFileListError.send(error.message || error.error); // error.name, error.message
         }
 
-        let entries = response.entries.map((entry) => (
+        const entries = response.entries.map((entry) => (
             {
                 tag: entry['.tag']
                 , key: entry.path_lower

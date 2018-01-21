@@ -101,7 +101,7 @@ flash model =
     model.debug
         |> Maybe.map
             (\msg ->
-                div [ class "ui message" ]
+                div [ class "ui warning message" ]
                     [ Html.p [ class "lead" ] [ text msg ]
                     ]
             )

@@ -14,7 +14,7 @@ type Msg
       -- file retrieval
     | ListFiles
     | FileList (List FileEntry) Bool
-    | FileListError
+    | FileListError (Maybe String)
     | RenderFileTreeMap
       -- view controls
     | Focus String
