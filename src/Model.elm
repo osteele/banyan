@@ -2,8 +2,7 @@ module Model exposing (..)
 
 import Data exposing (..)
 import Dropbox
-import FileEntry exposing (FileEntry)
-import FileTree exposing (..)
+import FileTree exposing (FileTree)
 import Navigation
 
 
@@ -58,7 +57,20 @@ isSignedIn model =
 
 subtree : Model -> FileTree
 subtree model =
-    model.fileTree |> getSubtree model.path |> Maybe.withDefault model.fileTree
+    model.fileTree
+        |> FileTree.getSubtree model.path
+        |> Maybe.withDefault model.fileTree
+
+
+subtreeTitle : Model -> String
+subtreeTitle model =
+    let
+        path =
+            subtree model
+                |> FileTree.itemEntry
+                |> .path
+    in
+    teamName model ++ path
 
 
 teamName : Model -> String

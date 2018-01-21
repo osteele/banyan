@@ -84,10 +84,10 @@ content model =
         List.filterMap identity <|
             [ flash model
             , ifJust (isSignedIn model) <|
-                Html.h1 [] [ breadcrumb model ]
+                breadcrumb model
             , Just <|
                 grid [ class "two column" ]
-                    [ column [] [ listView model ]
+                    [ column [] [ treeList model ]
                     , column [] [ treeMap model ]
                     ]
             , ifJust (model.requestCount > 0) <|
@@ -107,7 +107,12 @@ flash model =
 
 
 breadcrumb : Model -> Html Msg
-breadcrumb model =
+breadcrumb =
+    breadcrumb_ Html.h1 <| icon [ class "right angle icon divider" ] []
+
+
+breadcrumb_ : (List (Html.Attribute Msg) -> List (Html Msg) -> Html Msg) -> Html Msg -> Model -> Html Msg
+breadcrumb_ hn sep model =
     let
         withPrefixes dirs =
             prefixes dirs
@@ -134,8 +139,8 @@ breadcrumb model =
                         ]
                     ]
             )
-        |> List.intersperse (icon [ class "right angle icon divider" ] [])
-        |> Html.h1 [ class "ui breadcrumb header" ]
+        |> List.intersperse sep
+        |> hn [ class "ui breadcrumb header" ]
 
 
 progress : Model -> Html Msg
@@ -168,16 +173,16 @@ treeMap model =
 
 toolbar : Model -> Html Msg
 toolbar model =
-    div []
-        [ span [] [ text "Levels:" ]
-        , div [ class "ui buttons" ] <|
+    div [ class "toolbar" ]
+        [ div [ class "ui mini buttons" ] <|
             List.map
                 (\n ->
-                    Html.button
+                    button
                         [ if n == model.depth then
-                            class "ui active button"
+                            class "active"
                           else
-                            class "ui button"
+                            class ""
+                        , class "compact"
                         , onClick <| TreeDepth n
                         ]
                         [ text <| toString n ]
@@ -187,26 +192,24 @@ toolbar model =
         ]
 
 
-listView : Model -> Html Msg
-listView model =
+treeList : Model -> Html Msg
+treeList model =
     div [] <|
         List.filterMap identity <|
             [ ifJust (isSignedIn model) <|
                 toolbar model
             , ifJust (not <| FileTree.isEmpty model.fileTree) <|
-                treeView model
+                div [ class "tree" ]
+                    [ subtree model.depth (Just <| treeListTitle model) <| Model.subtree model ]
             ]
 
 
-treeView : Model -> Html Msg
-treeView model =
-    subtree model.depth (Model.subtree model)
-        |> List.singleton
-        |> div [ class "tree" ]
+treeListTitle =
+    breadcrumb_ Html.h3 (div [ class "divider" ] [ text "/" ])
 
 
-subtree : Int -> FileTree -> Html Msg
-subtree depth tree =
+subtree : Int -> Maybe (Html Msg) -> FileTree -> Html Msg
+subtree depth title tree =
     let
         children =
             if depth > 0 then
@@ -222,7 +225,7 @@ subtree depth tree =
                     (children
                         |> List.sortBy (FileTree.itemEntry >> .path >> String.toUpper)
                         |> List.map
-                            (\t -> Html.li [] [ subtree (depth - 1) t ])
+                            (\t -> Html.li [] [ subtree (depth - 1) Nothing t ])
                     )
                 ]
     in
@@ -239,7 +242,10 @@ subtree depth tree =
                 []
                 (div
                     [ class "clearfix text-primary" ]
-                    [ Html.a [ onClick <| Focus entry.key ] [ text <| takeFileName <| entry.path ]
+                    [ flip Maybe.withDefault title <|
+                        Html.a
+                            [ onClick <| Focus entry.key ]
+                            [ text <| takeFileName entry.path ]
                     , span [ class "float-right" ] [ text <| humanize size ]
                     ]
                     :: childViews
