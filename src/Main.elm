@@ -133,17 +133,21 @@ update msg model =
             }
                 ! []
 
-        Focus p ->
-            update RenderFileTreeMap { model | path = p }
-
-        TreeDepth n ->
-            { model | depth = n } ! []
-
         RenderFileTreeMap ->
             model
                 ! [ Model.subtree model
                         |> fileTreeMap 1
                   ]
+
+        -- view commands
+        Focus p ->
+            update RenderFileTreeMap { model | path = p }
+
+        SortOrder ord ->
+            { model | order = ord } ! []
+
+        TreeDepth n ->
+            { model | depth = n } ! []
 
 
 clearLocationHash : Model -> Cmd msg

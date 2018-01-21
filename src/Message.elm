@@ -11,9 +11,12 @@ type Msg
     | SignIn
     | SignOut
     | SetAccountInfo AccountInfo
+      -- file retrieval
     | ListFiles
     | FileList (List FileEntry) Bool
     | FileListError
-    | Focus String
-    | TreeDepth Int
     | RenderFileTreeMap
+      -- view controls
+    | Focus String
+    | SortOrder Data.SortOrder
+    | TreeDepth Int

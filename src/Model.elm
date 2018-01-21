@@ -8,32 +8,46 @@ import Navigation
 
 type alias Model =
     { location : Navigation.Location
-    , auth : Maybe Dropbox.UserAuth
     , clientId : String
     , debug : Maybe String
+
+    -- account
+    , accountInfo : Maybe AccountInfo
+    , auth : Maybe Dropbox.UserAuth
+
+    -- tree and loading status
     , fileTree : FileTree
     , loadingTree : Bool
     , loadedEntryCount : Int
     , requestCount : Int
-    , accountInfo : Maybe AccountInfo
+
+    -- view state
     , path : String
     , depth : Int
+    , order : SortOrder
     }
 
 
 init : String -> Navigation.Location -> Model
 init clientId location =
     { location = location
+    , debug = Nothing
+
+    -- account
+    , accountInfo = Nothing
     , auth = Nothing
     , clientId = clientId
-    , debug = Nothing
+
+    -- tree and loading status
     , fileTree = FileTree.empty
     , loadingTree = False
     , loadedEntryCount = 0
     , requestCount = 0
-    , accountInfo = Nothing
+
+    -- view state
     , path = "/"
     , depth = 1
+    , order = Alphabetic
     }
 
 

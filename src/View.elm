@@ -1,6 +1,7 @@
 module View exposing (..)
 
 import Color
+import Data exposing (..)
 import Dict
 import FileTree exposing (FileTree)
 import Html exposing (Html, button, div, span, text)
@@ -99,9 +100,9 @@ flash : { a | debug : Maybe String } -> Maybe (Html msg)
 flash model =
     model.debug
         |> Maybe.map
-            (\message ->
+            (\msg ->
                 div [ class "ui message" ]
-                    [ Html.p [ class "lead" ] [ text message ]
+                    [ Html.p [ class "lead" ] [ text msg ]
                     ]
             )
 
@@ -111,7 +112,7 @@ breadcrumb =
     breadcrumb_ Html.h1 <| icon [ class "right angle icon divider" ] []
 
 
-breadcrumb_ : (List (Html.Attribute Msg) -> List (Html Msg) -> Html Msg) -> Html Msg -> Model -> Html Msg
+breadcrumb_ : Node Msg -> Html Msg -> Model -> Html Msg
 breadcrumb_ hn sep model =
     let
         withPrefixes dirs =
@@ -173,7 +174,8 @@ treeMap model =
 
 toolbar : Model -> Html Msg
 toolbar model =
-    div [ class "toolbar" ]
+    div
+        [ class "toolbar" ]
         [ div [ class "ui mini buttons" ] <|
             List.map
                 (\n ->
@@ -189,6 +191,27 @@ toolbar model =
                 )
             <|
                 [ 1, 2, 3 ]
+        , div [ class "ui buttons float-right" ]
+            [ sortOrderButton Alphabetic "alphabet ascending" model
+            , sortOrderButton DescendingSize "numeric descending" model
+            , sortOrderButton AscendingSize "numeric ascending" model
+            ]
+        ]
+
+
+sortOrderButton : SortOrder -> String -> Model -> Html Msg
+sortOrderButton order classes model =
+    button
+        [ class <|
+            "icon"
+                ++ (if order == model.order then
+                        " active"
+                    else
+                        ""
+                   )
+        , onClick <| SortOrder order
+        ]
+        [ icon [ class <| "sort " ++ classes ] []
         ]
 
 
@@ -200,16 +223,17 @@ treeList model =
                 toolbar model
             , ifJust (not <| FileTree.isEmpty model.fileTree) <|
                 div [ class "tree" ]
-                    [ subtree model.depth (Just <| treeListTitle model) <| Model.subtree model ]
+                    [ subtree model model.depth (Just <| treeListTitle model) <| Model.subtree model ]
             ]
 
 
+treeListTitle : Model -> Html Msg
 treeListTitle =
     breadcrumb_ Html.h3 (div [ class "divider" ] [ text "/" ])
 
 
-subtree : Int -> Maybe (Html Msg) -> FileTree -> Html Msg
-subtree depth title tree =
+subtree : Model -> Int -> Maybe (Html Msg) -> FileTree -> Html Msg
+subtree model depth title tree =
     let
         children =
             if depth > 0 then
@@ -217,15 +241,26 @@ subtree depth title tree =
             else
                 []
 
+        sort =
+            case model.order of
+                Alphabetic ->
+                    List.sortBy <| FileTree.itemEntry >> .path >> String.toUpper
+
+                AscendingSize ->
+                    List.sortBy FileTree.nodeSize
+
+                DescendingSize ->
+                    List.sortBy (negate << FileTree.nodeSize)
+
         childViews =
             if List.isEmpty children then
                 []
             else
                 [ Html.ul []
                     (children
-                        |> List.sortBy (FileTree.itemEntry >> .path >> String.toUpper)
+                        |> sort
                         |> List.map
-                            (\t -> Html.li [] [ subtree (depth - 1) Nothing t ])
+                            (\st -> Html.li [] [ subtree model (depth - 1) Nothing st ])
                     )
                 ]
     in
@@ -256,26 +291,30 @@ subtree depth title tree =
 --- helpers
 
 
-button : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+type alias Node msg =
+    List (Html.Attribute msg) -> List (Html msg) -> Html msg
+
+
+button : Node msg
 button attrs =
-    Html.button (class "ui button" :: attrs)
+    Html.button <| class "ui button" :: attrs
 
 
-column : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+column : Node msg
 column attrs =
-    div (class "column" :: attrs)
+    div <| class "column" :: attrs
 
 
-grid : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+grid : Node msg
 grid attrs =
-    div (class "ui grid" :: attrs)
+    div <| class "ui grid" :: attrs
 
 
-icon : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+icon : Node msg
 icon attrs =
-    Html.i (class "icon" :: attrs)
+    Html.i <| class "icon" :: attrs
 
 
-row : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+row : Node msg
 row attrs =
-    div (class "row" :: attrs)
+    div <| class "row" :: attrs
