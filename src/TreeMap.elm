@@ -1,7 +1,8 @@
 port module TreeMap exposing (..)
 
 import Dict
-import FileEntry exposing (..)
+import FileEntry
+import FileTree exposing (..)
 import Utils exposing (..)
 
 
@@ -44,7 +45,7 @@ toNodes fileTree =
                 node =
                     { name = entry.path |> Utils.takeFileName
                     , id = nodeId
-                    , key = ifJust (isDir entry) entry.key
+                    , key = ifJust (FileEntry.isDir entry) entry.key
                     , parent = parent
                     , value = nodeSize item
                     }

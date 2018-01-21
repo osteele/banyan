@@ -2,7 +2,7 @@ module View exposing (..)
 
 import Color
 import Dict
-import FileEntry exposing (..)
+import FileTree exposing (FileTree)
 import Html exposing (Html, button, div, span, text)
 import Html.Attributes exposing (class, id)
 import Html.Events exposing (onClick)
@@ -110,7 +110,7 @@ breadcrumb model =
     in
     model
         |> Model.subtree
-        |> itemEntry
+        |> FileTree.itemEntry
         |> .path
         |> String.split "/"
         |> withPrefixes
@@ -140,7 +140,7 @@ progress model =
                 String.join ""
                     [ toStringWithCommas model.loadedEntryCount
                     , " entries totalling "
-                    , humanize <| nodeSize model.fileTree
+                    , humanize <| FileTree.nodeSize model.fileTree
                     , " loaded in "
                     , toString model.requestCount
                     , " requests"
@@ -187,7 +187,7 @@ listView model =
         List.filterMap identity <|
             [ ifJust (isSignedIn model) <|
                 toolbar model
-            , ifJust (not <| FileEntry.isEmpty model.fileTree) <|
+            , ifJust (not <| FileTree.isEmpty model.fileTree) <|
                 treeView model
             ]
 
@@ -204,7 +204,7 @@ subtree depth tree =
     let
         children =
             if depth > 0 then
-                nodeChildren tree |> Dict.values
+                FileTree.nodeChildren tree |> Dict.values
             else
                 []
 
@@ -214,21 +214,21 @@ subtree depth tree =
             else
                 [ Html.ul []
                     (children
-                        |> List.sortBy (itemEntry >> .path >> String.toUpper)
+                        |> List.sortBy (FileTree.itemEntry >> .path >> String.toUpper)
                         |> List.map
                             (\t -> Html.li [] [ subtree (depth - 1) t ])
                     )
                 ]
     in
     case tree of
-        File entry ->
+        FileTree.File entry ->
             div
                 [ class "clearfix" ]
                 [ text <| takeFileName <| entry.path
                 , span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
                 ]
 
-        Dir entry size children ->
+        FileTree.Dir entry size children ->
             div
                 []
                 (div

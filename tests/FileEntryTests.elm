@@ -44,7 +44,7 @@ suite =
 
 fromFilePaths : List String -> FileEntry.FileTree
 fromFilePaths paths =
-    FileEntry.empty
+    FileTree.empty
         |> addEntries (List.map (\p -> FileEntry dirTag (String.toLower p) p Nothing) paths)
 
 

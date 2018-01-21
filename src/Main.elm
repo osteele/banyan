@@ -1,7 +1,11 @@
 module Main exposing (..)
 
+--exposing (..)
+-- exposing (..)
+
 import Dropbox
-import FileEntry exposing (..)
+import FileEntry
+import FileTree
 import Message exposing (..)
 import Model exposing (..)
 import Navigation
@@ -99,7 +103,7 @@ update msg model =
         ListFiles ->
             { model
                 | debug = Nothing
-                , fileTree = FileEntry.empty
+                , fileTree = FileTree.empty
                 , loadedEntryCount = 0
                 , loadingTree = True
                 , path = "/"
@@ -114,7 +118,7 @@ update msg model =
             let
                 model2 =
                     { model
-                        | fileTree = addEntries entries model.fileTree
+                        | fileTree = FileTree.addEntries entries model.fileTree
                         , loadingTree = loading
                         , loadedEntryCount = model.loadedEntryCount + List.length entries
                         , requestCount = model.requestCount + 1
@@ -137,9 +141,7 @@ update msg model =
 
         RenderFileTreeMap ->
             model
-                ! [ model.fileTree
-                        |> getSubtree model.path
-                        |> Maybe.withDefault model.fileTree
+                ! [ Model.subtree model
                         |> fileTreeMap 1
                   ]
 

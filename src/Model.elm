@@ -2,7 +2,8 @@ module Model exposing (..)
 
 import Data exposing (..)
 import Dropbox
-import FileEntry exposing (..)
+import FileEntry exposing (FileEntry)
+import FileTree exposing (..)
 import Navigation
 
 
@@ -27,7 +28,7 @@ init clientId location =
     , auth = Nothing
     , clientId = clientId
     , debug = Nothing
-    , fileTree = FileEntry.empty
+    , fileTree = FileTree.empty
     , loadingTree = False
     , loadedEntryCount = 0
     , requestCount = 0
@@ -42,7 +43,7 @@ clearAccountFields model =
     { model
         | auth = Nothing
         , accountInfo = Nothing
-        , fileTree = FileEntry.empty
+        , fileTree = FileTree.empty
         , loadingTree = False
         , loadedEntryCount = 0
         , requestCount = 0
