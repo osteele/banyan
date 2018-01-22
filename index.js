@@ -5,13 +5,16 @@ import Dropbox from 'dropbox';
 import Elm from './src/Main.elm';
 import chart from './src/chart.js';
 
-const accessTokenKey = "accessToken";
+const accessTokenKey = 'accessToken';
+var accessToken = localStorage[accessTokenKey] || null;
+
 const app = Elm.Main.embed(document.getElementById('app'), {
-    accessToken: localStorage[accessTokenKey] || null,
+    accessToken,
     clientId: process.env.DROPBOX_APP_KEY
 });
 
-app.ports.listFiles.subscribe(async ([accessToken, reload]) => {
+app.ports.listFiles.subscribe(async (reload) => {
+    // if (!accessToken) { return; }
     const dbx = new Dropbox({ accessToken });
     let cache = null;
     if (!reload && localStorage['fileTree']) {
@@ -71,12 +74,14 @@ app.ports.getAccountInfo.subscribe(async accessToken => {
     app.ports.receiveAccountInfo.send({ teamName, name });
 });
 
-app.ports.storeAccessToken.subscribe((value) => {
-    localStorage[accessTokenKey] = value;
+app.ports.storeAccessToken.subscribe((token) => {
+    localStorage[accessTokenKey] = token;
+    accessToken = token;
 });
 
 app.ports.signOut.subscribe(() => {
     localStorage.clear();
+    accessToken = null;
 });
 
 app.ports.chart.subscribe(([title, data]) => {

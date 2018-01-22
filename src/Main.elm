@@ -106,11 +106,7 @@ update msg model =
                 , loadingTree = True
                 , path = "/"
             }
-                ! [ model.auth
-                        |> Maybe.andThen extractAccessToken
-                        |> Maybe.map (\tok -> listFiles ( tok, False ))
-                        |> Maybe.withDefault Cmd.none
-                  ]
+                ! [ listFiles False ]
 
         FileList entries loading ->
             let

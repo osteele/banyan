@@ -16,7 +16,7 @@ port getAccountInfo : String -> Cmd msg
 port signOut : () -> Cmd msg
 
 
-port listFiles : ( String, Bool ) -> Cmd msg
+port listFiles : Bool -> Cmd msg
 
 
 
