@@ -11,8 +11,7 @@ const app = Elm.Main.embed(document.getElementById('app'), {
     clientId: process.env.DROPBOX_APP_KEY
 });
 
-app.ports.listFiles.subscribe(async (accessToken) => {
-    const path = '';
+app.ports.listFiles.subscribe(async ([accessToken, reload]) => {
     const dbx = new Dropbox({ accessToken });
     let cache = null;
     if (!reload && localStorage['fileTree']) {
@@ -30,7 +29,7 @@ app.ports.listFiles.subscribe(async (accessToken) => {
     }
     let query = cache.cursor
         ? dbx.filesListFolderContinue({ cursor: cache.cursor })
-        : dbx.filesListFolder({ path, recursive: true });
+        : dbx.filesListFolder({ path: '', include_deleted: true, recursive: true });
     while (query) {
         var response
         try {
@@ -48,13 +47,15 @@ app.ports.listFiles.subscribe(async (accessToken) => {
                 , size: entry.size || null
             }
         ));
+        const deleted = response.entries.filter(({ tag }) => tag == "deleted");
+        if (deleted.length) { console.info('deleted', deleted) }
 
         // update the cache
         cache.cursor = response.cursor;
         entries.forEach((entry) => {
             cache.entries[entry.key] = entry;
         });
-        localStorage['fileTree'] = JSON.stringify(cache);
+        // localStorage['fileTree'] = JSON.stringify(cache);
 
         const more = Boolean(response.has_more);
         app.ports.receiveFileList.send([entries, more]);
@@ -71,13 +72,7 @@ app.ports.getAccountInfo.subscribe(async accessToken => {
 });
 
 app.ports.storeAccessToken.subscribe((value) => {
-    const key = accessTokenKey;
-    if (value) {
-        localStorage[key] = value;
-    } else {
-        localStorage.clear();
-        // localStorage.removeItem(key)
-    }
+    localStorage[accessTokenKey] = value;
 });
 
 app.ports.signOut.subscribe(() => {

@@ -62,7 +62,7 @@ update msg model =
                 ! (case auth.userAuth |> extractAccessToken of
                     Just token ->
                         [ getAccountInfo token
-                        , storeAccessToken <| Just token
+                        , storeAccessToken token
                         , clearLocationHash model
                         ]
 
@@ -90,7 +90,7 @@ update msg model =
 
         SignOut ->
             clearAccountFields model
-                ! [ storeAccessToken Nothing
+                ! [ signOut ()
                   , clearLocationHash model
                   ]
 
@@ -108,7 +108,7 @@ update msg model =
             }
                 ! [ model.auth
                         |> Maybe.andThen extractAccessToken
-                        |> Maybe.map listFiles
+                        |> Maybe.map (\tok -> listFiles ( tok, False ))
                         |> Maybe.withDefault Cmd.none
                   ]
 
