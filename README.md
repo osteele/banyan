@@ -23,7 +23,7 @@ $ yarn start
 Build with [Elm](http://elm-lang.org/), [Highcharts](https://www.highcharts.com/products/highcharts/)
 [Semantic UI](https://semantic-ui.com/), [Poi](https://poi.js.org/#/),
 [elm-dropbox](http://package.elm-lang.org/packages/avh4/elm-dropbox/latest),
-and[elm-round](http://package.elm-lang.org/packages/myrho/elm-round/latest).
+and [elm-round](http://package.elm-lang.org/packages/myrho/elm-round/latest).
 
 The [Banyan tree
 image](https://commons.wikimedia.org/wiki/File:Banyan_tree_(PSF).png) was

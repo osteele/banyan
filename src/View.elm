@@ -15,7 +15,7 @@ import Utils exposing (..)
 config : { color : Maybe Color.Color, githubUrl : String, title : String, description : String }
 config =
     { title = "Banyan"
-    , description = "A dropbox file size browser."
+    , description = "A Dropbox file size browser."
     , color = Just Color.blue
     , githubUrl = "https://github.com/osteele/banyan"
     }
