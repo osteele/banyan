@@ -15,6 +15,10 @@ const app = Elm.Main.embed(document.getElementById('app'), {
 
 app.ports.listFiles.subscribe(async (reload) => {
     // if (!accessToken) { return; }
+    if (!accessToken) {
+        app.ports.receiveFileListError.send("internal error: access token not set");
+        return;
+    }
     const dbx = new Dropbox({ accessToken });
     let cache = null;
     if (!reload && localStorage['fileTree']) {
