@@ -78,6 +78,7 @@ type alias FileSyncModel =
     , loadingTree : Bool
     , loadedEntryCount : Int
     , requestCount : Int
+    , errorMessage : Maybe String
     }
 
 
@@ -87,6 +88,7 @@ initFileSyncModel =
     , loadingTree = False
     , loadedEntryCount = 0
     , requestCount = 0
+    , errorMessage = Nothing
     }
 
 

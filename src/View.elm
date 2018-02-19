@@ -96,9 +96,9 @@ content model =
             ]
 
 
-flash : { a | debug : Maybe String } -> Maybe (Html msg)
+flash : Model -> Maybe (Html msg)
 flash model =
-    model.debug
+    model.files.errorMessage
         |> Maybe.map
             (\msg ->
                 div [ class "ui warning message" ]

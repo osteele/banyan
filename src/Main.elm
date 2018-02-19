@@ -97,11 +97,10 @@ update msg model =
         SetAccountInfo info ->
             update ListFiles { model | accountInfo = Just info }
 
-        -- file list
+        -- list files
         ListFiles ->
             { model
-                | debug = Nothing
-                , files = { initFileSyncModel | loadingTree = True }
+                | files = { initFileSyncModel | loadingTree = True }
                 , path = "/"
             }
                 ! [ listFiles False ]
@@ -127,8 +126,11 @@ update msg model =
                     model.files
             in
             { model
-                | debug = Just <| Maybe.withDefault "Error listing files" <| msg
-                , files = { syncModel | loadingTree = False }
+                | files =
+                    { syncModel
+                        | loadingTree = False
+                        , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msg
+                    }
             }
                 ! []
 
