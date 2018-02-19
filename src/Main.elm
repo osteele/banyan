@@ -144,7 +144,7 @@ updateSyncModel msg model =
     case msg of
         ListFiles ->
             { initFileSyncModel | syncing = True }
-                ! [ listFiles False ]
+                ! [ listFiles ( False, True ) ]
 
         FileList entries loading ->
             { model

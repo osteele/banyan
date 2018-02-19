@@ -13,15 +13,15 @@ const app = Elm.Main.embed(document.getElementById('app'), {
     clientId: process.env.DROPBOX_APP_KEY
 });
 
-app.ports.listFiles.subscribe(async (reload) => {
-    // if (!accessToken) { return; }
+app.ports.listFiles.subscribe(async ([include_deleted, useCache]) => {
+    const path = '';
     if (!accessToken) {
         app.ports.receiveFileListError.send("internal error: access token not set");
         return;
     }
     const dbx = new Dropbox({ accessToken });
     let cache = null;
-    if (!reload && localStorage['fileTree']) {
+    if (!useCache && localStorage['fileTree']) {
         cache = JSON.parse(localStorage['fileTree']);
     }
     if (cache && cache.accessToken !== accessToken) {
@@ -36,7 +36,7 @@ app.ports.listFiles.subscribe(async (reload) => {
     }
     let query = cache.cursor
         ? dbx.filesListFolderContinue({ cursor: cache.cursor })
-        : dbx.filesListFolder({ path: '', include_deleted: true, recursive: true });
+        : dbx.filesListFolder({ path, include_deleted, recursive: true });
     while (query) {
         var response
         try {

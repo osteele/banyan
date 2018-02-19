@@ -16,7 +16,16 @@ port getAccountInfo : String -> Cmd msg
 port signOut : () -> Cmd msg
 
 
-port listFiles : Bool -> Cmd msg
+
+-- includeDeleted, useCache
+
+
+{-| Request that JavaScript start initiating requests to Dropbox.
+
+    fromList (includeDeleted, useCache)
+
+-}
+port listFiles : ( Bool, Bool ) -> Cmd msg
 
 
 
