@@ -100,7 +100,7 @@ update msg model =
         -- list files
         ListFiles ->
             { model
-                | files = { initFileSyncModel | loadingTree = True }
+                | files = { initFileSyncModel | syncing = True }
                 , path = "/"
             }
                 ! [ listFiles False ]
@@ -113,8 +113,8 @@ update msg model =
                 syncModel_ =
                     { syncModel
                         | fileTree = FileTree.addEntries entries syncModel.fileTree
-                        , loadingTree = loading
-                        , loadedEntryCount = syncModel.loadedEntryCount + List.length entries
+                        , syncing = loading
+                        , syncedEntryCount = syncModel.syncedEntryCount + List.length entries
                         , requestCount = syncModel.requestCount + 1
                     }
             in
@@ -128,7 +128,7 @@ update msg model =
             { model
                 | files =
                     { syncModel
-                        | loadingTree = False
+                        | syncing = False
                         , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msg
                     }
             }

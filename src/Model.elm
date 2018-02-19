@@ -75,8 +75,8 @@ teamName model =
 
 type alias FileSyncModel =
     { fileTree : FileTree
-    , loadingTree : Bool
-    , loadedEntryCount : Int
+    , syncing : Bool
+    , syncedEntryCount : Int
     , requestCount : Int
     , errorMessage : Maybe String
     }
@@ -85,8 +85,8 @@ type alias FileSyncModel =
 initFileSyncModel : FileSyncModel
 initFileSyncModel =
     { fileTree = FileTree.empty
-    , loadingTree = False
-    , loadedEntryCount = 0
+    , syncing = False
+    , syncedEntryCount = 0
     , requestCount = 0
     , errorMessage = Nothing
     }

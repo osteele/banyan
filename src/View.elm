@@ -43,7 +43,7 @@ header model =
                     , span [ class "item" ] [ text config.description ]
                     , div [ class "right menu" ] <|
                         List.filterMap identity <|
-                            [ ifJust (isSignedIn model && not model.files.loadingTree) <|
+                            [ ifJust (isSignedIn model && not model.files.syncing) <|
                                 button
                                     [ class "item", onClick ListFiles ]
                                     [ text "Sync" ]
@@ -149,7 +149,7 @@ progress model =
     div
         [ class <|
             "ui message progress"
-                ++ (if model.files.loadingTree then
+                ++ (if model.files.syncing then
                         ""
                     else
                         " success"
@@ -161,13 +161,13 @@ progress model =
         , div [ class "label" ]
             [ text <|
                 String.join ""
-                    [ toStringWithCommas model.files.loadedEntryCount
+                    [ toStringWithCommas model.files.syncedEntryCount
                     , " entries totalling "
                     , humanize <| FileTree.nodeSize model.files.fileTree
                     , " loaded in "
                     , toString model.files.requestCount
                     , " requests"
-                    , if model.files.loadingTree then
+                    , if model.files.syncing then
                         "…"
                       else
                         "."
