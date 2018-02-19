@@ -99,40 +99,30 @@ update msg model =
 
         -- list files
         ListFiles ->
+            let
+                ( syncModel, cmd ) =
+                    updateSyncModel msg model.files
+            in
             { model
-                | files = { initFileSyncModel | syncing = True }
+                | files = syncModel
                 , path = "/"
             }
-                ! [ listFiles False ]
+                ! [ cmd ]
 
-        FileList entries loading ->
+        FileList _ _ ->
             let
-                syncModel =
-                    model.files
-
-                syncModel_ =
-                    { syncModel
-                        | fileTree = FileTree.addEntries entries syncModel.fileTree
-                        , syncing = loading
-                        , syncedEntryCount = syncModel.syncedEntryCount + List.length entries
-                        , requestCount = syncModel.requestCount + 1
-                    }
+                ( syncModel, cmd ) =
+                    updateSyncModel msg model.files
             in
-            update RenderFileTreeMap { model | files = syncModel_ }
+            -- TODO include cmd
+            update RenderFileTreeMap { model | files = syncModel }
 
-        FileListError msg ->
+        FileListError _ ->
             let
-                syncModel =
-                    model.files
+                ( syncModel, cmd ) =
+                    updateSyncModel msg model.files
             in
-            { model
-                | files =
-                    { syncModel
-                        | syncing = False
-                        , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msg
-                    }
-            }
-                ! []
+            { model | files = syncModel } ! [ cmd ]
 
         RenderFileTreeMap ->
             model
@@ -147,6 +137,33 @@ update msg model =
 
         TreeDepth n ->
             { model | depth = n } ! []
+
+
+updateSyncModel : Msg -> FileSyncModel -> ( FileSyncModel, Cmd msg )
+updateSyncModel msg model =
+    case msg of
+        ListFiles ->
+            { initFileSyncModel | syncing = True }
+                ! [ listFiles False ]
+
+        FileList entries loading ->
+            { model
+                | fileTree = FileTree.addEntries entries model.fileTree
+                , syncing = loading
+                , syncedEntryCount = model.syncedEntryCount + List.length entries
+                , requestCount = model.requestCount + 1
+            }
+                ! []
+
+        FileListError msg ->
+            { model
+                | syncing = False
+                , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msg
+            }
+                ! []
+
+        _ ->
+            model ! []
 
 
 clearLocationHash : Model -> Cmd msg
