@@ -16,10 +16,7 @@ type alias Model =
     , auth : Maybe Dropbox.UserAuth
 
     -- tree and loading status
-    , fileTree : FileTree
-    , loadingTree : Bool
-    , loadedEntryCount : Int
-    , requestCount : Int
+    , files : FileSyncModel
 
     -- view state
     , path : String
@@ -39,10 +36,7 @@ init clientId location =
     , clientId = clientId
 
     -- tree and loading status
-    , fileTree = FileTree.empty
-    , loadingTree = False
-    , loadedEntryCount = 0
-    , requestCount = 0
+    , files = initFileSyncModel
 
     -- view state
     , path = "/"
@@ -51,15 +45,16 @@ init clientId location =
     }
 
 
+
+-- account
+
+
 clearAccountFields : Model -> Model
 clearAccountFields model =
     { model
         | auth = Nothing
         , accountInfo = Nothing
-        , fileTree = FileTree.empty
-        , loadingTree = False
-        , loadedEntryCount = 0
-        , requestCount = 0
+        , files = initFileSyncModel
         , path = "/"
     }
 
@@ -69,11 +64,37 @@ isSignedIn model =
     model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False
 
 
+teamName : Model -> String
+teamName model =
+    model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal"
+
+
+
+-- files
+
+
+type alias FileSyncModel =
+    { fileTree : FileTree
+    , loadingTree : Bool
+    , loadedEntryCount : Int
+    , requestCount : Int
+    }
+
+
+initFileSyncModel : FileSyncModel
+initFileSyncModel =
+    { fileTree = FileTree.empty
+    , loadingTree = False
+    , loadedEntryCount = 0
+    , requestCount = 0
+    }
+
+
 subtree : Model -> FileTree
 subtree model =
-    model.fileTree
+    model.files.fileTree
         |> FileTree.getSubtree model.path
-        |> Maybe.withDefault model.fileTree
+        |> Maybe.withDefault model.files.fileTree
 
 
 subtreeTitle : Model -> String
@@ -85,8 +106,3 @@ subtreeTitle model =
                 |> .path
     in
     teamName model ++ path
-
-
-teamName : Model -> String
-teamName model =
-    model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal"

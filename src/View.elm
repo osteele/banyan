@@ -43,7 +43,7 @@ header model =
                     , span [ class "item" ] [ text config.description ]
                     , div [ class "right menu" ] <|
                         List.filterMap identity <|
-                            [ ifJust (isSignedIn model && not model.loadingTree) <|
+                            [ ifJust (isSignedIn model && not model.files.loadingTree) <|
                                 button
                                     [ class "item", onClick ListFiles ]
                                     [ text "Sync" ]
@@ -91,7 +91,7 @@ content model =
                     [ column [] [ treeList model ]
                     , column [] [ treeMap model ]
                     ]
-            , ifJust (model.requestCount > 0) <|
+            , ifJust (model.files.requestCount > 0) <|
                 progress model
             ]
 
@@ -146,21 +146,34 @@ breadcrumb_ hn sep model =
 
 progress : Model -> Html Msg
 progress model =
-    div [ class "ui message" ] <|
-        List.singleton <|
-            text <|
+    div
+        [ class <|
+            "ui message progress"
+                ++ (if model.files.loadingTree then
+                        ""
+                    else
+                        " success"
+                   )
+
+        --    data-value data-total
+        ]
+        [ div [ class "bar" ] [ div [ class "progress" ] [] ]
+        , div [ class "label" ]
+            [ text <|
                 String.join ""
-                    [ toStringWithCommas model.loadedEntryCount
+                    [ toStringWithCommas model.files.loadedEntryCount
                     , " entries totalling "
-                    , humanize <| FileTree.nodeSize model.fileTree
+                    , humanize <| FileTree.nodeSize model.files.fileTree
                     , " loaded in "
-                    , toString model.requestCount
+                    , toString model.files.requestCount
                     , " requests"
-                    , if model.loadingTree then
+                    , if model.files.loadingTree then
                         "…"
                       else
                         "."
                     ]
+            ]
+        ]
 
 
 treeMap : Model -> Html Msg
@@ -221,7 +234,7 @@ treeList model =
         List.filterMap identity <|
             [ ifJust (isSignedIn model) <|
                 toolbar model
-            , ifJust (not <| FileTree.isEmpty model.fileTree) <|
+            , ifJust (not <| FileTree.isEmpty model.files.fileTree) <|
                 div [ class "tree" ]
                     [ subtree model model.depth (Just <| treeListTitle model) <| Model.subtree model ]
             ]

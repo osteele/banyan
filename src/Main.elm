@@ -97,33 +97,38 @@ update msg model =
         SetAccountInfo info ->
             update ListFiles { model | accountInfo = Just info }
 
-        -- list files
+        -- file list
         ListFiles ->
             { model
                 | debug = Nothing
-                , fileTree = FileTree.empty
-                , loadedEntryCount = 0
-                , loadingTree = True
+                , files = { initFileSyncModel | loadingTree = True }
                 , path = "/"
             }
                 ! [ listFiles False ]
 
         FileList entries loading ->
             let
-                model2 =
-                    { model
-                        | fileTree = FileTree.addEntries entries model.fileTree
+                syncModel =
+                    model.files
+
+                syncModel_ =
+                    { syncModel
+                        | fileTree = FileTree.addEntries entries syncModel.fileTree
                         , loadingTree = loading
-                        , loadedEntryCount = model.loadedEntryCount + List.length entries
-                        , requestCount = model.requestCount + 1
+                        , loadedEntryCount = syncModel.loadedEntryCount + List.length entries
+                        , requestCount = syncModel.requestCount + 1
                     }
             in
-            update RenderFileTreeMap model2
+            update RenderFileTreeMap { model | files = syncModel_ }
 
         FileListError msg ->
+            let
+                syncModel =
+                    model.files
+            in
             { model
                 | debug = Just <| Maybe.withDefault "Error listing files" <| msg
-                , loadingTree = False
+                , files = { syncModel | loadingTree = False }
             }
                 ! []
 
