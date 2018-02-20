@@ -3,6 +3,7 @@ import 'semantic-ui-css/semantic.min.css';
 import './src/Main.scss';
 
 import Elm from './src/Main.elm';
+// eslint-disable-next-line import/no-named-as-default, import/no-named-as-default-member
 import chart from './src/chart';
 
 const accessTokenKey = 'accessToken';
