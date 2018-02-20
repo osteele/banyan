@@ -1,0 +1,4 @@
+#!/bin/sh
+
+ln -sf ../../config/pre-commit-hook .git/hooks/pre-commit
+ln -sf ../../config/pre-push-hook .git/hooks/pre-push
