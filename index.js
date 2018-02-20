@@ -22,6 +22,9 @@ app.ports.listFiles.subscribe(async ([followCursor, useCache]) => {
     return;
   }
   const dbx = new Dropbox({ accessToken });
+
+  // If there's a cached entry, return it first.
+  // TODO Make this a separate function.
   let cache = null;
   if (!useCache && localStorage[fileCacheKey]) {
     cache = JSON.parse(localStorage[fileCacheKey]);
@@ -38,9 +41,12 @@ app.ports.listFiles.subscribe(async ([followCursor, useCache]) => {
       app.ports.receiveFileList.send([entries, true]);
     }
   }
+
+
   let query = cache.cursor
     ? dbx.filesListFolderContinue({ cursor: cache.cursor })
     : dbx.filesListFolder({ path, include_deleted: followCursor, recursive: true });
+
   // eslint-disable-next-line no-await-in-loop
   while (query) {
     let response;
@@ -49,6 +55,7 @@ app.ports.listFiles.subscribe(async ([followCursor, useCache]) => {
     } catch (error) {
       console.error('listFiles:', error);
       app.ports.receiveFileListError.send(error.message || error.error);
+      return;
     }
 
     const entries = response.entries.map(entry => (
@@ -67,12 +74,13 @@ app.ports.listFiles.subscribe(async ([followCursor, useCache]) => {
     entries.forEach((entry) => {
       cache.entries[entry.key] = entry;
     });
-    // localStorage['fileTree'] = JSON.stringify(cache);
+    // localStorage[fileCacheKey] = JSON.stringify(cache);
 
-    const more = Boolean(response.has_more);
-    app.ports.receiveFileList.send([entries, more]);
-
-    query = more && dbx.filesListFolderContinue({ cursor: response.cursor });
+    const hasMore = Boolean(response.has_more);
+    // initiate the query before processing these entries, in case this allows
+    // for greater parallelism
+    query = hasMore && dbx.filesListFolderContinue({ cursor: response.cursor });
+    app.ports.receiveFileList.send([entries, hasMore]);
   }
 });
 
