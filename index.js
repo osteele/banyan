@@ -6,6 +6,8 @@ import Elm from './src/Main.elm';
 import chart from './src/chart';
 
 const accessTokenKey = 'accessToken';
+const fileCacheKey = 'fileTree';
+
 let accessToken = localStorage[accessTokenKey] || null;
 
 const app = Elm.Main.embed(document.getElementById('app'), {
@@ -13,7 +15,7 @@ const app = Elm.Main.embed(document.getElementById('app'), {
   clientId: process.env.DROPBOX_APP_KEY,
 });
 
-app.ports.listFiles.subscribe(async ([includeDeleted, useCache]) => {
+app.ports.listFiles.subscribe(async ([followCursor, useCache]) => {
   const path = '';
   if (!accessToken) {
     app.ports.receiveFileListError.send('internal error: access token not set');
@@ -21,10 +23,8 @@ app.ports.listFiles.subscribe(async ([includeDeleted, useCache]) => {
   }
   const dbx = new Dropbox({ accessToken });
   let cache = null;
-  // eslint-disable-next-line dot-notation
-  if (!useCache && localStorage['fileTree']) {
-    // eslint-disable-next-line dot-notation
-    cache = JSON.parse(localStorage['fileTree']);
+  if (!useCache && localStorage[fileCacheKey]) {
+    cache = JSON.parse(localStorage[fileCacheKey]);
   }
   if (cache && cache.accessToken !== accessToken) {
     console.info('reset cache');
@@ -40,8 +40,8 @@ app.ports.listFiles.subscribe(async ([includeDeleted, useCache]) => {
   }
   let query = cache.cursor
     ? dbx.filesListFolderContinue({ cursor: cache.cursor })
-    : dbx.filesListFolder({ path, include_deleted: includeDeleted, recursive: true });
-    // eslint-disable-next-line no-await-in-loop
+    : dbx.filesListFolder({ path, include_deleted: followCursor, recursive: true });
+  // eslint-disable-next-line no-await-in-loop
   while (query) {
     let response;
     try {
@@ -77,7 +77,7 @@ app.ports.listFiles.subscribe(async ([includeDeleted, useCache]) => {
 });
 
 app.ports.getAccountInfo.subscribe(async (accessToken_) => {
-  const dbx = new Dropbox({ accessToken_ });
+  const dbx = new Dropbox({ accessToken: accessToken_ });
   const { name, team } = await dbx.usersGetCurrentAccount();
   const teamName = team ? team.name : 'Personal';
   app.ports.receiveAccountInfo.send({ teamName, name });
