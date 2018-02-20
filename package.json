@@ -10,12 +10,15 @@
     "start": "poi",
     "prebuild": "rimraf dist",
     "build": "poi build",
+    "lint": "eslint index.js src",
+    "format": "eslint --fix index.js src",
     "reinstall": "rimraf node_modules && yarn install && elm package install",
     "test": "elm test",
     "deploy": "yarn build && netlify deploy"
   },
   "devDependencies": {
     "elm": "^0.18.0",
+    "eslint": "^4.18.0",
     "node-sass": "^4.7.2",
     "poi": "^9.6.12",
     "poi-preset-elm": "^1.1.1",
