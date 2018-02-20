@@ -1,0 +1,10 @@
+{
+    "checks": {
+        "ExposeAll": false,
+        "ImportAll": false,
+        "TriggerWords": false
+    },
+    "excludedPaths": [
+        "../elm-dropbox"
+    ]
+}
