@@ -2,5 +2,4 @@ extends: airbnb-base
 env:
   browser: true
 rules:
-  indent: [2, 4]
   no-console: 0
