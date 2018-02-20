@@ -1,8 +1,9 @@
-module FileEntryTests exposing (..)
+module FileTreeTests exposing (..)
 
 import Dict
 import Expect exposing (Expectation)
 import FileEntry exposing (..)
+import FileTree exposing (..)
 import Test exposing (..)
 
 
@@ -42,7 +43,7 @@ suite =
         ]
 
 
-fromFilePaths : List String -> FileEntry.FileTree
+fromFilePaths : List String -> FileTree
 fromFilePaths paths =
     FileTree.empty
         |> addEntries (List.map (\p -> FileEntry dirTag (String.toLower p) p Nothing) paths)
