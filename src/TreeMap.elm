@@ -102,6 +102,6 @@ flatTreeMapM f s item =
             f s item
 
         ( t, s3 ) =
-            flatMapM (flatTreeMapM f) s <| Dict.values <| nodeChildren item
+            flatMapM (flatTreeMapM f) s2 <| Dict.values <| nodeChildren item
     in
     ( h :: t, s3 )

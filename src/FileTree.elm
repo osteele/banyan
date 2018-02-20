@@ -128,7 +128,7 @@ updateCache tree =
 
 
 updateTreeItem : List String -> (Maybe FileTree -> FileTree) -> List String -> FileTree -> FileTree
-updateTreeItem ks alter path tree =
+updateTreeItem keys alter path tree =
     let
         childAt k =
             emptyNode <| String.join "/" <| path ++ [ k ]
@@ -147,7 +147,7 @@ updateTreeItem ks alter path tree =
                     in
                     fn (FileEntry dirTag name name Nothing) 0 Dict.empty
     in
-    case ks of
+    case keys of
         [] ->
             alter <| Just tree
 

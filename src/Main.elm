@@ -155,10 +155,10 @@ updateSyncModel msg model =
             }
                 ! []
 
-        FileListError msg ->
+        FileListError msgText ->
             { model
                 | syncing = False
-                , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msg
+                , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msgText
             }
                 ! []
 
@@ -182,7 +182,7 @@ clearLocationHash model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
         , receiveFileList <| uncurry FileList
@@ -198,4 +198,9 @@ subscriptions model =
 extractAccessToken : Dropbox.UserAuth -> Maybe String
 extractAccessToken auth =
     -- TODO extract from JSON instead?
-    auth |> toString |> firstMatch (Regex.regex "Bearer \"(.+)\"")
+    auth |> toString |> firstMatch bearerRegex
+
+
+bearerRegex : Regex.Regex
+bearerRegex =
+    Regex.regex "Bearer \"(.+)\""

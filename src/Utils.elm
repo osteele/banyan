@@ -42,10 +42,15 @@ toStringWithCommas : num -> String
 toStringWithCommas =
     toString
         >> String.reverse
-        >> Regex.find Regex.All (Regex.regex "(\\d*\\.)?\\d{0,3}-?")
+        >> Regex.find Regex.All threeDigitsRegex
         >> List.map .match
         >> String.join ","
         >> String.reverse
+
+
+threeDigitsRegex : Regex.Regex
+threeDigitsRegex =
+    Regex.regex "(\\d*\\.)?\\d{0,3}-?"
 
 
 {-| Remove the prefix, if present.

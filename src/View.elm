@@ -4,7 +4,7 @@ import Color
 import Data exposing (..)
 import Dict
 import FileTree exposing (FileTree)
-import Html exposing (Html, button, div, span, text)
+import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id)
 import Html.Events exposing (onClick)
 import Message exposing (..)
@@ -177,7 +177,7 @@ progress model =
 
 
 treeMap : Model -> Html Msg
-treeMap model =
+treeMap _ =
     div [ id "treeMap" ] []
 
 
@@ -285,7 +285,7 @@ subtree model depth title tree =
                 , span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
                 ]
 
-        FileTree.Dir entry size children ->
+        FileTree.Dir entry size _ ->
             div
                 []
                 (div
