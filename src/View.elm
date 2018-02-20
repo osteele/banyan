@@ -83,7 +83,9 @@ content : Model -> Html Msg
 content model =
     div [ class "ui main container" ] <|
         List.filterMap identity <|
-            [ flash model
+            [ ifJust (model.files.requestCount > 0) <|
+                progress model
+            , flash model
             , ifJust (isSignedIn model) <|
                 breadcrumb model
             , Just <|
@@ -91,8 +93,6 @@ content model =
                     [ column [] [ treeList model ]
                     , column [] [ treeMap model ]
                     ]
-            , ifJust (model.files.requestCount > 0) <|
-                progress model
             ]
 
 
@@ -146,16 +146,26 @@ breadcrumb_ hn sep model =
 
 progress : Model -> Html Msg
 progress model =
+    let
+        dataTotal =
+            10
+
+        dataValue =
+            if model.files.syncing then
+                1
+            else
+                dataTotal
+    in
     div
         [ class <|
-            "ui message progress"
+            "ui progress"
                 ++ (if model.files.syncing then
                         ""
                     else
                         " success"
                    )
-
-        --    data-value data-total
+        , attribute "data-total" <| toString dataTotal
+        , attribute "data-value" <| toString dataValue
         ]
         [ div [ class "bar" ] [ div [ class "progress" ] [] ]
         , div [ class "label" ]
