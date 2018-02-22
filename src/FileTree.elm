@@ -171,8 +171,8 @@ updateTreeItem keys alter path tree =
                                 |> updateCache
 
 
-insert : String -> FileEntry -> FileTree -> FileTree
-insert ks entry =
+insert : FileEntry -> FileTree -> FileTree
+insert entry =
     let
         updateFile _ =
             File entry
@@ -196,7 +196,7 @@ insert ks entry =
 
 addEntries : List FileEntry -> FileTree -> FileTree
 addEntries entries tree =
-    List.foldl (\e -> insert e.key e) tree entries
+    List.foldl insert tree entries
 
 
 splitPath : String -> List String
