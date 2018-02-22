@@ -194,9 +194,50 @@ insert entry =
         updateTreeItem (splitPath entry.key) update [ "" ]
 
 
+remove : FileEntry -> FileTree -> FileTree
+remove entry =
+    let
+        updateChildren update entry =
+            case entry of
+                File _ ->
+                    entry
+
+                Dir entry cache children ->
+                    children |> update |> Dir entry cache |> updateCache
+
+        rm : List String -> FileTree -> FileTree
+        rm keys entry =
+            case entry of
+                File _ ->
+                    empty
+
+                Dir entry cache children ->
+                    case keys of
+                        [] ->
+                            empty
+
+                        [ k ] ->
+                            -- updateChildren (Dict.remove k) entry
+                            children |> Dict.remove k |> Dir entry cache |> updateCache
+
+                        k :: ks ->
+                            children |> Dict.update k (Maybe.map <| rm ks) |> Dir entry cache |> updateCache
+    in
+        rm <| splitPath entry.key
+
+
 addEntries : List FileEntry -> FileTree -> FileTree
 addEntries entries tree =
-    List.foldl insert tree entries
+    let
+        action entry =
+            case entry.tag of
+                "deleted" ->
+                    remove entry
+
+                _ ->
+                    insert entry
+    in
+        List.foldl action tree entries
 
 
 splitPath : String -> List String

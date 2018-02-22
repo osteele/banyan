@@ -9,9 +9,17 @@ type alias FileEntry =
     }
 
 
+deleteTag =
+    "deleted"
+
+
 dirTag : String
 dirTag =
     "folder"
+
+
+fileTag =
+    "file"
 
 
 isDir : FileEntry -> Bool

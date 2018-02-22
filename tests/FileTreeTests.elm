@@ -40,13 +40,47 @@ suite =
                 fromFilePaths [ "/Dir", "/dir/leaf" ]
                     |> get "/dir"
                     |> Expect.equal (Just <| dirEntry "/Dir")
+        , test "delete /dir deletes directory" <|
+            \_ ->
+                [ dirEntry "/dir"
+                , FileEntry deleteTag "/dir" "/dir" Nothing
+                ]
+                    |> fromEntries
+                    |> get "/dir"
+                    |> Expect.equal Nothing
+        , test "delete /dir deletes subdirectory" <|
+            \_ ->
+                [ dirEntry "/dir"
+                , dirEntry "/dir/subdir"
+                , FileEntry deleteTag "/dir" "/dir" Nothing
+                ]
+                    |> fromEntries
+                    |> get "/dir/subdir"
+                    |> Expect.equal Nothing
+        , test "delete /dir/subdir deletes subdirectory" <|
+            \_ ->
+                [ dirEntry "/dir"
+                , dirEntry "/dir/subdir"
+                , FileEntry deleteTag "/dir/subdir" "/dir/subdir" Nothing
+                ]
+                    |> fromEntries
+                    |> Expect.all
+                        [ get "/dir" >> Expect.equal (Just <| dirEntry "/dir")
+                        , get "/dir/subdir" >> Expect.equal Nothing
+                        ]
         ]
+
+
+fromEntries : List FileEntry -> FileTree
+fromEntries entries =
+    FileTree.empty |> addEntries entries
 
 
 fromFilePaths : List String -> FileTree
 fromFilePaths paths =
-    FileTree.empty
-        |> addEntries (List.map (\p -> FileEntry dirTag (String.toLower p) p Nothing) paths)
+    paths
+        |> List.map (\p -> FileEntry dirTag (String.toLower p) p Nothing)
+        |> fromEntries
 
 
 dirEntry : String -> FileEntry
