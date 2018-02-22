@@ -120,28 +120,28 @@ breadcrumb_ hn sep model =
                 |> List.map (String.join "/")
                 |> zip dirs
     in
-    model
-        |> Model.subtree
-        |> FileTree.itemEntry
-        |> .path
-        |> String.split "/"
-        |> withPrefixes
-        |> List.map
-            (\( dir, prefix ) ->
-                div
-                    [ class "section" ]
-                    [ Html.a
-                        [ onClick <| Focus prefix ]
-                        [ text <|
-                            if dir == "" then
-                                teamName model
-                            else
-                                dir
+        model
+            |> Model.subtree
+            |> FileTree.itemEntry
+            |> .path
+            |> String.split "/"
+            |> withPrefixes
+            |> List.map
+                (\( dir, prefix ) ->
+                    div
+                        [ class "section" ]
+                        [ Html.a
+                            [ onClick <| Focus prefix ]
+                            [ text <|
+                                if dir == "" then
+                                    teamName model
+                                else
+                                    dir
+                            ]
                         ]
-                    ]
-            )
-        |> List.intersperse sep
-        |> hn [ class "ui breadcrumb header" ]
+                )
+            |> List.intersperse sep
+            |> hn [ class "ui breadcrumb header" ]
 
 
 progress : Model -> Html Msg
@@ -156,34 +156,34 @@ progress model =
             else
                 dataTotal
     in
-    div
-        [ class <|
-            "ui progress"
-                ++ (if model.files.syncing then
-                        ""
-                    else
-                        " success"
-                   )
-        , attribute "data-total" <| toString dataTotal
-        , attribute "data-value" <| toString dataValue
-        ]
-        [ div [ class "bar" ] [ div [ class "progress" ] [] ]
-        , div [ class "label" ]
-            [ text <|
-                String.join ""
-                    [ toStringWithCommas model.files.syncedEntryCount
-                    , " entries totalling "
-                    , humanize <| FileTree.nodeSize model.files.fileTree
-                    , " loaded in "
-                    , toString model.files.requestCount
-                    , " requests"
-                    , if model.files.syncing then
-                        "…"
-                      else
-                        "."
-                    ]
+        div
+            [ class <|
+                "ui progress"
+                    ++ (if model.files.syncing then
+                            ""
+                        else
+                            " success"
+                       )
+            , attribute "data-total" <| toString dataTotal
+            , attribute "data-value" <| toString dataValue
             ]
-        ]
+            [ div [ class "bar" ] [ div [ class "progress" ] [] ]
+            , div [ class "label" ]
+                [ text <|
+                    String.join ""
+                        [ toStringWithCommas model.files.syncedEntryCount
+                        , " entries totalling "
+                        , humanize <| FileTree.nodeSize model.files.fileTree
+                        , " loaded in "
+                        , toString model.files.requestCount
+                        , " requests"
+                        , if model.files.syncing then
+                            "…"
+                          else
+                            "."
+                        ]
+                ]
+            ]
 
 
 treeMap : Model -> Html Msg
@@ -287,27 +287,27 @@ subtree model depth title tree =
                     )
                 ]
     in
-    case tree of
-        FileTree.File entry ->
-            div
-                [ class "clearfix" ]
-                [ text <| takeFileName <| entry.path
-                , span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
-                ]
-
-        FileTree.Dir entry size _ ->
-            div
-                []
-                (div
-                    [ class "clearfix text-primary" ]
-                    [ flip Maybe.withDefault title <|
-                        Html.a
-                            [ onClick <| Focus entry.key ]
-                            [ text <| takeFileName entry.path ]
-                    , span [ class "float-right" ] [ text <| humanize size ]
+        case tree of
+            FileTree.File entry ->
+                div
+                    [ class "clearfix" ]
+                    [ text <| takeFileName <| entry.path
+                    , span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
                     ]
-                    :: childViews
-                )
+
+            FileTree.Dir entry size _ ->
+                div
+                    []
+                    (div
+                        [ class "clearfix text-primary" ]
+                        [ flip Maybe.withDefault title <|
+                            Html.a
+                                [ onClick <| Focus entry.key ]
+                                [ text <| takeFileName entry.path ]
+                        , span [ class "float-right" ] [ text <| humanize size ]
+                        ]
+                        :: childViews
+                    )
 
 
 

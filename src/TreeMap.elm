@@ -27,7 +27,7 @@ fileTreeMap depth fileTree =
         title =
             dropPrefix "/" path |> Maybe.withDefault path
     in
-    curry chart title <| toNodes <| trimTree depth fileTree
+        curry chart title <| toNodes <| trimTree depth fileTree
 
 
 toNodes : FileTree -> List Node
@@ -53,9 +53,9 @@ toNodes fileTree =
                 ( childNodes, ( _, nextId2 ) ) =
                     flatMapM f ( Just nodeId, nextId ) <| Dict.values <| nodeChildren item
             in
-            ( node :: childNodes, ( parent, nextId2 ) )
+                ( node :: childNodes, ( parent, nextId2 ) )
     in
-    Tuple.first <| flatMapM f ( Nothing, 0 ) <| Dict.values <| nodeChildren fileTree
+        Tuple.first <| flatMapM f ( Nothing, 0 ) <| Dict.values <| nodeChildren fileTree
 
 
 
@@ -104,4 +104,4 @@ flatTreeMapM f s item =
         ( t, s3 ) =
             flatMapM (flatTreeMapM f) s2 <| Dict.values <| nodeChildren item
     in
-    ( h :: t, s3 )
+        ( h :: t, s3 )

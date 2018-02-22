@@ -57,7 +57,7 @@ getSubtree path tree =
                 d :: pt ->
                     nodeChildren t |> Dict.get d |> Maybe.andThen (get_ pt)
     in
-    get_ (splitPath <| String.toLower path) tree
+        get_ (splitPath <| String.toLower path) tree
 
 
 get : String -> FileTree -> Maybe FileEntry
@@ -121,7 +121,7 @@ updateCache tree =
                 s =
                     children |> Dict.values |> List.map nodeSize |> List.sum
             in
-            Dir e s children
+                Dir e s children
 
         _ ->
             tree
@@ -145,30 +145,30 @@ updateTreeItem keys alter path tree =
                         name =
                             String.join "/" path
                     in
-                    fn (FileEntry dirTag name name Nothing) 0 Dict.empty
+                        fn (FileEntry dirTag name name Nothing) 0 Dict.empty
     in
-    case keys of
-        [] ->
-            alter <| Just tree
+        case keys of
+            [] ->
+                alter <| Just tree
 
-        k :: [] ->
-            withDirItem <|
-                \entry _ children ->
-                    Dict.update k (Just << alter) children
-                        |> Dir entry 0
-                        |> updateCache
+            k :: [] ->
+                withDirItem <|
+                    \entry _ children ->
+                        Dict.update k (Just << alter) children
+                            |> Dir entry 0
+                            |> updateCache
 
-        k :: ks ->
-            let
-                alt =
-                    updateTreeItem ks alter (path ++ [ k ])
-                        << Maybe.withDefault (childAt k)
-            in
-            withDirItem <|
-                \entry _ children ->
-                    Dict.update k (Just << alt) children
-                        |> Dir entry 0
-                        |> updateCache
+            k :: ks ->
+                let
+                    alt =
+                        updateTreeItem ks alter (path ++ [ k ])
+                            << Maybe.withDefault (childAt k)
+                in
+                    withDirItem <|
+                        \entry _ children ->
+                            Dict.update k (Just << alt) children
+                                |> Dir entry 0
+                                |> updateCache
 
 
 insert : String -> FileEntry -> FileTree -> FileTree
@@ -191,7 +191,7 @@ insert ks entry =
             else
                 updateFile
     in
-    updateTreeItem (splitPath entry.key) update [ "" ]
+        updateTreeItem (splitPath entry.key) update [ "" ]
 
 
 addEntries : List FileEntry -> FileTree -> FileTree

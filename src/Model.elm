@@ -107,4 +107,4 @@ subtreeTitle model =
                 |> FileTree.itemEntry
                 |> .path
     in
-    teamName model ++ path
+        teamName model ++ path

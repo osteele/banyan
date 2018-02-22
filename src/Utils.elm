@@ -82,7 +82,7 @@ flatMapM f s xs =
                 ( r2, s3 ) =
                     flatMapM f s2 t
             in
-            ( r1 ++ r2, s3 )
+                ( r1 ++ r2, s3 )
 
 
 {-| Find the first matching substring.

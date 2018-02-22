@@ -103,26 +103,26 @@ update msg model =
                 ( syncModel, cmd ) =
                     updateSyncModel msg model.files
             in
-            { model
-                | files = syncModel
-                , path = "/"
-            }
-                ! [ cmd ]
+                { model
+                    | files = syncModel
+                    , path = "/"
+                }
+                    ! [ cmd ]
 
         FileList _ _ ->
             let
                 ( syncModel, cmd ) =
                     updateSyncModel msg model.files
             in
-            -- TODO include cmd
-            update RenderFileTreeMap { model | files = syncModel }
+                -- TODO include cmd
+                update RenderFileTreeMap { model | files = syncModel }
 
         FileListError _ ->
             let
                 ( syncModel, cmd ) =
                     updateSyncModel msg model.files
             in
-            { model | files = syncModel } ! [ cmd ]
+                { model | files = syncModel } ! [ cmd ]
 
         RenderFileTreeMap ->
             model
@@ -172,9 +172,9 @@ clearLocationHash model =
         location =
             model.location
     in
-    Navigation.modifyUrl <|
-        String.join ""
-            [ location.protocol, "//", location.host, location.pathname ]
+        Navigation.modifyUrl <|
+            String.join ""
+                [ location.protocol, "//", location.host, location.pathname ]
 
 
 
