@@ -1,21 +1,36 @@
 # Banyan
 
-A Dropbox directory size browser.
+Browse your Dropbox directory size.
 
-## Install
+![](./docs/screenshot.png)
+
+## Develop
+
+### Install
+
+Install [yarn](https://yarnpkg.com).
 
 ```bash
 $ yarn install
-…
 $ elm-package install
-…
 ```
 
-## Run
+### Run
 
 ```bash
 $ yarn start
-…
+```
+
+### Test
+
+```bash
+$ yarn test
+```
+
+### Lint
+
+```bash
+$ yarn lint
 ```
 
 ## Acknowledgements
