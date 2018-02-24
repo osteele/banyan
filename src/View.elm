@@ -15,7 +15,7 @@ import Utils exposing (..)
 config : { color : Maybe Color.Color, githubUrl : String, title : String, description : String }
 config =
     { title = "Banyan"
-    , description = "A Dropbox file size browser."
+    , description = "File size browser for Dropbox."
     , color = Just Color.blue
     , githubUrl = "https://github.com/osteele/banyan"
     }
@@ -26,7 +26,25 @@ view model =
     div []
         [ header model
         , githubLink
-        , content model
+        , if isSignedIn model then
+            content model
+          else
+            help
+        ]
+
+
+help : Html Msg
+help =
+    div [ class "ui text container" ]
+        [ Html.p [] [ text "Sign into Dropbox, to browse files and folders by size." ]
+        , Html.figure [ class "" ]
+            [ Html.img
+                [ Html.Attributes.src "/screenshot-view.png"
+                , class "ui big rounded bordered fluid image"
+                ]
+                []
+            , Html.caption [] [ text "Screenshot" ]
+            ]
         ]
 
 
