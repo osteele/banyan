@@ -5,7 +5,7 @@ import Data exposing (..)
 import Dict
 import FileTree exposing (FileTree)
 import Html exposing (Html, div, span, text)
-import Html.Attributes exposing (attribute, class, href, id)
+import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
 import Message exposing (..)
 import Model exposing (..)
@@ -147,41 +147,55 @@ breadcrumb_ hn sep model =
 progress : Model -> Html Msg
 progress model =
     let
-        dataTotal =
-            10
+        files =
+            model.files
 
-        dataValue =
-            if model.files.syncing then
-                1
+        loading =
+            files.syncing
+
+        requestsF =
+            toFloat files.requestCount
+
+        frac =
+            if loading then
+                requestsF / (requestsF + 1.0)
             else
-                dataTotal
+                1.0
+
+        width =
+            (frac * 100 |> toString |> flip (++) "%")
     in
         div
             [ class <|
                 "ui progress"
-                    ++ (if model.files.syncing then
+                    ++ (if loading then
                             ""
                         else
                             " success"
                        )
-            , attribute "data-total" <| toString dataTotal
-            , attribute "data-value" <| toString dataValue
             ]
-            [ div [ class "bar" ] [ div [ class "progress" ] [] ]
+            [ div
+                [ class "bar"
+                , style [ ( "width", width ) ]
+                ]
+                [ div [ class "progress" ] [] ]
             , div [ class "label" ]
                 [ text <|
-                    String.join ""
-                        [ toStringWithCommas model.files.syncedEntryCount
+                    String.join "" <|
+                        [ "Loaded "
+                        , toStringWithCommas files.syncedEntryCount
                         , " entries totalling "
-                        , humanize <| FileTree.nodeSize model.files.fileTree
-                        , " loaded in "
-                        , toString model.files.requestCount
-                        , " requests"
-                        , if model.files.syncing then
-                            "…"
-                          else
-                            "."
+                        , humanize <| FileTree.nodeSize files.fileTree
                         ]
+                            ++ (if loading then
+                                    [ " in "
+                                    , toString files.requestCount
+                                    , " requests…"
+                                    ]
+                                else
+                                    [ "."
+                                    ]
+                               )
                 ]
             ]
 
