@@ -1,3 +1,19 @@
+.app {
+    position: relative;
+}
+
+.github-link {
+    display: block;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    text-decoration: none !important;
+}
+
+.ui.borderless.menu {
+    margin-bottom: 10px;
+}
+
 a {
     text-decoration: underline !important;
     cursor: pointer;

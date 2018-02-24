@@ -25,6 +25,7 @@ view : Model -> Html Msg
 view model =
     div []
         [ header model
+        , githubLink
         , content model
         ]
 
@@ -35,28 +36,30 @@ view model =
 
 header : Model -> Html Msg
 header model =
-    div [ class "ui top borderless inverted menu" ]
-        [ div [ class "ui container grid" ] <|
-            List.singleton <|
-                row []
-                    [ Html.h1 [ class "header item" ] [ text config.title ]
-                    , span [ class "item" ] [ text config.description ]
-                    , div [ class "right menu" ] <|
-                        List.filterMap identity <|
-                            [ ifJust (isSignedIn model && not model.files.syncing) <|
-                                button
-                                    [ class "item", onClick ListFiles ]
-                                    [ text "Sync" ]
-                            , Just <| signInOut model
-                            ]
-                    , Html.a
-                        [ class "link item"
-                        , href config.githubUrl
-                        , attribute "target" "_"
-                        ]
-                        [ icon [ class "large github" ] [] ]
+    div [ class "ui container" ]
+        [ div [ class "ui borderless inverted menu" ]
+            [ Html.h1 [ class "header item" ] [ text config.title ]
+            , span [ class "item" ] [ text config.description ]
+            , div [ class "right menu" ] <|
+                List.filterMap identity <|
+                    [ ifJust (isSignedIn model && not model.files.syncing) <|
+                        button
+                            [ class "item", onClick ListFiles ]
+                            [ text "Sync" ]
+                    , Just <| signInOut model
                     ]
+            ]
         ]
+
+
+githubLink : Html msg
+githubLink =
+    Html.a
+        [ class "link item github-link"
+        , href config.githubUrl
+        , attribute "target" "_"
+        ]
+        [ icon [ class "huge github" ] [] ]
 
 
 signInOut : Model -> Html Msg
