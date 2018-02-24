@@ -216,27 +216,30 @@ toolbar : Model -> Html Msg
 toolbar model =
     div
         [ class "toolbar" ]
-        [ div [ class "ui mini buttons" ] <|
-            List.map
-                (\n ->
-                    button
-                        [ if n == model.depth then
-                            class "active"
-                          else
-                            class ""
-                        , class "compact"
-                        , onClick <| TreeDepth n
-                        ]
-                        [ text <| toString n ]
-                )
-            <|
-                [ 1, 2, 3 ]
+        [ div [ class "ui buttons" ] <|
+            [ button [ class "disabled" ] [ text "Levels" ] ]
+                ++ List.map (foldDepthButton model)
+                    [ 1, 2, 3 ]
         , div [ class "ui buttons float-right" ]
-            [ sortOrderButton Alphabetic "alphabet ascending" model
+            [ button [ class "disabled" ] [ text "Sort" ]
+            , sortOrderButton Alphabetic "alphabet ascending" model
             , sortOrderButton DescendingSize "numeric descending" model
             , sortOrderButton AscendingSize "numeric ascending" model
             ]
         ]
+
+
+foldDepthButton : Model -> Int -> Html Msg
+foldDepthButton model depth =
+    button
+        [ if depth == model.depth then
+            class "active"
+          else
+            class ""
+        , class "compact"
+        , onClick <| TreeDepth depth
+        ]
+        [ text <| toString depth ]
 
 
 sortOrderButton : SortOrder -> String -> Model -> Html Msg
