@@ -19,22 +19,22 @@ view model =
         , if isSignedIn model then
             content model
           else
-            help
+            startView
         ]
 
 
-help : Html Msg
-help =
+startView : Html Msg
+startView =
     div [ class "ui text container" ]
-        [ Html.p [] [ text "Sign into Dropbox to browse files and folders by size." ]
-        , Html.figure [ class "" ]
-            [ Html.img
-                [ Html.Attributes.src "/screenshot-view.png"
-                , class "ui big rounded bordered fluid image"
-                ]
-                []
-            , Html.caption [] [ text "Example screen." ]
+        [ Html.p []
+            [ Html.a [ class "link item", onClick SignIn ] [ text "Sign in" ]
+            , text " to Dropbox to browse files and folders by size."
             ]
+        , Html.img
+            [ class "ui big rounded bordered fluid image"
+            , Html.Attributes.src "/screenshot-view.png"
+            ]
+            []
         ]
 
 
