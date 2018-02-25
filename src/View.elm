@@ -1,6 +1,5 @@
 module View exposing (..)
 
-import Color
 import Data exposing (..)
 import Dict
 import FileTree exposing (FileTree)
@@ -10,15 +9,6 @@ import Html.Events exposing (onClick)
 import Message exposing (..)
 import Model exposing (..)
 import Utils exposing (..)
-
-
-config : { color : Maybe Color.Color, githubUrl : String, title : String, description : String }
-config =
-    { title = "Banyan"
-    , description = "File size browser for Dropbox."
-    , color = Just Color.blue
-    , githubUrl = "https://github.com/osteele/banyan"
-    }
 
 
 view : Model -> Html Msg
@@ -36,14 +26,14 @@ view model =
 help : Html Msg
 help =
     div [ class "ui text container" ]
-        [ Html.p [] [ text "Sign into Dropbox, to browse files and folders by size." ]
+        [ Html.p [] [ text "Sign into Dropbox to browse files and folders by size." ]
         , Html.figure [ class "" ]
             [ Html.img
                 [ Html.Attributes.src "/screenshot-view.png"
                 , class "ui big rounded bordered fluid image"
                 ]
                 []
-            , Html.caption [] [ text "Screenshot" ]
+            , Html.caption [] [ text "Example screen." ]
             ]
         ]
 
@@ -56,8 +46,8 @@ header : Model -> Html Msg
 header model =
     div [ class "ui container" ]
         [ div [ class "ui borderless inverted menu" ]
-            [ Html.h1 [ class "header item" ] [ text config.title ]
-            , span [ class "item" ] [ text config.description ]
+            [ Html.h1 [ class "header item" ] [ text "Banyan" ]
+            , span [ class "item" ] [ text "Dropbox directory size browser" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
                     [ ifJust (isSignedIn model && not model.files.syncing) <|
@@ -74,7 +64,7 @@ githubLink : Html msg
 githubLink =
     Html.a
         [ class "link item github-link"
-        , href config.githubUrl
+        , href "https://github.com/osteele/banyan"
         , attribute "target" "_"
         ]
         [ icon [ class "huge github" ] [] ]
