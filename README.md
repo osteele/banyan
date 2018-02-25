@@ -59,4 +59,5 @@ and demonstrations.
 
 ## License
 
-Copyright 2018 by Oliver Steele. All rights reserved.
+MIT
+
