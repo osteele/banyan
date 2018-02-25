@@ -49,9 +49,9 @@ Build with [Elm](http://elm-lang.org/),
 UI](https://semantic-ui.com/), and [Poi](https://poi.js.org/#/).
 
 The [Banyan tree
-image](https://commons.wikimedia.org/wiki/File:Banyan_tree_(PSF).png) has
-donated to the Wikimedia Foundation by Pearson Scott Foresman, and is
-in the public domain.
+image](https://commons.wikimedia.org/wiki/File:Banyan_tree_(PSF).png) that's
+used in this app's Dropbox OAuth page was donated to the Wikimedia Foundation by
+Pearson Scott Foresman, and is in the public domain.
 
 Highcharts is used under
 the Creative Commons (CC) Attribution-NonCommercial licence for personal use
