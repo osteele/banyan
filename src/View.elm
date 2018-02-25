@@ -11,6 +11,11 @@ import Model exposing (..)
 import Utils exposing (..)
 
 
+githubURL : String
+githubURL =
+    "https://github.com/osteele/banyan"
+
+
 view : Model -> Html Msg
 view model =
     div []
@@ -23,21 +28,6 @@ view model =
         ]
 
 
-startView : Html Msg
-startView =
-    div [ class "ui text container" ]
-        [ Html.p []
-            [ Html.a [ class "link item", onClick SignIn ] [ text "Sign in" ]
-            , text " to Dropbox to browse files and folders by size."
-            ]
-        , Html.img
-            [ class "ui big rounded bordered fluid image"
-            , Html.Attributes.src "/screenshot-view.png"
-            ]
-            []
-        ]
-
-
 
 -- header
 
@@ -46,8 +36,10 @@ header : Model -> Html Msg
 header model =
     div [ class "ui container" ]
         [ div [ class "ui borderless inverted menu" ]
-            [ Html.h1 [ class "header item" ] [ text "Banyan" ]
-            , span [ class "item" ] [ text "Dropbox directory size browser" ]
+            [ -- div [ class "header item logo" ]
+              --     [ Html.img [ Html.Attributes.src "/logo.png" ] []
+              --     ]
+              Html.h1 [ class "header item" ] [ text "Banyan" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
                     [ ifJust (isSignedIn model && not model.files.syncing) <|
@@ -63,8 +55,8 @@ header model =
 githubLink : Html msg
 githubLink =
     Html.a
-        [ class "link item github-link"
-        , href "https://github.com/osteele/banyan"
+        [ class "github link item"
+        , href githubURL
         , attribute "target" "_"
         ]
         [ icon [ class "huge github" ] [] ]
@@ -84,6 +76,21 @@ signInOut model =
             [ icon [ class "large link sign in" ] []
             , text "Sign into Dropbox"
             ]
+
+
+startView : Html Msg
+startView =
+    div [ class "ui text container" ]
+        [ Html.p []
+            [ Html.a [ class "link item", onClick SignIn ] [ text "Sign in" ]
+            , text " to Dropbox to browse files and folders by size."
+            ]
+        , Html.img
+            [ class "ui big rounded bordered fluid image"
+            , Html.Attributes.src "/screenshot-view.png"
+            ]
+            []
+        ]
 
 
 
@@ -228,7 +235,7 @@ toolbar model =
             [ button [ class "disabled" ] [ text "Levels" ] ]
                 ++ List.map (foldDepthButton model)
                     [ 1, 2, 3 ]
-        , div [ class "ui buttons float-right" ]
+        , div [ class "right floated ui buttons" ]
             [ button [ class "disabled" ] [ text "Sort" ]
             , sortOrderButton Alphabetic "alphabet ascending" model
             , sortOrderButton DescendingSize "numeric descending" model
