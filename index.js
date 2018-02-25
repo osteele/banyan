@@ -16,8 +16,8 @@ const app = Elm.Main.embed(document.getElementById('app'), {
   clientId: process.env.DROPBOX_APP_KEY,
 });
 
-app.ports.listFiles.subscribe(async ([followCursor, useCache]) => {
-  const path = '';
+app.ports.listFolder.subscribe(async (params) => {
+  const useCache = false;
   if (!accessToken) {
     app.ports.receiveFileListError.send('internal error: access token not set');
     return;
@@ -43,10 +43,13 @@ app.ports.listFiles.subscribe(async ([followCursor, useCache]) => {
     }
   }
 
-
   let query = cache.cursor
     ? dbx.filesListFolderContinue({ cursor: cache.cursor })
-    : dbx.filesListFolder({ path, include_deleted: followCursor, recursive: true });
+    : dbx.filesListFolder({
+      path: params.path,
+      recursive: params.recursive,
+      include_deleted: params.includeDeleted,
+    });
 
   // eslint-disable-next-line no-await-in-loop
   while (query) {

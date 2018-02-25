@@ -17,7 +17,14 @@ port signOut : () -> Cmd msg
 
 
 
--- includeDeleted, useCache
+-- from https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder
+
+
+type alias ListFolderParameters =
+    { path : String
+    , recursive : Bool
+    , includeDeleted : Bool
+    }
 
 
 {-| Request that JavaScript start initiating requests to Dropbox.
@@ -25,7 +32,7 @@ port signOut : () -> Cmd msg
     fromList (includeDeleted, useCache)
 
 -}
-port listFiles : ( Bool, Bool ) -> Cmd msg
+port listFolder : ListFolderParameters -> Cmd msg
 
 
 
