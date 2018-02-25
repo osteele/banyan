@@ -23,6 +23,19 @@ the `banyan` workspace:
 $ (cd .. && git clone https://github.com/osteele/elm-dropbox.git)
 ```
 
+### Create a Dropbox API Key
+
+Sign into Dropbox.
+
+[Create a new app](https://www.dropbox.com/developers/apps/create). Select
+“Dropbox API”, and give it “Full Dropbox” access.
+
+Add `http://localhost:4000/` to the list of Redirect URIs.
+
+Set the `DROPBOX_APP_KEY` environment variable to the app's API key. (If you use
+[direnv](https://direnv.net/), you can copy `.envrc.template` to `.envrc` and
+edit the key into that file.)
+
 ### Run
 
 ```bash
