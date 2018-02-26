@@ -1,6 +1,6 @@
 # Banyan
 
-Browse your Dropbox directory size.
+Visualize Dropbox file and directory sizes.
 
 ![](./docs/screenshot.png)
 
