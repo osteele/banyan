@@ -6,6 +6,7 @@ import Message exposing (..)
 import Model exposing (..)
 import Navigation
 import Ports exposing (..)
+import ListFolder exposing (..)
 import Regex
 import Task
 import TreeMap exposing (fileTreeMap)
