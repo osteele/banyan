@@ -5,7 +5,7 @@
   "homepage": "https://github.com/osteele/banyan",
   "author": "Oliver Steele <steele@osteele.com>",
   "repository": "github:osteele/banyan",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "start": "poi",
     "prebuild": "rimraf dist",
