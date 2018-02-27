@@ -91,7 +91,7 @@ update msg model =
 
         SignOut ->
             clearAccountFields model
-                ! [ signOut ()
+                ! [ removeAccountInfo ()
                   , clearLocationHash model
                   ]
 
@@ -101,29 +101,21 @@ update msg model =
         -- list files
         ListFiles ->
             let
-                ( syncModel, cmd ) =
-                    updateSyncModel msg model.files
+                ( model_, cmd ) =
+                    updateFileList msg model
             in
-                { model
-                    | files = syncModel
-                    , path = "/"
-                }
-                    ! [ cmd ]
+                { model_ | path = "/" } ! [ cmd ]
 
         FileList _ _ ->
             let
-                ( syncModel, cmd ) =
-                    updateSyncModel msg model.files
+                ( model_, cmd ) =
+                    updateFileList msg model
             in
                 -- TODO include cmd
-                update RenderFileTreeMap { model | files = syncModel }
+                update RenderFileTreeMap model_
 
         FileListError _ ->
-            let
-                ( syncModel, cmd ) =
-                    updateSyncModel msg model.files
-            in
-                { model | files = syncModel } ! [ cmd ]
+            updateFileList msg model
 
         RenderFileTreeMap ->
             model
@@ -140,12 +132,35 @@ update msg model =
             { model | depth = n } ! []
 
 
-updateSyncModel : Msg -> FileSyncModel -> ( FileSyncModel, Cmd msg )
-updateSyncModel msg model =
+updateFileList : Msg -> Model -> ( Model, Cmd msg )
+updateFileList msg model =
+    case model.auth of
+        Just auth ->
+            let
+                ( files, cmd ) =
+                    updateSyncModel auth msg model.files
+            in
+                { model | files = files } ! [ cmd ]
+
+        Nothing ->
+            model ! []
+
+
+updateSyncModel : Dropbox.UserAuth -> Msg -> FileSyncModel -> ( FileSyncModel, Cmd msg )
+updateSyncModel auth msg model =
     case msg of
         ListFiles ->
-            { initFileSyncModel | syncing = True }
-                ! [ listFolder { path = "", recursive = True, includeDeleted = False } ]
+            case extractAccessToken auth of
+                Just token ->
+                    let
+                        files =
+                            initFileSyncModel
+                    in
+                        { files | syncing = True }
+                            ! [ curry listFolder token { path = "", recursive = True, includeDeleted = False } ]
+
+                Nothing ->
+                    model ! []
 
         FileList entries loading ->
             { model

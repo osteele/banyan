@@ -1,5 +1,6 @@
 port module ListFolder exposing (..)
 
+import Dropbox exposing (UserAuth)
 import FileEntry exposing (..)
 
 
@@ -15,11 +16,8 @@ type alias ListFolderParameters =
 
 
 {-| Request that JavaScript start initiating requests to Dropbox.
-
-    fromList (includeDeleted, useCache)
-
 -}
-port listFolder : ListFolderParameters -> Cmd msg
+port listFolder : ( String, ListFolderParameters ) -> Cmd msg
 
 
 

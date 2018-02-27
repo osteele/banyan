@@ -9,14 +9,13 @@ import chart from './src/chart';
 const accessTokenKey = 'accessToken';
 const fileCacheKey = 'fileTree';
 
-let accessToken = localStorage[accessTokenKey] || null;
 
 const app = Elm.Main.embed(document.getElementById('app'), {
-  accessToken,
+  accessToken: localStorage[accessTokenKey] || null,
   clientId: process.env.DROPBOX_APP_KEY,
 });
 
-app.ports.listFolder.subscribe(async (params) => {
+app.ports.listFolder.subscribe(async ([accessToken, params]) => {
   const useCache = false;
   if (!accessToken) {
     app.ports.receiveFileListError.send('internal error: access token not set');
@@ -88,8 +87,8 @@ app.ports.listFolder.subscribe(async (params) => {
   }
 });
 
-app.ports.getAccountInfo.subscribe(async (accessToken_) => {
-  const dbx = new Dropbox({ accessToken: accessToken_ });
+app.ports.getAccountInfo.subscribe(async (accessToken) => {
+  const dbx = new Dropbox({ accessToken });
   const { name, team } = await dbx.usersGetCurrentAccount();
   const teamName = team ? team.name : 'Personal';
   app.ports.receiveAccountInfo.send({ teamName, name });
@@ -97,12 +96,10 @@ app.ports.getAccountInfo.subscribe(async (accessToken_) => {
 
 app.ports.storeAccessToken.subscribe((token) => {
   localStorage[accessTokenKey] = token;
-  accessToken = token;
 });
 
-app.ports.signOut.subscribe(() => {
+app.ports.removeAccountInfo.subscribe(() => {
   localStorage.clear();
-  accessToken = null;
 });
 
 app.ports.chart.subscribe(([title, data]) => {

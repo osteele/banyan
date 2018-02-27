@@ -12,7 +12,7 @@ port getAccountInfo : String -> Cmd msg
 port storeAccessToken : String -> Cmd msg
 
 
-port signOut : () -> Cmd msg
+port removeAccountInfo : () -> Cmd msg
 
 
 
