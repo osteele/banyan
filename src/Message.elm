@@ -12,9 +12,9 @@ type Msg
     | SignOut
     | SetAccountInfo AccountInfo
       -- file retrieval
-    | ListFiles
-    | FileList (List FileEntry) Bool
-    | FileListError (Maybe String)
+    | SyncFiles
+    | ReceiveListFolderResponse (List FileEntry) Bool
+    | SyncFilesError (Maybe String)
     | RenderFileTreeMap
       -- view controls
     | Focus String

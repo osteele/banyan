@@ -9,7 +9,7 @@ import Ports exposing (..)
 import ListFolder exposing (..)
 import Regex
 import Task
-import TreeMap exposing (fileTreeMap)
+import TreeMap exposing (renderFileTreeMap)
 import Utils exposing (..)
 import View exposing (..)
 
@@ -24,7 +24,8 @@ main : Program Flags Model (Dropbox.Msg Msg)
 main =
     Dropbox.programWithFlags
         { init =
-            \flags location -> init flags.clientId location ! [ initialCmd flags ]
+            \flags location ->
+                Model.init flags.clientId location ! [ initialCmd flags ]
         , update = update
         , subscriptions = subscriptions
         , view = view
@@ -96,30 +97,32 @@ update msg model =
                   ]
 
         SetAccountInfo info ->
-            update ListFiles { model | accountInfo = Just info }
+            update SyncFiles { model | accountInfo = Just info }
 
         -- list files
-        ListFiles ->
+        SyncFiles ->
             let
                 ( model_, cmd ) =
                     updateFileList msg model
             in
                 { model_ | path = "/" } ! [ cmd ]
 
-        FileList _ _ ->
+        ReceiveListFolderResponse _ _ ->
             let
                 ( model_, cmd ) =
                     updateFileList msg model
-            in
-                -- TODO include cmd
-                update RenderFileTreeMap model_
 
-        FileListError _ ->
+                ( model__, cmd_ ) =
+                    update RenderFileTreeMap model_
+            in
+                model__ ! [ cmd, cmd_ ]
+
+        SyncFilesError _ ->
             updateFileList msg model
 
         RenderFileTreeMap ->
             model
-                ! [ Model.subtree model |> fileTreeMap 1 ]
+                ! [ renderFileTreeMap 1 <| Model.subtree model ]
 
         -- view commands
         Focus p ->
@@ -149,7 +152,7 @@ updateFileList msg model =
 updateSyncModel : Dropbox.UserAuth -> Msg -> FileSyncModel -> ( FileSyncModel, Cmd msg )
 updateSyncModel auth msg model =
     case msg of
-        ListFiles ->
+        SyncFiles ->
             case extractAccessToken auth of
                 Just token ->
                     let
@@ -162,7 +165,7 @@ updateSyncModel auth msg model =
                 Nothing ->
                     model ! []
 
-        FileList entries loading ->
+        ReceiveListFolderResponse entries loading ->
             { model
                 | fileTree = FileTree.addEntries entries model.fileTree
                 , syncing = loading
@@ -171,7 +174,7 @@ updateSyncModel auth msg model =
             }
                 ! []
 
-        FileListError msgText ->
+        SyncFilesError msgText ->
             { model
                 | syncing = False
                 , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msgText
@@ -201,8 +204,8 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
-        , receiveFileList <| uncurry FileList
-        , receiveFileListError FileListError
+        , receiveFileList <| uncurry ReceiveListFolderResponse
+        , receiveFileListError SyncFilesError
         , setPath Focus
         ]
 

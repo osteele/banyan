@@ -18,8 +18,8 @@ type alias Node =
 port chart : ( String, List Node ) -> Cmd msg
 
 
-fileTreeMap : Int -> FileTree -> Cmd msg
-fileTreeMap depth fileTree =
+renderFileTreeMap : Int -> FileTree -> Cmd msg
+renderFileTreeMap depth fileTree =
     let
         path =
             itemEntry fileTree |> .path

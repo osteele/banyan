@@ -44,7 +44,7 @@ header model =
                 List.filterMap identity <|
                     [ ifJust (isSignedIn model && not model.files.syncing) <|
                         button
-                            [ class "item", onClick ListFiles ]
+                            [ class "item", onClick SyncFiles ]
                             [ text "Sync" ]
                     , Just <| signInOut model
                     ]
