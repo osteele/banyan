@@ -207,8 +207,8 @@ progress model =
                         ]
                             ++ (if loading then
                                     [ " in "
-                                    , toString files.requestCount
-                                    , " requests…"
+                                    , quantify " request" files.requestCount
+                                    , "…"
                                     ]
                                 else
                                     [ "."

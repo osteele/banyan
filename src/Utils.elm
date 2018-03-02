@@ -157,6 +157,39 @@ prefixes xs =
             []
 
 
+sibilantEnding : Regex.Regex
+sibilantEnding =
+    Regex.regex "(s|sh|ch)$"
+
+
+pluralizesWithIes : Regex.Regex
+pluralizesWithIes =
+    Regex.regex "[^aeio]y$"
+
+
+pluralize : String -> String
+pluralize s =
+    if Regex.contains sibilantEnding s then
+        s ++ "es"
+    else if String.endsWith "o" s then
+        s ++ "es"
+    else if Regex.contains pluralizesWithIes s then
+        String.dropRight 1 s |> flip (++) "ies"
+    else
+        s ++ "s"
+
+
+quantify : String -> number -> String
+quantify s n =
+    String.join " "
+        [ toString n
+        , if n == 1 then
+            s
+          else
+            pluralize s
+        ]
+
+
 {-| Get the POSIX filename.
 
     takeFileName "/directory/file.ext" == "file.ext"
