@@ -246,3 +246,24 @@ splitPath path =
         |> dropPrefix "/"
         |> Maybe.withDefault path
         |> String.split "/"
+
+
+{-| Remove leaves at depth > n from the root.
+-}
+trimDepth : Int -> FileTree -> FileTree
+trimDepth n tree =
+    case tree of
+        Dir entry cache children ->
+            let
+                children_ =
+                    if n > 0 then
+                        Dict.map (\_ -> trimDepth (n - 1)) children
+                    else
+                        Dict.empty
+            in
+                Dir entry cache children_
+
+        _ ->
+            tree
+
+

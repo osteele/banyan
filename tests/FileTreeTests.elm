@@ -68,6 +68,14 @@ suite =
                         [ get "/dir" >> Expect.equal (Just <| dirEntry "/dir")
                         , get "/dir/subdir" >> Expect.equal Nothing
                         ]
+        , test "trimDepth" <|
+            \_ ->
+                fromFilePathS "/a;/a/b"
+                    |> trimDepth 1
+                    |> Expect.all
+                        [ get "/a" >> Expect.equal (Just <| dirEntry "/a")
+                        , get "/a/b" >> Expect.equal Nothing
+                        ]
         ]
 
 
@@ -81,6 +89,11 @@ fromFilePaths paths =
     paths
         |> List.map (\p -> FileEntry dirTag (String.toLower p) p Nothing)
         |> fromEntries
+
+
+fromFilePathS : String -> FileTree
+fromFilePathS =
+    String.split ";" >> fromFilePaths
 
 
 dirEntry : String -> FileEntry

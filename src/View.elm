@@ -36,10 +36,7 @@ header : Model -> Html Msg
 header model =
     div [ class "ui container" ]
         [ div [ class "ui borderless inverted menu" ]
-            [ -- div [ class "header item logo" ]
-              --     [ Html.img [ Html.Attributes.src "/logo.png" ] []
-              --     ]
-              Html.h1 [ class "header item" ] [ text "Banyan" ]
+            [ Html.h1 [ class "header item" ] [ text "Banyan" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
                     [ ifJust (isSignedIn model && not model.files.syncing) <|
@@ -218,13 +215,17 @@ progress model =
             ]
 
 
+
+-- tree map view
+
+
 treeMap : Model -> Html Msg
 treeMap _ =
     div [ id "treeMap" ] []
 
 
 
--- tree view
+-- tree list view
 
 
 toolbar : Model -> Html Msg
@@ -281,7 +282,7 @@ treeList model =
                 toolbar model
             , ifJust (not <| FileTree.isEmpty model.files.fileTree) <|
                 div [ class "tree" ]
-                    [ subtree model model.depth (Just <| treeListTitle model) <| Model.subtree model ]
+                    [ subtree model (Just <| treeListTitle model) <| FileTree.trimDepth model.depth <| Model.subtree model ]
             ]
 
 
@@ -290,14 +291,11 @@ treeListTitle =
     breadcrumb_ Html.h3 (div [ class "divider" ] [ text "/" ])
 
 
-subtree : Model -> Int -> Maybe (Html Msg) -> FileTree -> Html Msg
-subtree model depth title tree =
+subtree : Model -> Maybe (Html Msg) -> FileTree -> Html Msg
+subtree model title tree =
     let
         children =
-            if depth > 0 then
                 FileTree.nodeChildren tree |> Dict.values
-            else
-                []
 
         sort =
             case model.order of
@@ -308,17 +306,17 @@ subtree model depth title tree =
                     List.sortBy FileTree.nodeSize
 
                 DescendingSize ->
-                    List.sortBy (negate << FileTree.nodeSize)
+                    List.sortBy <| negate << FileTree.nodeSize
 
         childViews =
             if List.isEmpty children then
                 []
             else
-                [ Html.ul []
+                [ Html.ul [] <|
                     (children
                         |> sort
                         |> List.map
-                            (\st -> Html.li [] [ subtree model (depth - 1) Nothing st ])
+                            (\st -> Html.li [] [ subtree model Nothing st ])
                     )
                 ]
     in
