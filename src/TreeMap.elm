@@ -19,15 +19,19 @@ port chart : ( String, List Node ) -> Cmd msg
 
 
 renderFileTreeMap : Int -> FileTree -> Cmd msg
-renderFileTreeMap depth fileTree =
+renderFileTreeMap _ tree =
     let
         path =
-            itemEntry fileTree |> .path
+            itemEntry tree |> .path
 
         title =
             dropPrefix "/" path |> Maybe.withDefault path
     in
-        curry chart title <| toNodes <| trimTree depth fileTree
+        tree
+            |> trimTree 1
+            |> combineSmallerEntries 10 2
+            |> toNodes
+            |> curry chart title
 
 
 toNodes : FileTree -> List Node

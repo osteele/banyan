@@ -122,7 +122,7 @@ update msg model =
 
         RenderFileTreeMap ->
             model
-                ! [ renderFileTreeMap 1 <| Model.subtree model ]
+                ! [ Model.subtree model |> renderFileTreeMap model.depth ]
 
         -- view commands
         Focus p ->
