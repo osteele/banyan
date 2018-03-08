@@ -1,24 +1,79 @@
-module FileTree exposing (..)
+module FileTree
+    exposing
+        ( FileTree(..)
+        , addEntries
+        , combineSmallerEntries
+        , empty
+        , getSubtree
+        , isEmpty
+        , itemEntry
+        , nodeChildren
+        , nodeSize
+        , trimDepth
+        , trimTree
+        , fromDebugString
+        , toDebugString
+        , get
+        , map
+        , mapChildLists
+        )
+
+{-|
+
+
+## Hierarchical mdel of Dropbox files
+
+See the official Dropbox documentation at
+<https://www.dropbox.com/developers/documentation/http/documentation>
+
+@docs FileTree
+
+
+### Build
+
+@docs empty, addEntries
+
+
+### Query
+
+@docs getSubtree, isEmpty
+
+
+### Nodes
+
+@docs itemEntry, nodeChildren, nodeSize
+
+
+### Tree truncation
+
+@docs trimDepth, trimTree, combineSmallerEntries
+
+
+### Debug
+
+@docs fromDebugString, toDebugString
+
+-}
 
 import Dict
 import FileEntry exposing (..)
 import Utils exposing (..)
 
 
-{-| A Rose tree of FileEntry's, and cached rolled up sizes.
+{-| A Rose tree of FileEntry's, and cache rolled up sizes.
 
 Note: Having a separate branch for the terminals (File) makes for more code but
 less runtime data. I haven't measured whether this is worth it.
 
 -}
 type FileTree
-    = Dir FileEntry FileNodeCache (Dict.Dict String FileTree)
+    = Dir FileEntry Stats (Dict.Dict String FileTree)
     | File FileEntry
 
 
-{-| The rolled-up file size.
+{-| The rolled-up file stats. Currently just the size.
 -}
-type alias FileNodeCache =
+type alias Stats =
     Int
 
 
@@ -100,8 +155,8 @@ nodeSize item =
 trimTree : Int -> FileTree -> FileTree
 trimTree depth tree =
     case tree of
-        Dir data cache children ->
-            Dir data cache <|
+        Dir data stats children ->
+            Dir data stats <|
                 if depth > 0 then
                     mapValues (trimTree <| depth - 1) children
                 else
@@ -111,17 +166,17 @@ trimTree depth tree =
             leaf
 
 
-{-| Recompute a node's cache fields.
+{-| Recompute a node's stats.
 -}
-updateCache : FileTree -> FileTree
-updateCache tree =
+recomputeStats : FileTree -> FileTree
+recomputeStats tree =
     case tree of
         Dir e _ children ->
             let
-                cache =
+                stats =
                     children |> Dict.values |> List.map nodeSize |> List.sum
             in
-                Dir e cache children
+                Dir e stats children
 
         leaf ->
             leaf
@@ -134,7 +189,7 @@ updateTreeItem keys alter path tree =
             emptyNode <| String.join "/" <| path ++ [ k ]
 
         -- construct a directory item for the current node, if not already present
-        withDirItem : (FileEntry -> FileNodeCache -> Dict.Dict String FileTree -> a) -> a
+        withDirItem : (FileEntry -> Stats -> Dict.Dict String FileTree -> a) -> a
         withDirItem fn =
             case tree of
                 Dir entry size children ->
@@ -156,7 +211,7 @@ updateTreeItem keys alter path tree =
                     \entry _ children ->
                         Dict.update k (Just << alter) children
                             |> Dir entry 0
-                            |> updateCache
+                            |> recomputeStats
 
             k :: ks ->
                 let
@@ -168,7 +223,7 @@ updateTreeItem keys alter path tree =
                         \entry _ children ->
                             Dict.update k (Just << alt) children
                                 |> Dir entry 0
-                                |> updateCache
+                                |> recomputeStats
 
 
 insert : FileEntry -> FileTree -> FileTree
@@ -202,8 +257,8 @@ remove entry =
                 File _ ->
                     entry
 
-                Dir entry cache children ->
-                    children |> update |> Dir entry cache |> updateCache
+                Dir entry stats children ->
+                    children |> update |> Dir entry stats |> recomputeStats
 
         rm : List String -> FileTree -> FileTree
         rm keys entry =
@@ -211,17 +266,17 @@ remove entry =
                 File _ ->
                     empty
 
-                Dir entry cache children ->
+                Dir entry stats children ->
                     case keys of
                         [] ->
                             empty
 
                         [ k ] ->
                             -- updateChildren (Dict.remove k) entry
-                            children |> Dict.remove k |> Dir entry cache |> updateCache
+                            children |> Dict.remove k |> Dir entry stats |> recomputeStats
 
                         k :: ks ->
-                            children |> Dict.update k (Maybe.map <| rm ks) |> Dir entry cache |> updateCache
+                            children |> Dict.update k (Maybe.map <| rm ks) |> Dir entry stats |> recomputeStats
     in
         rm <| splitPath entry.key
 
@@ -276,7 +331,7 @@ itemKeyTail tree =
         splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
 
 
-{-| Apply fn to the tree's nodes in postfix order. Don't recompute the caches.
+{-| Apply fn to the tree's nodes in postfix order. Don't recompute the statss.
 -}
 map : (FileTree -> FileTree) -> FileTree -> FileTree
 map fn =
@@ -288,13 +343,13 @@ map fn =
 mapChildList : (List FileTree -> List FileTree) -> FileTree -> FileTree
 mapChildList fn tree =
     case tree of
-        Dir entry cache children ->
+        Dir entry stats children ->
             children
                 |> Dict.values
                 |> fn
                 |> List.map (\e -> ( itemKeyTail e, e ))
                 |> Dict.fromList
-                |> Dir entry cache
+                |> Dir entry stats
 
         leaf ->
             leaf
@@ -353,7 +408,7 @@ combineSmallerEntries n orphans =
 trimDepth : Int -> FileTree -> FileTree
 trimDepth n tree =
     case tree of
-        Dir entry cache children ->
+        Dir entry stats children ->
             let
                 children_ =
                     if n > 0 then
@@ -361,7 +416,7 @@ trimDepth n tree =
                     else
                         Dict.empty
             in
-                Dir entry cache children_
+                Dir entry stats children_
 
         leaf ->
             leaf
