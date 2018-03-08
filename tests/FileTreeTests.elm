@@ -9,7 +9,12 @@ import Test exposing (..)
 suite : Test
 suite =
     describe "FileTree"
-        [ test "/dir/ creates dir node" <|
+        [ test "fromString >> toString" <|
+            \_ ->
+                FileTree.fromString "/a;/b:;/c:12"
+                    |> FileTree.toString
+                    |> Expect.equal "/a;/b:;/c:12"
+        , test "/dir/ creates dir node" <|
             \_ ->
                 FileTree.fromString "/dir"
                     |> get "/dir"
@@ -82,18 +87,18 @@ suite =
                     |> FileTree.toString
                     |> Expect.equal "/a;/a/1"
         , describe "combineSmallerEntries"
-            [ test "combines top-level files" <|
+            [ test "combines top-level items" <|
                 \_ ->
-                    FileTree.fromString "/a;/b;/c"
+                    FileTree.fromString "/a:5;/b:4;/c:3;/d:2"
                         |> combineSmallerEntries 2 1
                         |> FileTree.toString
-                        |> Expect.equal "/a;/b;/…1 smaller object…"
-            , test "combines non-toplevel files" <|
+                        |> Expect.equal "/a:5;/b:4;/…2 smaller objects…:5"
+            , test "combines non-toplevel items" <|
                 \_ ->
                     FileTree.fromString "/a/1;/a/2;/a/3"
                         |> combineSmallerEntries 2 1
                         |> FileTree.toString
-                        |> Expect.equal "/a;/a/1;/a/2;/a/…1 smaller object…"
+                        |> Expect.equal "/a;/a/1;/a/2;/a/…1 smaller object…:0"
             ]
         , test "trimDepth" <|
             \_ ->

@@ -58,6 +58,7 @@ See the official Dropbox documentation at
 import Dict
 import FileEntry exposing (..)
 import Utils exposing (..)
+import Regex
 
 
 {-| A Rose tree of FileEntry's, and cache rolled up sizes.
@@ -448,7 +449,14 @@ fromString : String -> FileTree
 fromString =
     let
         pathToEntry p =
-            FileEntry dirTag (String.toLower p) p Nothing
+            case p |> Regex.find (Regex.AtMost 1) (Regex.regex "^(.+):(\\d*)$") |> List.head |> Maybe.map .submatches of
+                Just ((Just p_) :: size :: _) ->
+                    size
+                        |> Maybe.andThen (String.toInt >> Result.toMaybe)
+                        |> FileEntry fileTag (String.toLower p_) p_
+
+                _ ->
+                    FileEntry dirTag (String.toLower p) p Nothing
     in
         String.split ";"
             >> List.map pathToEntry
@@ -458,22 +466,26 @@ fromString =
 {-| Turn a tree into a string. See fromString for the format.
 -}
 toString : FileTree -> String
-toString t =
+toString tree =
     let
+        path : FileTree -> String
+        path node =
+            case node of
+                Dir entry _ _ ->
+                    entry.path
+
+                File entry ->
+                    String.join ":"
+                        [ entry.path
+                        , Maybe.map Basics.toString entry.size |> Maybe.withDefault ""
+                        ]
+
         paths : FileTree -> List (List String)
-        paths t =
-            let
-                key =
-                    itemEntry t |> .path
-            in
-                [ [ key ] ]
-                    ++ (nodeChildren t
-                            |> Dict.values
-                            |> List.map paths
-                            |> List.concat
-                       )
+        paths tree =
+            [ [ path tree ] ]
+                ++ (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
-        paths t
+        paths tree
             |> List.map (String.join "/")
             |> List.filter ((/=) "")
             |> List.sort
