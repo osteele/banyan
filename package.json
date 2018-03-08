@@ -15,7 +15,7 @@
     "format": "eslint --fix index.js src && elm-format --yes src",
     "reinstall": "rimraf node_modules && yarn install && elm package install",
     "test": "elm test",
-    "deploy": "yarn build && netlify deploy"
+    "deploy": "yarn build && netlifyctl deploy -b dist"
   },
   "devDependencies": {
     "elm": "^0.18.0",

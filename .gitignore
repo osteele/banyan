@@ -97,3 +97,4 @@ Temporary Items
 # End of https://www.gitignore.io/api/elm,macos
 .netlify
 dist/
+netlify.toml
