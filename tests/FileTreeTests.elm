@@ -1,6 +1,5 @@
 module FileTreeTests exposing (..)
 
-import Dict
 import Expect exposing (Expectation)
 import FileEntry exposing (..)
 import FileTree exposing (..)
@@ -68,9 +67,37 @@ suite =
                         [ get "/dir" >> Expect.equal (Just <| dirEntry "/dir")
                         , get "/dir/subdir" >> Expect.equal Nothing
                         ]
+        , test "map" <|
+            \_ ->
+                fromDebugString "/a/1;/a/2;/b"
+                    -- |> FileTree.map (\e -> (fromEntries <| List.singleton <| dirEntry <| .path <| itemEntry e))
+                    -- TODO replace identity by an actual test
+                    |> FileTree.map identity
+                    |> toDebugString
+                    |> Expect.equal "/a;/a/1;/a/2;/b"
+        , test "mapChildLists" <|
+            \_ ->
+                fromDebugString "/a/1;/a/2;/b"
+                    |> mapChildLists (List.sortBy (itemEntry >> .path) >> List.take 1)
+                    |> toDebugString
+                    |> Expect.equal "/a;/a/1"
+        , describe "combineSmallerEntries"
+            [ test "combines top-level files" <|
+                \_ ->
+                    fromDebugString "/a;/b;/c"
+                        |> combineSmallerEntries 2 1
+                        |> toDebugString
+                        |> Expect.equal "/a;/b;/…1 smaller object…"
+            , test "combines non-toplevel files" <|
+                \_ ->
+                    fromDebugString "/a/1;/a/2;/a/3"
+                        |> combineSmallerEntries 2 1
+                        |> toDebugString
+                        |> Expect.equal "/a;/a/1;/a/2;/a/…1 smaller object…"
+            ]
         , test "trimDepth" <|
             \_ ->
-                fromFilePathS "/a;/a/b"
+                fromDebugString "/a;/a/b"
                     |> trimDepth 1
                     |> Expect.all
                         [ get "/a" >> Expect.equal (Just <| dirEntry "/a")
@@ -91,11 +118,11 @@ fromFilePaths paths =
         |> fromEntries
 
 
-fromFilePathS : String -> FileTree
-fromFilePathS =
-    String.split ";" >> fromFilePaths
-
-
 dirEntry : String -> FileEntry
 dirEntry path =
     FileEntry "folder" (String.toLower path) path Nothing
+
+
+fileEntry : String -> Int -> FileEntry
+fileEntry path size =
+    FileEntry "file" (String.toLower path) path <| Just size

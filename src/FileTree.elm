@@ -107,8 +107,8 @@ trimTree depth tree =
                 else
                     Dict.empty
 
-        _ ->
-            tree
+        leaf ->
+            leaf
 
 
 {-| Recompute a node's cache fields.
@@ -118,13 +118,13 @@ updateCache tree =
     case tree of
         Dir e _ children ->
             let
-                s =
+                cache =
                     children |> Dict.values |> List.map nodeSize |> List.sum
             in
-                Dir e s children
+                Dir e cache children
 
-        _ ->
-            tree
+        leaf ->
+            leaf
 
 
 updateTreeItem : List String -> (Maybe FileTree -> FileTree) -> List String -> FileTree -> FileTree
@@ -240,12 +240,112 @@ addEntries entries tree =
         List.foldl action tree entries
 
 
+dirname : String -> String
+dirname path =
+    path
+        |> String.split "/"
+        |> List.reverse
+        |> List.drop 1
+        |> List.reverse
+        |> String.join "/"
+
+
 splitPath : String -> List String
 splitPath path =
     path
         |> dropPrefix "/"
         |> Maybe.withDefault path
         |> String.split "/"
+
+
+itemKeyHead : FileTree -> String
+itemKeyHead tree =
+    let
+        key =
+            itemEntry tree |> .key
+    in
+        splitPath key |> List.head |> Maybe.withDefault key
+
+
+itemKeyTail : FileTree -> String
+itemKeyTail tree =
+    let
+        key =
+            itemEntry tree |> .key
+    in
+        splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
+
+
+{-| Apply fn to the tree's nodes in postfix order. Don't recompute the caches.
+-}
+map : (FileTree -> FileTree) -> FileTree -> FileTree
+map fn =
+    mapChildList (List.map <| map fn) >> fn
+
+
+{-| Apply fn to the node's child list.
+-}
+mapChildList : (List FileTree -> List FileTree) -> FileTree -> FileTree
+mapChildList fn tree =
+    case tree of
+        Dir entry cache children ->
+            children
+                |> Dict.values
+                |> fn
+                |> List.map (\e -> ( itemKeyTail e, e ))
+                |> Dict.fromList
+                |> Dir entry cache
+
+        leaf ->
+            leaf
+
+
+{-| Apply fn to node child lists, in postfix order.
+-}
+mapChildLists : (List FileTree -> List FileTree) -> FileTree -> FileTree
+mapChildLists fn =
+    map <| mapChildList fn
+
+
+{-| Combine any children after the first n, ordered by descending size, into a
+single child, if the new child would combine at least orphans number of items.
+This function applies recursively.
+-}
+combineSmallerEntries : Int -> Int -> FileTree -> FileTree
+combineSmallerEntries n orphans =
+    mapChildLists <|
+        \children ->
+            if List.length children < (n + orphans) then
+                children
+            else
+                let
+                    parentKey =
+                        List.head children
+                            |> Maybe.map (itemEntry >> .path)
+                            |> Maybe.withDefault "/"
+                            |> dirname
+
+                    name =
+                        String.join ""
+                            [ parentKey
+                            , "/…"
+                            , quantify "smaller object" <| List.length children - n
+                            , "…"
+                            ]
+
+                    sorted =
+                        children
+                            |> List.sortBy (nodeSize >> negate)
+
+                    combined =
+                        List.drop n sorted
+                            |> List.map nodeSize
+                            |> List.sum
+                            |> Just
+                            |> FileEntry.FileEntry FileEntry.fileTag name name
+                            |> File
+                in
+                    (List.take n sorted) ++ [ combined ]
 
 
 {-| Remove leaves at depth > n from the root.
@@ -263,7 +363,60 @@ trimDepth n tree =
             in
                 Dir entry cache children_
 
-        _ ->
-            tree
+        leaf ->
+            leaf
 
 
+fromDebugString : String -> FileTree
+fromDebugString =
+    let
+        pathToEntry p =
+            FileEntry dirTag (String.toLower p) p Nothing
+    in
+        String.split ";"
+            >> List.map pathToEntry
+            >> flip addEntries empty
+
+
+toDebugString : FileTree -> String
+toDebugString t =
+    let
+        paths : FileTree -> List (List String)
+        paths t =
+            let
+                key =
+                    itemEntry t |> .path
+            in
+                [ [ key ] ]
+                    ++ (nodeChildren t
+                            |> Dict.values
+                            |> List.map paths
+                            |> List.concat
+                       )
+    in
+        paths t
+            |> List.map (String.join "/")
+            |> List.filter ((/=) "")
+            |> List.sort
+            |> String.join ";"
+
+
+logTree : String -> FileTree -> FileTree
+logTree msg t =
+    let
+        _ =
+            Debug.log msg <| toDebugString t
+    in
+        t
+
+
+logTrees : String -> List FileTree -> List FileTree
+logTrees msg ts =
+    let
+        _ =
+            ts
+                |> List.map toDebugString
+                |> String.join ";"
+                |> Debug.log msg
+    in
+        ts

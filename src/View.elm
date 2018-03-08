@@ -282,7 +282,11 @@ treeList model =
                 toolbar model
             , ifJust (not <| FileTree.isEmpty model.files.fileTree) <|
                 div [ class "tree" ]
-                    [ subtree model (Just <| treeListTitle model) <| FileTree.trimDepth model.depth <| Model.subtree model ]
+                    [ Model.subtree model
+                        |> FileTree.trimDepth model.depth
+                        |> FileTree.combineSmallerEntries 10 2
+                        |> subtree model (Just <| treeListTitle model)
+                    ]
             ]
 
 
@@ -295,7 +299,7 @@ subtree : Model -> Maybe (Html Msg) -> FileTree -> Html Msg
 subtree model title tree =
     let
         children =
-                FileTree.nodeChildren tree |> Dict.values
+            FileTree.nodeChildren tree |> Dict.values
 
         sort =
             case model.order of
