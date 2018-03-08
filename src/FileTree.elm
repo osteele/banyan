@@ -77,11 +77,15 @@ type alias Stats =
     Int
 
 
+{-| Create an empty tree.
+-}
 empty : FileTree
 empty =
     emptyNode ""
 
 
+{-| Determine if a dictionary is empty.
+-}
 isEmpty : FileTree -> Bool
 isEmpty tree =
     case tree of
@@ -97,6 +101,8 @@ emptyNode name =
     Dir (FileEntry dirTag name name Nothing) 0 Dict.empty
 
 
+{-| Get the subtree at a file path.
+-}
 getSubtree : String -> FileTree -> Maybe FileTree
 getSubtree path tree =
     let
@@ -115,6 +121,8 @@ getSubtree path tree =
         get_ (splitPath <| String.toLower path) tree
 
 
+{-| Get the value associated with a file path.
+-}
 get : String -> FileTree -> Maybe FileEntry
 get path tree =
     getSubtree path tree |> Maybe.map itemEntry
@@ -226,6 +234,8 @@ updateTreeItem keys alter path tree =
                                 |> recomputeStats
 
 
+{-| Insert a value into a tree.
+-}
 insert : FileEntry -> FileTree -> FileTree
 insert entry =
     let
@@ -249,6 +259,8 @@ insert entry =
         updateTreeItem (splitPath entry.key) update [ "" ]
 
 
+{-| Remove a value from a tree.
+-}
 remove : FileEntry -> FileTree -> FileTree
 remove entry =
     let
@@ -281,6 +293,8 @@ remove entry =
         rm <| splitPath entry.key
 
 
+{-| Update a tree from a list of values.
+-}
 addEntries : List FileEntry -> FileTree -> FileTree
 addEntries entries tree =
     let
@@ -466,22 +480,26 @@ toString t =
             |> String.join ";"
 
 
+{-| Like Debug.log, but uses FileTree.toString to print the tree.
+-}
 logTree : String -> FileTree -> FileTree
-logTree msg t =
+logTree msg tree =
     let
         _ =
-            Debug.log msg <| toString t
+            Debug.log msg <| toString tree
     in
-        t
+        tree
 
 
+{-| Like Debug.log, but uses FileTree.toString to print the trees.
+-}
 logTrees : String -> List FileTree -> List FileTree
-logTrees msg ts =
+logTrees msg trees =
     let
         _ =
-            ts
+            trees
                 |> List.map toString
                 |> String.join ";"
                 |> Debug.log msg
     in
-        ts
+        trees
