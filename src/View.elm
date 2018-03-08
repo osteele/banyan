@@ -284,7 +284,7 @@ treeList model =
                 div [ class "tree" ]
                     [ Model.subtree model
                         |> FileTree.trimDepth model.depth
-                        |> FileTree.combineSmallerEntries 10 2
+                        |> FileTree.combineSmallerEntries 20 2
                         |> subtree model (Just <| treeListTitle model)
                     ]
             ]

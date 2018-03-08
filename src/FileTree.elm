@@ -11,8 +11,8 @@ module FileTree
         , nodeSize
         , trimDepth
         , trimTree
-        , fromDebugString
-        , toDebugString
+        , fromString
+        , toString
         , get
         , map
         , mapChildLists
@@ -51,7 +51,7 @@ See the official Dropbox documentation at
 
 ### Debug
 
-@docs fromDebugString, toDebugString
+@docs fromString, toString
 
 -}
 
@@ -422,8 +422,16 @@ trimDepth n tree =
             leaf
 
 
-fromDebugString : String -> FileTree
-fromDebugString =
+{-| Construct a tree from a string. This is used in testing.
+
+The string is a ;-separated list of paths. Files end in :size, where size
+is an optional size.
+
+       fromString "/dir;/dir/a:;/dir/b:10"
+
+-}
+fromString : String -> FileTree
+fromString =
     let
         pathToEntry p =
             FileEntry dirTag (String.toLower p) p Nothing
@@ -433,8 +441,10 @@ fromDebugString =
             >> flip addEntries empty
 
 
-toDebugString : FileTree -> String
-toDebugString t =
+{-| Turn a tree into a string. See fromString for the format.
+-}
+toString : FileTree -> String
+toString t =
     let
         paths : FileTree -> List (List String)
         paths t =
@@ -460,7 +470,7 @@ logTree : String -> FileTree -> FileTree
 logTree msg t =
     let
         _ =
-            Debug.log msg <| toDebugString t
+            Debug.log msg <| toString t
     in
         t
 
@@ -470,7 +480,7 @@ logTrees msg ts =
     let
         _ =
             ts
-                |> List.map toDebugString
+                |> List.map toString
                 |> String.join ";"
                 |> Debug.log msg
     in
