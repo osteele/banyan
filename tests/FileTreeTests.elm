@@ -9,42 +9,56 @@ import Test exposing (..)
 suite : Test
 suite =
     describe "FileTree"
-        [ test "fromString >> toString" <|
+        [ describe "fromString"
+            [ test "creates files" <|
+                \_ ->
+                    FileTree.fromString "/a:12"
+                        |> get "/a"
+                        >> Expect.equal (Just <| fileEntry "/a" 12)
+            , test "creates directories" <|
+                \_ ->
+                    FileTree.fromString "/dir/"
+                        |> get "/dir"
+                        >> Expect.equal (Just <| dirEntry "/dir")
+            ]
+        , describe "fromString >> toString"
+            [ test "recognizes files, directories, and file sizes" <|
+                \_ ->
+                    FileTree.fromString "/a;/b/;/c:12"
+                        |> FileTree.toString
+                        |> Expect.equal "/a;/b/;/c:12"
+            ]
+        , test "/dir/ creates a directory node" <|
             \_ ->
-                FileTree.fromString "/a;/b:;/c:12"
-                    |> FileTree.toString
-                    |> Expect.equal "/a;/b:;/c:12"
-        , test "/dir/ creates dir node" <|
-            \_ ->
-                FileTree.fromString "/dir"
+                FileTree.fromString "/dir/"
                     |> get "/dir"
                     |> Expect.equal (Just <| dirEntry "/dir")
-        , test "/dir/leaf creates /dir node" <|
+        , test "/dir/leaf creates a directory node" <|
             \_ ->
                 FileTree.fromString "/dir/leaf"
                     |> get "/dir"
                     |> Expect.equal (Just <| dirEntry "/dir")
-        , test "/dir/leaf creates leaf node" <|
+        , test "/dir/subdir/ creates a leaf node" <|
             \_ ->
-                FileTree.fromString "/dir/leaf"
-                    |> get "/dir/leaf"
-                    |> Expect.equal (Just <| dirEntry "/dir/leaf")
-        , test "/dir/leaf + /Dir preserves leaf node" <|
+                FileTree.fromString "/dir/subdir/"
+                    |> get "/dir/subdir"
+                    |> Expect.equal (Just <| dirEntry "/dir/subdir")
+        , test "/dir/subdir/ + /Dir/ preserves the subdirectory" <|
             \_ ->
-                FileTree.fromString "/dir/leaf;/Dir"
-                    |> get "/dir/leaf"
-                    |> Expect.equal (Just <| dirEntry "/dir/leaf")
-        , test "/dir/leaf + /Dir updates dir node" <|
+                FileTree.fromString "/dir/subdir/;/Dir/"
+                    |> get "/dir/subdir"
+                    |> Expect.equal (Just <| dirEntry "/dir/subdir")
+        , test "/dir/leaf + /Dir/ updates the directory node" <|
             \_ ->
-                FileTree.fromString "/dir/leaf;/Dir"
+                FileTree.fromString "/dir/leaf;/Dir/"
                     |> get "/dir"
                     |> Expect.equal (Just <| dirEntry "/Dir")
-        , test "/Dir + /dir/leaf + leaves dir node" <|
+        , test "/Dir/ + /dir/leaf + preserves the directory node" <|
             \_ ->
-                FileTree.fromString "/Dir;/dir/leaf"
+                FileTree.fromString "/Dir/;/dir/leaf"
                     |> get "/dir"
                     |> Expect.equal (Just <| dirEntry "/Dir")
-        , test "delete /dir deletes directory" <|
+        , test "delete /dir deletes the directory node" <|
             \_ ->
                 [ dirEntry "/dir"
                 , FileEntry deleteTag "/dir" "/dir" Nothing
@@ -52,7 +66,7 @@ suite =
                     |> fromEntries
                     |> get "/dir"
                     |> Expect.equal Nothing
-        , test "delete /dir deletes subdirectory" <|
+        , test "delete /dir deletes the subdirectory node" <|
             \_ ->
                 [ dirEntry "/dir"
                 , dirEntry "/dir/subdir"
@@ -61,7 +75,7 @@ suite =
                     |> fromEntries
                     |> get "/dir/subdir"
                     |> Expect.equal Nothing
-        , test "delete /dir/subdir deletes subdirectory" <|
+        , test "delete /dir/subdir deletes the subdirectory node" <|
             \_ ->
                 [ dirEntry "/dir"
                 , dirEntry "/dir/subdir"
@@ -79,13 +93,13 @@ suite =
                     -- TODO replace identity by an actual test
                     |> FileTree.map identity
                     |> FileTree.toString
-                    |> Expect.equal "/a;/a/1;/a/2;/b"
+                    |> Expect.equal "/a/;/a/1;/a/2;/b"
         , test "mapChildLists" <|
             \_ ->
                 FileTree.fromString "/a/1;/a/2;/b"
                     |> mapChildLists (List.sortBy (itemEntry >> .path) >> List.take 1)
                     |> FileTree.toString
-                    |> Expect.equal "/a;/a/1"
+                    |> Expect.equal "/a/;/a/1"
         , describe "combineSmallerEntries"
             [ test "combines top-level items" <|
                 \_ ->
@@ -98,7 +112,7 @@ suite =
                     FileTree.fromString "/a/1;/a/2;/a/3"
                         |> combineSmallerEntries 2 1
                         |> FileTree.toString
-                        |> Expect.equal "/a;/a/1;/a/2;/a/…1 smaller object…:0"
+                        |> Expect.equal "/a/;/a/1;/a/2;/a/…1 smaller object…:0"
             ]
         , test "trimDepth" <|
             \_ ->

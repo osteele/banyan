@@ -448,15 +448,30 @@ is an optional size.
 fromString : String -> FileTree
 fromString =
     let
-        pathToEntry p =
-            case p |> Regex.find (Regex.AtMost 1) (Regex.regex "^(.+):(\\d*)$") |> List.head |> Maybe.map .submatches of
-                Just ((Just p_) :: size :: _) ->
-                    size
+        pathToEntry path =
+            if String.endsWith "/" path then
+                let
+                    p =
+                        String.dropRight 1 path
+                in
+                    FileEntry dirTag (String.toLower p) p Nothing
+            else
+                let
+                    ( p, size ) =
+                        parseFilePath path
+                in
+                    FileEntry fileTag (String.toLower p) p size
+
+        parseFilePath path =
+            case path |> Regex.find (Regex.AtMost 1) (Regex.regex "^(.+):(\\d*)$") |> List.head |> Maybe.map .submatches of
+                Just ((Just p) :: size :: _) ->
+                    ( p
+                    , size
                         |> Maybe.andThen (String.toInt >> Result.toMaybe)
-                        |> FileEntry fileTag (String.toLower p_) p_
+                    )
 
                 _ ->
-                    FileEntry dirTag (String.toLower p) p Nothing
+                    ( path, Nothing )
     in
         String.split ";"
             >> List.map pathToEntry
@@ -472,22 +487,22 @@ toString tree =
         path node =
             case node of
                 Dir entry _ _ ->
-                    entry.path
+                    entry.path ++ "/"
 
                 File entry ->
-                    String.join ":"
-                        [ entry.path
-                        , Maybe.map Basics.toString entry.size |> Maybe.withDefault ""
-                        ]
+                    String.join ":" <|
+                        List.filterMap identity
+                            [ Just entry.path
+                            , Maybe.map Basics.toString entry.size
+                            ]
 
-        paths : FileTree -> List (List String)
+        paths : FileTree -> List String
         paths tree =
-            [ [ path tree ] ]
+            [ path tree ]
                 ++ (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
         paths tree
-            |> List.map (String.join "/")
-            |> List.filter ((/=) "")
+            |> List.filter ((/=) "/")
             |> List.sort
             |> String.join ";"
 
