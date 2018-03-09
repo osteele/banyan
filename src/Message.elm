@@ -13,10 +13,10 @@ type Msg
     | SetAccountInfo AccountInfo
       -- file retrieval
     | SyncFiles
-    | ReceiveListFolderResponse (List FileEntry) Bool
+    | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
     | SyncFilesError (Maybe String)
-    | RenderFileTreeMap
       -- view controls
     | Focus String
+    | RenderFileTreeMap
     | SortOrder Data.SortOrder
     | TreeDepth Int

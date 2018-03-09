@@ -2,6 +2,7 @@ module Model exposing (..)
 
 import Data exposing (..)
 import Dropbox
+import FileEntry
 import FileTree exposing (FileTree)
 import Navigation
 
@@ -105,6 +106,6 @@ subtreeTitle model =
         path =
             subtree model
                 |> FileTree.itemEntry
-                |> .path
+                |> FileEntry.path
     in
         teamName model ++ path

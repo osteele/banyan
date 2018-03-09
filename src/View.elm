@@ -2,6 +2,7 @@ module View exposing (..)
 
 import Data exposing (..)
 import Dict
+import FileEntry
 import FileTree exposing (FileTree)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
@@ -138,7 +139,7 @@ breadcrumb_ hn sep model =
         model
             |> Model.subtree
             |> FileTree.itemEntry
-            |> .path
+            |> FileEntry.path
             |> String.split "/"
             |> withPrefixes
             |> List.map
@@ -304,7 +305,7 @@ subtree model title tree =
         sort =
             case model.order of
                 Alphabetic ->
-                    List.sortBy <| FileTree.itemEntry >> .path >> String.toUpper
+                    List.sortBy <| FileTree.itemEntry >> FileEntry.path >> String.toUpper
 
                 AscendingSize ->
                     List.sortBy FileTree.nodeSize
@@ -328,8 +329,9 @@ subtree model title tree =
             FileTree.File entry ->
                 div
                     [ class "clearfix" ]
-                    [ text <| takeFileName <| entry.path
-                    , span [ class "float-right" ] [ text <| humanize <| Maybe.withDefault 0 entry.size ]
+                    [ text <| takeFileName <| FileEntry.path entry
+                    , span [ class "float-right" ]
+                        [ text <| humanize <| Maybe.withDefault 0 <| FileEntry.size entry ]
                     ]
 
             FileTree.Dir entry size _ ->
@@ -339,8 +341,8 @@ subtree model title tree =
                         [ class "clearfix text-primary" ]
                         [ flip Maybe.withDefault title <|
                             Html.a
-                                [ onClick <| Focus entry.key ]
-                                [ text <| takeFileName entry.path ]
+                                [ onClick <| Focus <| FileEntry.key entry ]
+                                [ text <| takeFileName <| FileEntry.path entry ]
                         , span [ class "float-right" ] [ text <| humanize size ]
                         ]
                         :: childViews

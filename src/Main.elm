@@ -107,7 +107,7 @@ update msg model =
             in
                 { model_ | path = "/" } ! [ cmd ]
 
-        ReceiveListFolderResponse _ _ ->
+        ReceiveListFolderResponse _ ->
             let
                 ( model_, cmd ) =
                     updateFileList msg model
@@ -165,19 +165,28 @@ updateSyncModel auth msg model =
                 Nothing ->
                     model ! []
 
-        ReceiveListFolderResponse entries loading ->
-            { model
-                | fileTree = FileTree.addEntries entries model.fileTree
-                , syncing = loading
-                , syncedEntryCount = model.syncedEntryCount + List.length entries
-                , requestCount = model.requestCount + 1
-            }
-                ! []
+        ReceiveListFolderResponse result ->
+            case result of
+                Result.Ok ( entries, hasMore ) ->
+                    { model
+                        | fileTree = FileTree.addEntries entries model.fileTree
+                        , syncing = hasMore
+                        , syncedEntryCount = model.syncedEntryCount + List.length entries
+                        , requestCount = model.requestCount + 1
+                    }
+                        ! []
 
-        SyncFilesError msgText ->
+                Result.Err msg ->
+                    { model
+                        | syncing = False
+                        , errorMessage = Just msg
+                    }
+                        ! []
+
+        SyncFilesError msg ->
             { model
                 | syncing = False
-                , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msgText
+                , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msg
             }
                 ! []
 
@@ -204,7 +213,7 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
-        , receiveFileList <| uncurry ReceiveListFolderResponse
+        , receiveFileList (decodeFileList >> ReceiveListFolderResponse)
         , receiveFileListError SyncFilesError
         , setPath Focus
         ]

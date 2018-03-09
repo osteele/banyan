@@ -22,7 +22,7 @@ renderFileTreeMap : Int -> FileTree -> Cmd msg
 renderFileTreeMap _ tree =
     let
         path =
-            itemEntry tree |> .path
+            itemEntry tree |> FileEntry.path
 
         title =
             dropPrefix "/" path |> Maybe.withDefault path
@@ -44,12 +44,12 @@ toNodes fileTree =
                     itemEntry item
 
                 nodeId =
-                    toString nextId
+                    Basics.toString nextId
 
                 node =
-                    { name = entry.path |> Utils.takeFileName
+                    { name = entry |> FileEntry.path |> Utils.takeFileName
                     , id = nodeId
-                    , key = ifJust (FileEntry.isDir entry) entry.key
+                    , key = ifJust (FileEntry.isDir entry) <| FileEntry.key entry
                     , parent = parent
                     , value = nodeSize item
                     }

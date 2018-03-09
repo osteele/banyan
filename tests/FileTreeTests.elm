@@ -61,7 +61,7 @@ suite =
         , test "delete /dir deletes the directory node" <|
             \_ ->
                 [ dirEntry "/dir"
-                , FileEntry deleteTag "/dir" "/dir" Nothing
+                , FileEntry.Deletion { key = "/dir", path = "/dir" }
                 ]
                     |> fromEntries
                     |> get "/dir"
@@ -70,7 +70,7 @@ suite =
             \_ ->
                 [ dirEntry "/dir"
                 , dirEntry "/dir/subdir"
-                , FileEntry deleteTag "/dir" "/dir" Nothing
+                , FileEntry.Deletion { key = "/dir", path = "/dir" }
                 ]
                     |> fromEntries
                     |> get "/dir/subdir"
@@ -79,7 +79,7 @@ suite =
             \_ ->
                 [ dirEntry "/dir"
                 , dirEntry "/dir/subdir"
-                , FileEntry deleteTag "/dir/subdir" "/dir/subdir" Nothing
+                , FileEntry.Deletion { key = "/dir/subdir", path = "/dir/subdir" }
                 ]
                     |> fromEntries
                     |> Expect.all
@@ -97,7 +97,7 @@ suite =
         , test "mapChildLists" <|
             \_ ->
                 FileTree.fromString "/a/1;/a/2;/b"
-                    |> mapChildLists (List.sortBy (itemEntry >> .path) >> List.take 1)
+                    |> mapChildLists (List.sortBy (itemEntry >> FileEntry.path) >> List.take 1)
                     |> FileTree.toString
                     |> Expect.equal "/a/;/a/1"
         , describe "combineSmallerEntries"
@@ -132,9 +132,9 @@ fromEntries entries =
 
 dirEntry : String -> FileEntry
 dirEntry path =
-    FileEntry "folder" (String.toLower path) path Nothing
+    FileEntry.Folder { key = String.toLower path, path = path }
 
 
 fileEntry : String -> Int -> FileEntry
 fileEntry path size =
-    FileEntry "file" (String.toLower path) path <| Just size
+    FileEntry.File { key = String.toLower path, path = path, size = Just size }

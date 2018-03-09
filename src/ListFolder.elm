@@ -2,6 +2,8 @@ port module ListFolder exposing (..)
 
 import Dropbox exposing (UserAuth)
 import FileEntry exposing (..)
+import Json.Encode
+import Json.Decode exposing (..)
 
 
 -- Elm -> JS
@@ -24,7 +26,13 @@ port listFolder : ( String, ListFolderParameters ) -> Cmd msg
 -- JS -> ELM
 
 
-port receiveFileList : (( List FileEntry, Bool ) -> msg) -> Sub msg
+port receiveFileList : (( Json.Encode.Value, Bool ) -> msg) -> Sub msg
+
+
+decodeFileList : ( Value, Bool ) -> Result String ( List FileEntry, Bool )
+decodeFileList ( data, more ) =
+    decodeValue (list decodeFileEntry) data
+        |> Result.map (\entries -> ( entries, more ))
 
 
 port receiveFileListError : (Maybe String -> msg) -> Sub msg

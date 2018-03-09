@@ -99,7 +99,7 @@ isEmpty tree =
 
 emptyNode : String -> FileTree
 emptyNode name =
-    Dir (FileEntry dirTag name name Nothing) 0 Dict.empty
+    Dir (FileEntry.Folder { key = name, path = name }) 0 Dict.empty
 
 
 {-| Get the subtree at a file path.
@@ -150,13 +150,13 @@ nodeChildren tree =
 
 
 nodeSize : FileTree -> Int
-nodeSize item =
-    case item of
-        Dir _ n _ ->
-            n
+nodeSize tree =
+    case tree of
+        Dir _ size _ ->
+            size
 
-        File e ->
-            e.size |> Maybe.withDefault 0
+        leaf ->
+            itemEntry leaf |> FileEntry.size |> Maybe.withDefault 0
 
 
 {-| Trim the tree to a maximum depth.
@@ -209,7 +209,7 @@ updateTreeItem keys alter path tree =
                         name =
                             String.join "/" path
                     in
-                        fn (FileEntry dirTag name name Nothing) 0 Dict.empty
+                        fn (FileEntry.Folder { key = name, path = name }) 0 Dict.empty
     in
         case keys of
             [] ->
@@ -252,12 +252,17 @@ insert entry =
                     Dir entry 0 Dict.empty
 
         update =
-            if entry.tag == dirTag then
-                updateDir
-            else
-                updateFile
+            case entry of
+                FileEntry.File _ ->
+                    updateFile
+
+                FileEntry.Folder _ ->
+                    updateDir
+
+                _ ->
+                    Debug.crash "unexpected FileEntry case"
     in
-        updateTreeItem (splitPath entry.key) update [ "" ]
+        updateTreeItem (splitPath <| FileEntry.key entry) update [ "" ]
 
 
 {-| Remove a value from a tree.
@@ -291,7 +296,7 @@ remove entry =
                         k :: ks ->
                             children |> Dict.update k (Maybe.map <| rm ks) |> Dir entry stats |> recomputeStats
     in
-        rm <| splitPath entry.key
+        rm <| splitPath <| FileEntry.key entry
 
 
 {-| Update a tree from a list of values.
@@ -300,8 +305,8 @@ addEntries : List FileEntry -> FileTree -> FileTree
 addEntries entries tree =
     let
         action entry =
-            case entry.tag of
-                "deleted" ->
+            case entry of
+                FileEntry.Deletion _ ->
                     remove entry
 
                 _ ->
@@ -332,7 +337,7 @@ itemKeyHead : FileTree -> String
 itemKeyHead tree =
     let
         key =
-            itemEntry tree |> .key
+            itemEntry tree |> FileEntry.key
     in
         splitPath key |> List.head |> Maybe.withDefault key
 
@@ -341,7 +346,7 @@ itemKeyTail : FileTree -> String
 itemKeyTail tree =
     let
         key =
-            itemEntry tree |> .key
+            itemEntry tree |> FileEntry.key
     in
         splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
 
@@ -391,7 +396,7 @@ combineSmallerEntries n orphans =
                 let
                     parentKey =
                         List.head children
-                            |> Maybe.map (itemEntry >> .path)
+                            |> Maybe.map (itemEntry >> FileEntry.path)
                             |> Maybe.withDefault "/"
                             |> dirname
 
@@ -412,8 +417,9 @@ combineSmallerEntries n orphans =
                             |> List.map nodeSize
                             |> List.sum
                             |> Just
-                            |> FileEntry.FileEntry FileEntry.fileTag name name
-                            |> File
+                            |> \size ->
+                                FileEntry.File { key = name, path = name, size = size }
+                                    |> File
                 in
                     (List.take n sorted) ++ [ combined ]
 
@@ -454,13 +460,13 @@ fromString =
                     p =
                         String.dropRight 1 path
                 in
-                    FileEntry dirTag (String.toLower p) p Nothing
+                    FileEntry.Folder { key = String.toLower p, path = p }
             else
                 let
                     ( p, size ) =
                         parseFilePath path
                 in
-                    FileEntry fileTag (String.toLower p) p size
+                    FileEntry.File { key = String.toLower p, path = p, size = size }
 
         parseFilePath path =
             case path |> Regex.find (Regex.AtMost 1) (Regex.regex "^(.+):(\\d*)$") |> List.head |> Maybe.map .submatches of
@@ -487,13 +493,13 @@ toString tree =
         path node =
             case node of
                 Dir entry _ _ ->
-                    entry.path ++ "/"
+                    FileEntry.path entry ++ "/"
 
                 File entry ->
                     String.join ":" <|
                         List.filterMap identity
-                            [ Just entry.path
-                            , Maybe.map Basics.toString entry.size
+                            [ Just <| FileEntry.path entry
+                            , Maybe.map Basics.toString <| FileEntry.size entry
                             ]
 
         paths : FileTree -> List String
