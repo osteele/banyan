@@ -7,19 +7,22 @@
   "repository": "github:osteele/banyan",
   "license": "MIT",
   "scripts": {
+    "install": "elm-package install -y && cd tests && elm-package install -y",
     "start": "poi",
     "prebuild": "rimraf dist",
     "build": "poi build",
     "analyze": "elm-analyse",
     "lint": "eslint index.js src && elm-format --validate src",
     "format": "eslint --fix index.js src && elm-format --yes src",
-    "reinstall": "rimraf node_modules && yarn install && elm package install",
+    "reinstall": "rimraf node_modules elm-stuff tests/elm-stuff && yarn install",
     "test": "elm test",
     "deploy": "yarn build && netlifyctl deploy -b dist"
   },
   "devDependencies": {
     "elm": "^0.18.0",
     "elm-analyse": "^0.13.3",
+    "elm-format": "^0.6.1-alpha",
+    "elm-test": "^0.18.12",
     "eslint": "^4.18.0",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.8.0",
