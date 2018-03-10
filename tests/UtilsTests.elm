@@ -109,10 +109,9 @@ suite =
                 \_ ->
                     takeFileName "base.ext"
                         |> Expect.equal "base.ext"
-            , skip <|
-                test "matches the built-in function" <|
-                    \_ ->
-                        takeFileName "test/"
-                            |> Expect.equal "test/"
+            , test "matches the directory name" <|
+                \_ ->
+                    takeFileName "test/"
+                        |> Expect.equal ""
             ]
         ]

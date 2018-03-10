@@ -18,17 +18,12 @@ module Utils
 you with optional arguments, error handling, and records with optional fields.
 
 
-# Dict helpers
+# Dicts
 
 @docs mapValues
 
 
-# String Helpers
-
-@docs dropPrefix, toStringWithCommas, firstMatch, humanize, prefixes, takeFileName
-
-
-# List Helpers
+# Lists
 
 @docs flatMapM, zip
 
@@ -36,6 +31,16 @@ you with optional arguments, error handling, and records with optional fields.
 # Maybe Helpers
 
 @docs ifJust
+
+
+# Paths
+
+@docs takeFileName
+
+
+# Strings
+
+@docs dropPrefix, toStringWithCommas, firstMatch, humanize, prefixes
 
 -}
 
@@ -206,8 +211,9 @@ quantify s n =
 
 {-| Get the POSIX filename.
 
-    takeFileName "/directory/file.ext" == "file.ext"
-    takeFileName "test/" == ""
+    takeFileName "/dir/file.ext" == "file.ext"
+    takeFileName "/dir/" == "dir"
+    takeFileName "dir/" == "dir"
 
 -}
 takeFileName : String -> String
