@@ -4,18 +4,17 @@ module FileTree
         , addEntries
         , combineSmallerEntries
         , empty
+        , fromString
+        , get
         , getSubtree
         , isEmpty
         , itemEntry
-        , nodeChildren
-        , nodeSize
-        , trimDepth
-        , trimTree
-        , fromString
-        , toString
-        , get
         , map
         , mapChildLists
+        , nodeChildren
+        , nodeSize
+        , toString
+        , trimDepth
         )
 
 {-|
@@ -36,7 +35,7 @@ See the official Dropbox documentation at
 
 ### Query
 
-@docs getSubtree, isEmpty
+@docs get, getSubtree, isEmpty
 
 
 ### Nodes
@@ -44,9 +43,14 @@ See the official Dropbox documentation at
 @docs itemEntry, nodeChildren, nodeSize
 
 
+### Mapping
+
+@docs map, mapChildLists, mapChildren
+
+
 ### Tree truncation
 
-@docs trimDepth, trimTree, combineSmallerEntries
+@docs combineSmallerEntries, trimDepth
 
 
 ### Debug
@@ -157,22 +161,6 @@ nodeSize tree =
 
         leaf ->
             itemEntry leaf |> FileEntry.size |> Maybe.withDefault 0
-
-
-{-| Trim the tree to a maximum depth.
--}
-trimTree : Int -> FileTree -> FileTree
-trimTree depth tree =
-    case tree of
-        Dir data stats children ->
-            Dir data stats <|
-                if depth > 0 then
-                    mapValues (trimTree <| depth - 1) children
-                else
-                    Dict.empty
-
-        leaf ->
-            leaf
 
 
 {-| Recompute a node's stats.
@@ -427,20 +415,13 @@ combineSmallerEntries n orphans =
 {-| Remove leaves at depth > n from the root.
 -}
 trimDepth : Int -> FileTree -> FileTree
-trimDepth n tree =
-    case tree of
-        Dir entry stats children ->
-            let
-                children_ =
-                    if n > 0 then
-                        Dict.map (\_ -> trimDepth (n - 1)) children
-                    else
-                        Dict.empty
-            in
-                Dir entry stats children_
-
-        leaf ->
-            leaf
+trimDepth n =
+    mapChildList <|
+        \children ->
+            if n > 0 then
+                List.map (trimDepth <| n - 1) children
+            else
+                []
 
 
 {-| Construct a tree from a string. This is used in testing.

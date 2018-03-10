@@ -28,7 +28,7 @@ renderFileTreeMap _ tree =
             dropPrefix "/" path |> Maybe.withDefault path
     in
         tree
-            |> trimTree 1
+            |> trimDepth 1
             |> combineSmallerEntries 10 2
             |> toNodes
             |> curry chart title

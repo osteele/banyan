@@ -1,4 +1,18 @@
-module Utils exposing (..)
+module Utils
+    exposing
+        ( dropPrefix
+        , firstMatch
+        , flatMapM
+        , humanize
+        , ifJust
+        , mapValues
+        , pluralize
+        , prefixes
+        , quantify
+        , takeFileName
+        , toStringWithCommas
+        , zip
+        )
 
 {-| This library fills a bunch of important niches in Elm. A `Maybe` can help
 you with optional arguments, error handling, and records with optional fields.
@@ -92,7 +106,7 @@ flatMapM f s xs =
 -}
 firstMatch : Regex.Regex -> String -> Maybe String
 firstMatch re s =
-    Regex.find Regex.All re s
+    Regex.find (Regex.AtMost 1) re s
         |> List.head
         |> Maybe.map .submatches
         |> Maybe.andThen (List.head >> Maybe.withDefault Nothing)
