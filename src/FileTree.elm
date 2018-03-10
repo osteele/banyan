@@ -62,7 +62,6 @@ See the official Dropbox documentation at
 import Dict
 import FileEntry exposing (..)
 import Utils exposing (..)
-import Regex
 
 
 {-| A Rose tree of FileEntry's, and cache rolled up sizes.
@@ -434,35 +433,9 @@ is an optional size.
 -}
 fromString : String -> FileTree
 fromString =
-    let
-        pathToEntry path =
-            if String.endsWith "/" path then
-                let
-                    p =
-                        String.dropRight 1 path
-                in
-                    FileEntry.Folder { key = String.toLower p, path = p }
-            else
-                let
-                    ( p, size ) =
-                        parseFilePath path
-                in
-                    FileEntry.File { key = String.toLower p, path = p, size = size }
-
-        parseFilePath path =
-            case path |> Regex.find (Regex.AtMost 1) (Regex.regex "^(.+):(\\d*)$") |> List.head |> Maybe.map .submatches of
-                Just ((Just p) :: size :: _) ->
-                    ( p
-                    , size
-                        |> Maybe.andThen (String.toInt >> Result.toMaybe)
-                    )
-
-                _ ->
-                    ( path, Nothing )
-    in
-        String.split ";"
-            >> List.map pathToEntry
-            >> flip addEntries empty
+    String.split ";"
+        >> List.map FileEntry.fromString
+        >> flip addEntries empty
 
 
 {-| Turn a tree into a string. See fromString for the format.
@@ -470,27 +443,16 @@ fromString =
 toString : FileTree -> String
 toString tree =
     let
-        path : FileTree -> String
-        path node =
-            case node of
-                Dir entry _ _ ->
-                    FileEntry.path entry ++ "/"
-
-                File entry ->
-                    String.join ":" <|
-                        List.filterMap identity
-                            [ Just <| FileEntry.path entry
-                            , Maybe.map Basics.toString <| FileEntry.size entry
-                            ]
-
         paths : FileTree -> List String
         paths tree =
-            [ path tree ]
+            [ FileEntry.toString <| itemEntry tree ]
                 ++ (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
         paths tree
             |> List.filter ((/=) "/")
+            -- just assume this
             |> List.sort
+            -- make deterministic
             |> String.join ";"
 
 

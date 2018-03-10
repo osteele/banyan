@@ -1,6 +1,17 @@
-module FileEntry exposing (..)
+module FileEntry
+    exposing
+        ( FileEntry(..)
+        , key
+        , path
+        , size
+        , isDir
+        , decodeFileEntry
+        , fromString
+        , toString
+        )
 
 import Json.Decode exposing (..)
+import Regex
 
 
 type alias FileData =
@@ -99,3 +110,56 @@ isDir entry =
 
         _ ->
             False
+
+
+{-| Construct an entry from a string. This is used in testing.
+
+The string is a ;-separated list of paths. Files end in :size, where size
+is an optional size.
+
+    fromString "/file" -- file with no size
+    fromString "/file:10" -- file with size
+    fromString "/dir/" -- folder
+
+-}
+fromString : String -> FileEntry
+fromString path =
+    if String.endsWith "/" path then
+        let
+            p =
+                String.dropRight 1 path
+        in
+            Folder { key = String.toLower p, path = p }
+    else
+        let
+            ( p, size ) =
+                case path |> Regex.find (Regex.AtMost 1) (Regex.regex "^(.+):(\\d*)$") |> List.head |> Maybe.map .submatches of
+                    Just ((Just p) :: size :: _) ->
+                        ( p
+                        , size
+                            |> Maybe.andThen (String.toInt >> Result.toMaybe)
+                        )
+
+                    _ ->
+                        ( path, Nothing )
+        in
+            File { key = String.toLower p, path = p, size = size }
+
+
+{-| Turn a tree into a string. See fromString for the format.
+-}
+toString : FileEntry -> String
+toString entry =
+    case entry of
+        Deletion { path } ->
+            "-" ++ path
+
+        File { path, size } ->
+            String.join ":" <|
+                List.filterMap identity
+                    [ Just <| path
+                    , Maybe.map Basics.toString <| size
+                    ]
+
+        Folder { path } ->
+            path ++ "/"
