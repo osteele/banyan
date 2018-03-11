@@ -1,0 +1,3 @@
+[submodule "shared/elm-dropbox"]
+	path = shared/elm-dropbox
+	url = https://github.com/osteele/elm-dropbox.git

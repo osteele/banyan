@@ -14,14 +14,6 @@ Install [yarn](https://yarnpkg.com).
 $ yarn install
 ```
 
-The build currently depends on a fork of <https://github.com/avh4/elm-dropbox>.
-Clone or download <https://github.com/osteele/elm-dropbox> to a sibling of
-the `banyan` workspace:
-
-```bash
-$ (cd .. && git clone https://github.com/osteele/elm-dropbox.git)
-```
-
 ### Create a Dropbox API Key
 
 Sign into Dropbox.
