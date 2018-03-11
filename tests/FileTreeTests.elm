@@ -10,20 +10,29 @@ suite : Test
 suite =
     describe "FileTree"
         [ describe "fromString"
-            [ test "creates files" <|
+            [ test "creates an unsized file" <|
                 \_ ->
-                    FileTree.fromString "/a;/b:12"
-                        |> Expect.all
-                            [ get "/a"
-                                >> expectJust (FileEntry.File { key = "/a", path = "/a", size = Nothing })
-                            , get "/b"
-                                >> expectJust (fileEntry "/b" 12)
-                            ]
-            , test "creates directories" <|
+                    FileTree.fromString "/File"
+                        |> get "/file"
+                        >> expectJust (fileEntry "/File" Nothing)
+            , test "creates a sized file" <|
                 \_ ->
-                    FileTree.fromString "/dir/"
+                    FileTree.fromString "/File:12"
+                        |> get "/file"
+                        >> expectJust (fileEntry "/File" <| Just 12)
+            , test "creates a directory" <|
+                \_ ->
+                    FileTree.fromString "/Dir/"
                         |> get "/dir"
-                        >> expectJust (dirEntry "/dir")
+                        >> expectJust (dirEntry "/Dir")
+            , test "adds all the entries" <|
+                \_ ->
+                    FileTree.fromString "/dir/;/f1;/f2:10"
+                        |> Expect.all
+                            [ get "/dir" >> expectJust (dirEntry "/dir")
+                            , get "/f1" >> expectJust (fileEntry "/f1" Nothing)
+                            , get "/f2" >> expectJust (fileEntry "/f2" <| Just 10)
+                            ]
             ]
         , describe "toString"
             [ test "prints files, file sizes, and directories" <|
@@ -32,64 +41,71 @@ suite =
                         |> FileTree.toString
                         |> Expect.equal "/a;/b/;/c:12"
             ]
-        , test "/dir/ creates a directory node" <|
-            \_ ->
-                FileTree.fromString "/dir/"
-                    |> get "/dir"
-                    |> expectJust (dirEntry "/dir")
-        , test "/dir/leaf creates the intermediate directory node" <|
-            \_ ->
-                FileTree.fromString "/dir/leaf"
-                    |> get "/dir"
-                    |> expectJust (dirEntry "/dir")
-        , test "/dir/subdir/ creates a leaf node" <|
-            \_ ->
-                FileTree.fromString "/dir/subdir/"
-                    |> get "/dir/subdir"
-                    |> expectJust (dirEntry "/dir/subdir")
-        , test "/dir/subdir/ + /Dir/ preserves the subdirectory" <|
-            \_ ->
-                FileTree.fromString "/dir/subdir/;/Dir/"
-                    |> get "/dir/subdir"
-                    |> expectJust (dirEntry "/dir/subdir")
-        , test "/dir/leaf + /Dir/ updates the directory name" <|
-            \_ ->
-                FileTree.fromString "/dir/leaf;/Dir/"
-                    |> get "/dir"
-                    |> expectJust (dirEntry "/Dir")
-        , test "/Dir/ + /dir/leaf + preserves the directory name" <|
-            \_ ->
-                FileTree.fromString "/Dir/;/dir/leaf"
-                    |> get "/dir"
-                    |> expectJust (dirEntry "/Dir")
-        , test "delete /dir deletes the directory node" <|
-            \_ ->
-                [ dirEntry "/dir"
-                , FileEntry.Deletion { key = "/dir", path = "/dir" }
-                ]
-                    |> fromEntries
-                    |> get "/dir"
-                    |> Expect.equal Nothing
-        , test "delete /dir deletes the directory's children" <|
-            \_ ->
-                [ dirEntry "/dir"
-                , dirEntry "/dir/subdir"
-                , FileEntry.Deletion { key = "/dir", path = "/dir" }
-                ]
-                    |> fromEntries
-                    |> get "/dir/subdir"
-                    |> Expect.equal Nothing
-        , test "delete /dir/leaf deletes only the leaf" <|
-            \_ ->
-                [ dirEntry "/dir"
-                , dirEntry "/dir/leaf"
-                , FileEntry.Deletion { key = "/dir/leaf", path = "/dir/leaf" }
-                ]
-                    |> fromEntries
-                    |> Expect.all
-                        [ get "/dir" >> expectJust (dirEntry "/dir")
-                        , get "/dir/child" >> Expect.equal Nothing
-                        ]
+        , describe "addEntries"
+            [ test "/dir/ creates a directory node" <|
+                \_ ->
+                    FileTree.fromString "/dir/"
+                        |> get "/dir"
+                        |> expectJust (dirEntry "/dir")
+            , test "/dir/leaf creates the intermediate directory node" <|
+                \_ ->
+                    FileTree.fromString "/dir/leaf"
+                        |> get "/dir"
+                        |> expectJust (dirEntry "/dir")
+            , test "/dir/subdir/ creates a leaf node" <|
+                \_ ->
+                    FileTree.fromString "/dir/subdir/"
+                        |> get "/dir/subdir"
+                        |> expectJust (dirEntry "/dir/subdir")
+            , test "/dir/leaf + /Dir/ updates the directory name" <|
+                \_ ->
+                    FileTree.fromString "/dir/leaf;/Dir/"
+                        |> get "/dir"
+                        |> expectJust (dirEntry "/Dir")
+            , test "/dir/subdir/ + /Dir/ preserves the subdirectory" <|
+                \_ ->
+                    FileTree.fromString "/dir/subdir/;/Dir/"
+                        |> get "/dir/subdir"
+                        |> expectJust (dirEntry "/dir/subdir")
+            , test "/Dir/ + /dir/leaf + preserves the directory name" <|
+                \_ ->
+                    FileTree.fromString "/Dir/;/dir/leaf"
+                        |> get "/dir"
+                        |> expectJust (dirEntry "/Dir")
+            , test "delete /dir deletes the directory node" <|
+                \_ ->
+                    [ dirEntry "/dir"
+                    , FileEntry.Deletion { key = "/dir", path = "/dir" }
+                    ]
+                        |> fromEntries
+                        |> get "/dir"
+                        |> Expect.equal Nothing
+            , test "delete /dir deletes the directory's children" <|
+                \_ ->
+                    [ dirEntry "/dir"
+                    , dirEntry "/dir/subdir"
+                    , FileEntry.Deletion { key = "/dir", path = "/dir" }
+                    ]
+                        |> fromEntries
+                        |> get "/dir/subdir"
+                        |> Expect.equal Nothing
+            , test "delete /dir/leaf deletes only the leaf" <|
+                \_ ->
+                    [ dirEntry "/dir"
+                    , dirEntry "/dir/leaf"
+                    , FileEntry.Deletion { key = "/dir/leaf", path = "/dir/leaf" }
+                    ]
+                        |> fromEntries
+                        |> Expect.all
+                            [ get "/dir" >> expectJust (dirEntry "/dir")
+                            , get "/dir/child" >> Expect.equal Nothing
+                            ]
+            , test "/file deletes a previous directory's children" <|
+                \_ ->
+                    FileTree.fromString "/a/;/a/subdir;/a"
+                        |> FileTree.toString
+                        >> Expect.equal "/a"
+            ]
         , test "map" <|
             \_ ->
                 FileTree.fromString "/a/1;/a/2;/b"
@@ -127,6 +143,11 @@ suite =
         ]
 
 
+expectJust : a -> Maybe a -> Expectation
+expectJust =
+    Expect.equal << Just
+
+
 fromEntries : List FileEntry -> FileTree
 fromEntries entries =
     FileTree.empty |> addEntries entries
@@ -137,11 +158,6 @@ dirEntry path =
     FileEntry.Folder { key = String.toLower path, path = path }
 
 
-fileEntry : String -> Int -> FileEntry
+fileEntry : String -> Maybe Int -> FileEntry
 fileEntry path size =
-    FileEntry.File { key = String.toLower path, path = path, size = Just size }
-
-
-expectJust : a -> Maybe a -> Expectation
-expectJust =
-    Expect.equal << Just
+    FileEntry.File { key = String.toLower path, path = path, size = size }
