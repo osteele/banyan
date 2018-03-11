@@ -23,6 +23,7 @@ before_install:
     fi
 
 script:
-  - yarn lint
-  - yarn test
-  - yarn build
+  - export PATH=$TRAVIS_BUILD_DIR/sysconfcpus/bin:$PATH
+  - sysconfcpus -n 2 yarn lint
+  - sysconfcpus -n 2 yarn test
+  - sysconfcpus -n 2 yarn build
