@@ -12,7 +12,6 @@ Install [yarn](https://yarnpkg.com).
 
 ```bash
 $ yarn install
-$ elm-package install
 ```
 
 The build currently depends on a fork of <https://github.com/avh4/elm-dropbox>.
@@ -49,7 +48,8 @@ $ yarn start
 ### Test
 
 ```bash
-$ yarn test
+$ yarn test        # run the tests once
+$ yarn test:watch  # test in watch mode
 ```
 
 ### Lint

@@ -7,16 +7,17 @@
   "repository": "github:osteele/banyan",
   "license": "MIT",
   "scripts": {
-    "install": "elm-package install -y && cd tests && elm-package install -y",
-    "start": "poi",
-    "prebuild": "rimraf dist",
-    "build": "poi build",
     "analyze": "elm-analyse",
-    "lint": "eslint index.js src && elm-format --validate src",
+    "build": "poi build",
+    "deploy": "yarn build && netlifyctl deploy -b dist",
     "format": "eslint --fix index.js src && elm-format --yes src",
+    "install": "elm-package install -y && cd tests && elm-package install -y",
+    "lint": "eslint index.js src && elm-format --validate src",
+    "prebuild": "rimraf dist",
     "reinstall": "rimraf node_modules elm-stuff tests/elm-stuff && yarn install",
-    "test": "elm test",
-    "deploy": "yarn build && netlifyctl deploy -b dist"
+    "start": "poi",
+    "test:watch": "elm test --watch",
+    "test": "elm test"
   },
   "devDependencies": {
     "elm": "^0.18.0",
