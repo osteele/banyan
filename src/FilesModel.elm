@@ -39,32 +39,36 @@ update auth msg model =
         ListFolder ->
             case extractAccessToken auth of
                 Just token ->
-                    let
-                        files =
-                            init
-                    in
-                        { files | hasMore = True }
-                            ! [ curry listFolder token { path = "", recursive = True, includeDeleted = False } ]
+                    { init | hasMore = True }
+                        ! [ curry listFolder token { path = "", recursive = True, includeDeleted = False } ]
 
                 Nothing ->
-                    model ! []
+                    { model | errorMessage = Just "Failed to extract access token" } ! []
 
         ReceiveListFolderResponse result ->
             case result of
                 Result.Ok ( entries, hasMore ) ->
-                    { model
-                        | fileTree = FileTree.addEntries entries model.fileTree
-                        , hasMore = hasMore
-                        , syncedEntryCount = model.syncedEntryCount + List.length entries
-                        , requestCount = model.requestCount + 1
-                    }
-                        ! []
+                    let
+                        tree =
+                            FileTree.addEntries entries model.fileTree
+
+                        cmd =
+                            if hasMore then
+                                Cmd.none
+                            else
+                                saveFilesCache <| FileTree.toString tree
+                    in
+                        ( { model
+                            | fileTree = tree
+                            , hasMore = hasMore
+                            , syncedEntryCount = model.syncedEntryCount + List.length entries
+                            , requestCount = model.requestCount + 1
+                          }
+                        , cmd
+                        )
 
                 Result.Err msg ->
-                    { model
-                        | hasMore = False
-                        , errorMessage = Just msg
-                    }
+                    { model | hasMore = False, errorMessage = Just msg }
                         ! []
 
         _ ->

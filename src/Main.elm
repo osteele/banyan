@@ -100,20 +100,20 @@ update msg model =
         -- list files
         ListFolder ->
             let
-                ( model_, cmd ) =
+                ( m, cmd ) =
                     updateFileList msg model
             in
-                { model_ | path = "/" } ! [ cmd ]
+                { m | path = "/" } ! [ cmd ]
 
         ReceiveListFolderResponse _ ->
             let
-                ( model_, cmd ) =
+                ( m1, cmd1 ) =
                     updateFileList msg model
 
-                ( model__, cmd_ ) =
-                    update RenderFileTreeMap model_
+                ( m2, cmd2 ) =
+                    update RenderFileTreeMap m1
             in
-                model__ ! [ cmd, cmd_ ]
+                m2 ! [ cmd1, cmd2 ]
 
         RenderFileTreeMap ->
             model

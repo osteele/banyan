@@ -8,7 +8,7 @@ import chart from './src/chart';
 
 const accessTokenKey = 'accessToken';
 const fileCacheKey = 'fileTree';
-
+// const filesCacheKey = 'files';
 
 const app = Elm.Main.embed(document.getElementById('app'), {
   accessToken: localStorage[accessTokenKey] || null,
@@ -26,8 +26,9 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
   // If there's a cached entry, return it first.
   // TODO Make this a separate function.
   let cache = null;
-  if (!useCache && localStorage[fileCacheKey]) {
+  if (useCache && localStorage[fileCacheKey]) {
     cache = JSON.parse(localStorage[fileCacheKey]);
+    console.info('read cache', (localStorage[fileCacheKey] || '').length);
   }
   if (cache && cache.accessToken !== accessToken) {
     console.info('reset cache');
@@ -38,7 +39,7 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
     const entries = Object.values(cache.entries);
     if (entries.length) {
       console.info('initial send', entries.length, 'entries');
-      app.ports.receiveFileList.send([entries, true]);
+      app.ports.receiveFileList.send([entries, false]);
     }
   }
 
@@ -61,23 +62,25 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
       return;
     }
 
-    const entries = response.entries.map(entry => (
-      {
-        tag: entry['.tag'],
-        key: entry.path_lower,
-        path: entry.path_display,
-        size: entry.size || null,
-      }
-    ));
+    const entries = response.entries.map(entry => ({
+      tag: entry['.tag'],
+      key: entry.path_lower,
+      path: entry.path_display,
+      size: entry.size || null,
+    }));
     const deleted = response.entries.filter(({ tag }) => tag === 'deleted');
-    if (deleted.length) { console.info('deleted', deleted); }
+    if (deleted.length) {
+      console.info('deleted', deleted);
+    }
 
-    // update the cache
     cache.cursor = response.cursor;
-    entries.forEach((entry) => {
-      cache.entries[entry.key] = entry;
-    });
-    // localStorage[fileCacheKey] = JSON.stringify(cache);
+    if (useCache) {
+      entries.forEach((entry) => {
+        cache.entries[entry.key] = entry;
+      });
+      localStorage[fileCacheKey] = JSON.stringify(cache);
+      console.info('wrote cache', localStorage[fileCacheKey].length);
+    }
 
     const hasMore = Boolean(response.has_more);
     // initiate the query before processing these entries, in case this allows
@@ -85,6 +88,11 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
     query = hasMore && dbx.filesListFolderContinue({ cursor: response.cursor });
     app.ports.receiveFileList.send([entries, hasMore]);
   }
+});
+
+app.ports.saveFilesCache.subscribe((cacheValue) => {
+  console.info('write cache', cacheValue.length);
+  // localStorage[filesCacheKey] = cacheValue;
 });
 
 app.ports.getAccountInfo.subscribe(async (accessToken) => {

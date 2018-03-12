@@ -22,6 +22,9 @@ type alias ListFolderParameters =
 port listFolder : ( String, ListFolderParameters ) -> Cmd msg
 
 
+port saveFilesCache : String -> Cmd msg
+
+
 
 -- JS -> ELM
 

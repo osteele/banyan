@@ -449,10 +449,10 @@ toString tree =
                 ++ (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
         paths tree
+            -- the root folder is implicit
             |> List.filter ((/=) "/")
-            -- just assume this
+            -- make the string deterministic
             |> List.sort
-            -- make deterministic
             |> String.join ";"
 
 
