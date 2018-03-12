@@ -16,7 +16,7 @@ import ListFolder exposing (..)
 
 type alias FilesModel =
     { fileTree : FileTree
-    , syncing : Bool
+    , hasMore : Bool
     , syncedEntryCount : Int
     , requestCount : Int
     , errorMessage : Maybe String
@@ -26,7 +26,7 @@ type alias FilesModel =
 init : FilesModel
 init =
     { fileTree = FileTree.empty
-    , syncing = False
+    , hasMore = False
     , syncedEntryCount = 0
     , requestCount = 0
     , errorMessage = Nothing
@@ -43,7 +43,7 @@ update auth msg model =
                         files =
                             init
                     in
-                        { files | syncing = True }
+                        { files | hasMore = True }
                             ! [ curry listFolder token { path = "", recursive = True, includeDeleted = False } ]
 
                 Nothing ->
@@ -54,7 +54,7 @@ update auth msg model =
                 Result.Ok ( entries, hasMore ) ->
                     { model
                         | fileTree = FileTree.addEntries entries model.fileTree
-                        , syncing = hasMore
+                        , hasMore = hasMore
                         , syncedEntryCount = model.syncedEntryCount + List.length entries
                         , requestCount = model.requestCount + 1
                     }
@@ -62,7 +62,7 @@ update auth msg model =
 
                 Result.Err msg ->
                     { model
-                        | syncing = False
+                        | hasMore = False
                         , errorMessage = Just msg
                     }
                         ! []

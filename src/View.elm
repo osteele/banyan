@@ -40,7 +40,7 @@ header model =
             [ Html.h1 [ class "header item" ] [ text "Banyan" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
-                    [ ifJust (isSignedIn model && not model.files.syncing) <|
+                    [ ifJust (isSignedIn model && not model.files.hasMore) <|
                         button
                             [ class "item", onClick ListFolder ]
                             [ text "Sync" ]
@@ -166,14 +166,11 @@ progress model =
         files =
             model.files
 
-        loading =
-            files.syncing
-
         requestsF =
             toFloat files.requestCount
 
         frac =
-            if loading then
+            if files.hasMore then
                 requestsF / (requestsF + 1.0)
             else
                 1.0
@@ -184,7 +181,7 @@ progress model =
         div
             [ class <|
                 "ui progress"
-                    ++ (if loading then
+                    ++ (if files.hasMore then
                             ""
                         else
                             " success"
@@ -203,7 +200,7 @@ progress model =
                         , " entries totalling "
                         , humanize <| FileTree.nodeSize files.fileTree
                         ]
-                            ++ (if loading then
+                            ++ (if files.hasMore then
                                     [ " in "
                                     , quantify " request" files.requestCount
                                     , "…"
