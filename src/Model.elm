@@ -4,6 +4,7 @@ import Data exposing (..)
 import Dropbox
 import FileEntry
 import FileTree exposing (FileTree)
+import FilesModel exposing (FilesModel)
 import Navigation
 
 
@@ -17,7 +18,7 @@ type alias Model =
     , auth : Maybe Dropbox.UserAuth
 
     -- tree and loading status
-    , files : FileSyncModel
+    , files : FilesModel
 
     -- view state
     , path : String
@@ -37,7 +38,7 @@ init clientId location =
     , clientId = clientId
 
     -- tree and loading status
-    , files = initFileSyncModel
+    , files = FilesModel.init
 
     -- view state
     , path = "/"
@@ -55,7 +56,7 @@ clearAccountFields model =
     { model
         | auth = Nothing
         , accountInfo = Nothing
-        , files = initFileSyncModel
+        , files = FilesModel.init
         , path = "/"
     }
 
@@ -72,25 +73,6 @@ teamName model =
 
 
 -- files
-
-
-type alias FileSyncModel =
-    { fileTree : FileTree
-    , syncing : Bool
-    , syncedEntryCount : Int
-    , requestCount : Int
-    , errorMessage : Maybe String
-    }
-
-
-initFileSyncModel : FileSyncModel
-initFileSyncModel =
-    { fileTree = FileTree.empty
-    , syncing = False
-    , syncedEntryCount = 0
-    , requestCount = 0
-    , errorMessage = Nothing
-    }
 
 
 subtree : Model -> FileTree

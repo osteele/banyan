@@ -1,16 +1,15 @@
 module Main exposing (..)
 
 import Dropbox
-import FileTree
+import DropboxUtils exposing (extractAccessToken)
+import FilesModel
+import ListFolder exposing (..)
 import Message exposing (..)
 import Model exposing (..)
 import Navigation
 import Ports exposing (..)
-import ListFolder exposing (..)
-import Regex
 import Task
 import TreeMap exposing (renderFileTreeMap)
-import Utils exposing (..)
 import View exposing (..)
 
 
@@ -138,49 +137,11 @@ updateFileList msg model =
         Just auth ->
             let
                 ( files, cmd ) =
-                    updateSyncModel auth msg model.files
+                    FilesModel.update auth msg model.files
             in
                 { model | files = files } ! [ cmd ]
 
         Nothing ->
-            model ! []
-
-
-updateSyncModel : Dropbox.UserAuth -> Msg -> FileSyncModel -> ( FileSyncModel, Cmd msg )
-updateSyncModel auth msg model =
-    case msg of
-        SyncFiles ->
-            case extractAccessToken auth of
-                Just token ->
-                    let
-                        files =
-                            initFileSyncModel
-                    in
-                        { files | syncing = True }
-                            ! [ curry listFolder token { path = "", recursive = True, includeDeleted = False } ]
-
-                Nothing ->
-                    model ! []
-
-        ReceiveListFolderResponse result ->
-            case result of
-                Result.Ok ( entries, hasMore ) ->
-                    { model
-                        | fileTree = FileTree.addEntries entries model.fileTree
-                        , syncing = hasMore
-                        , syncedEntryCount = model.syncedEntryCount + List.length entries
-                        , requestCount = model.requestCount + 1
-                    }
-                        ! []
-
-                Result.Err msg ->
-                    { model
-                        | syncing = False
-                        , errorMessage = Just msg
-                    }
-                        ! []
-
-        _ ->
             model ! []
 
 
@@ -207,18 +168,3 @@ subscriptions _ =
         , receiveFileListError (ReceiveListFolderResponse << Result.Err)
         , setPath Focus
         ]
-
-
-
--- utilities
-
-
-extractAccessToken : Dropbox.UserAuth -> Maybe String
-extractAccessToken auth =
-    -- TODO extract from JSON instead?
-    auth |> toString |> firstMatch bearerRegex
-
-
-bearerRegex : Regex.Regex
-bearerRegex =
-    Regex.regex "Bearer \"(.+)\""
