@@ -95,10 +95,10 @@ update msg model =
                   ]
 
         SetAccountInfo info ->
-            update SyncFiles { model | accountInfo = Just info }
+            update ListFolder { model | accountInfo = Just info }
 
         -- list files
-        SyncFiles ->
+        ListFolder ->
             let
                 ( model_, cmd ) =
                     updateFileList msg model

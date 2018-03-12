@@ -12,7 +12,7 @@ type Msg
     | SignOut
     | SetAccountInfo AccountInfo
       -- file retrieval
-    | SyncFiles
+    | ListFolder
     | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
       -- view controls
     | Focus String

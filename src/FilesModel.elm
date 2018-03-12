@@ -36,7 +36,7 @@ init =
 update : Dropbox.UserAuth -> Msg -> FilesModel -> ( FilesModel, Cmd msg )
 update auth msg model =
     case msg of
-        SyncFiles ->
+        ListFolder ->
             case extractAccessToken auth of
                 Just token ->
                     let
