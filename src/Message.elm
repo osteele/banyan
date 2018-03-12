@@ -14,7 +14,6 @@ type Msg
       -- file retrieval
     | SyncFiles
     | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
-    | SyncFilesError (Maybe String)
       -- view controls
     | Focus String
     | RenderFileTreeMap

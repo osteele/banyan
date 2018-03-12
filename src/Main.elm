@@ -117,9 +117,6 @@ update msg model =
             in
                 model__ ! [ cmd, cmd_ ]
 
-        SyncFilesError _ ->
-            updateFileList msg model
-
         RenderFileTreeMap ->
             model
                 ! [ Model.subtree model |> renderFileTreeMap model.depth ]
@@ -183,13 +180,6 @@ updateSyncModel auth msg model =
                     }
                         ! []
 
-        SyncFilesError msg ->
-            { model
-                | syncing = False
-                , errorMessage = Just <| Maybe.withDefault "Error listing files" <| msg
-            }
-                ! []
-
         _ ->
             model ! []
 
@@ -213,8 +203,8 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
-        , receiveFileList (decodeFileList >> ReceiveListFolderResponse)
-        , receiveFileListError SyncFilesError
+        , receiveFileList (ReceiveListFolderResponse << decodeFileList)
+        , receiveFileListError (ReceiveListFolderResponse << Result.Err)
         , setPath Focus
         ]
 

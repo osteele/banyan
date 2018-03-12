@@ -35,4 +35,4 @@ decodeFileList ( data, more ) =
         |> Result.map (\entries -> ( entries, more ))
 
 
-port receiveFileListError : (Maybe String -> msg) -> Sub msg
+port receiveFileListError : (String -> msg) -> Sub msg
