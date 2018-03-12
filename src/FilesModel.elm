@@ -11,6 +11,7 @@ import DropboxUtils exposing (extractAccessToken)
 import FileTree exposing (FileTree)
 import ListFolder exposing (listFolder)
 import Message exposing (..)
+import ListFolder exposing (..)
 
 
 type alias FilesModel =
@@ -68,3 +69,11 @@ update auth msg model =
 
         _ ->
             model ! []
+
+
+subscriptions : FilesModel -> Sub Msg
+subscriptions _ =
+    Sub.batch
+        [ receiveFileList (ReceiveListFolderResponse << decodeFileList)
+        , receiveFileListError (ReceiveListFolderResponse << Result.Err)
+        ]

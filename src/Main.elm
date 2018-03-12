@@ -3,7 +3,6 @@ module Main exposing (..)
 import Dropbox
 import DropboxUtils exposing (extractAccessToken)
 import FilesModel
-import ListFolder exposing (..)
 import Message exposing (..)
 import Model exposing (..)
 import Navigation
@@ -145,6 +144,8 @@ updateFileList msg model =
             model ! []
 
 
+{-| Remove the hash from the browser navigation URL.
+-}
 clearLocationHash : Model -> Cmd msg
 clearLocationHash model =
     let
@@ -161,10 +162,9 @@ clearLocationHash model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
+subscriptions model =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
-        , receiveFileList (ReceiveListFolderResponse << decodeFileList)
-        , receiveFileListError (ReceiveListFolderResponse << Result.Err)
         , setPath Focus
+        , FilesModel.subscriptions model.files
         ]
