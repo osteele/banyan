@@ -36,7 +36,7 @@ initialCmd flags =
 -- messages
 
 
-update : Msg -> Model -> ( Model, Cmd msg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         -- account
@@ -94,7 +94,7 @@ update msg model =
                     { model | accountInfo = Just info }
             in
                 if FilesModel.isEmpty model.files then
-                    update ListFolder m
+                    update RestoreFromCacheOrListFolder m
                 else
                     m ! []
 
@@ -102,14 +102,31 @@ update msg model =
         ListFolder ->
             let
                 ( m, cmd ) =
-                    updateFileList msg model
+                    updateFilesModel msg model
             in
                 { m | path = "/" } ! [ cmd ]
 
         ReceiveListFolderResponse _ ->
             let
                 ( m1, cmd1 ) =
-                    updateFileList msg model
+                    updateFilesModel msg model
+
+                ( m2, cmd2 ) =
+                    update RenderFileTreeMap m1
+            in
+                m2 ! [ cmd1, cmd2 ]
+
+        RestoreFromCacheOrListFolder ->
+            let
+                ( m, cmd ) =
+                    updateFilesModel msg model
+            in
+                { m | path = "/" } ! [ cmd ]
+
+        RestoreFromCache ->
+            let
+                ( m1, cmd1 ) =
+                    updateFilesModel msg model
 
                 ( m2, cmd2 ) =
                     update RenderFileTreeMap m1
@@ -131,8 +148,8 @@ update msg model =
             { model | depth = n } ! []
 
 
-updateFileList : Msg -> Model -> ( Model, Cmd msg )
-updateFileList msg model =
+updateFilesModel : Msg -> Model -> ( Model, Cmd Msg )
+updateFilesModel msg model =
     case model.auth of
         Just auth ->
             let

@@ -9,11 +9,14 @@ module FilesModel exposing (..)
 import Dropbox
 import DropboxUtils exposing (extractAccessToken)
 import FileTree exposing (FileTree)
-import ListFolder exposing (listFolder)
-import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder)
-import Message exposing (..)
+import Json.Encode as Encode
 import ListFolder exposing (..)
+import ListFolder exposing (listFolder)
+import Message exposing (..)
+import Process
+import Task
+import Time exposing (Time)
 
 
 -- UPDATE
@@ -25,6 +28,7 @@ type alias FilesModel =
     , syncedEntryCount : Int
     , requestCount : Int
     , errorMessage : Maybe String
+    , cache : Maybe String
     }
 
 
@@ -35,7 +39,13 @@ init =
     , syncedEntryCount = 0
     , requestCount = 0
     , errorMessage = Nothing
+    , cache = Nothing
     }
+
+
+fromCache : Maybe String -> FilesModel
+fromCache c =
+    { init | cache = c }
 
 
 isEmpty : FilesModel -> Bool
@@ -47,7 +57,7 @@ isEmpty =
 -- UPDATE
 
 
-update : Dropbox.UserAuth -> Msg -> FilesModel -> ( FilesModel, Cmd msg )
+update : Dropbox.UserAuth -> Msg -> FilesModel -> ( FilesModel, Cmd Msg )
 update auth msg model =
     case msg of
         ListFolder ->
@@ -83,8 +93,33 @@ update auth msg model =
                     { model | hasMore = False, errorMessage = Just msg }
                         ! []
 
+        RestoreFromCache ->
+            case model.cache |> Maybe.map (Decode.decodeString decode) |> Maybe.andThen Result.toMaybe of
+                Just m ->
+                    m ! []
+
+                Nothing ->
+                    update auth ListFolder { model | cache = Nothing }
+
+        RestoreFromCacheOrListFolder ->
+            case model.cache of
+                Just _ ->
+                    -- delay is necessary in order to display the message
+                    { model | errorMessage = Just "restoring from cache" }
+                        ! [ delay (100 * Time.millisecond) RestoreFromCache ]
+
+                Nothing ->
+                    update auth ListFolder { model | cache = Nothing }
+
         _ ->
             model ! []
+
+
+delay : Time -> msg -> Cmd msg
+delay time msg =
+    Process.sleep time
+        |> Task.andThen (always <| Task.succeed msg)
+        |> Task.perform identity
 
 
 
@@ -131,8 +166,9 @@ decode =
                 )
 
 
-fromCache : Maybe String -> FilesModel
-fromCache =
-    Maybe.map (Decode.decodeString decode)
-        >> Maybe.andThen Result.toMaybe
-        >> Maybe.withDefault init
+
+-- fromCache : Maybe String -> FilesModel
+-- fromCache =
+--     Maybe.map (Decode.decodeString decode)
+--         >> Maybe.andThen Result.toMaybe
+--         >> Maybe.withDefault init

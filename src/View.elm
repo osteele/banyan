@@ -161,6 +161,16 @@ breadcrumb_ hn sep model =
 
 progress : Model -> Html Msg
 progress model =
+    case model.files.cache of
+        Just _ ->
+            div [] [ text "reading cache" ]
+
+        Nothing ->
+            listFoldersProgress model
+
+
+listFoldersProgress : Model -> Html Msg
+listFoldersProgress model =
     let
         files =
             model.files

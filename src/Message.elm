@@ -14,6 +14,8 @@ type Msg
       -- file retrieval
     | ListFolder
     | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
+    | RestoreFromCacheOrListFolder
+    | RestoreFromCache
       -- view controls
     | Focus String
     | RenderFileTreeMap
