@@ -15,6 +15,7 @@ const app = Elm.Main.embed(document.getElementById('app'), {
   clientId: process.env.DROPBOX_APP_KEY,
 });
 
+// See https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder
 app.ports.listFolder.subscribe(async ([accessToken, params]) => {
   const useCache = false;
   if (!accessToken) {

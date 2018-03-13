@@ -38,13 +38,13 @@ toNodes : FileTree -> List Node
 toNodes fileTree =
     let
         f : ( Maybe String, Int ) -> FileTree -> ( List Node, ( Maybe String, Int ) )
-        f ( parent, nextId ) item =
+        f ( parent, nextId1 ) item =
             let
                 entry =
                     itemEntry item
 
                 nodeId =
-                    Basics.toString nextId
+                    Basics.toString nextId1
 
                 node =
                     { name = entry |> FileEntry.path |> Utils.takeFileName
@@ -55,7 +55,7 @@ toNodes fileTree =
                     }
 
                 ( childNodes, ( _, nextId2 ) ) =
-                    flatMapM f ( Just nodeId, nextId ) <| Dict.values <| nodeChildren item
+                    flatMapM f ( Just nodeId, nextId1 ) <| Dict.values <| nodeChildren item
             in
                 ( node :: childNodes, ( parent, nextId2 ) )
     in

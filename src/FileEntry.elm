@@ -10,33 +10,63 @@ module FileEntry
         , toString
         )
 
+{-| See <https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder>.
+-}
+
 import Json.Decode exposing (..)
 import Regex
 
 
-type alias FileData =
+{-| File metadata, as returned from a listFolders request.
+
+See
+<https://www.dropbox.com/developers/documentation/http/documentation#FileMetadata>.
+
+Doesn't record name, id, client_modified, server_modified, rev, sharing_info,
+property_groups, has_explicit_shared_members, content_hash, media_info,
+symlink_info.
+
+-}
+type alias FileMetadata =
     { key : String
     , path : String
     , size : Maybe Int
     }
 
 
-type alias FolderData =
+{-| Folder metadata, as returned from a listFolders request.
+
+See
+<https://www.dropbox.com/developers/documentation/http/documentation#FolderMetadata>.
+
+Renames path_lower -> key, path_display -> path.
+
+Doesn't record name, id, sharing_info, property_groups.
+
+-}
+type alias FolderMetadata =
     { key : String
     , path : String
     }
 
 
-type alias DeletionData =
+{-| File metadata, as returned from a listFolders request.
+
+See <https://www.dropbox.com/developers/documentation/http/documentation#DeletedMetadata>.
+
+Doesn't record name.
+
+-}
+type alias DeletedMetadata =
     { key : String
     , path : String
     }
 
 
 type FileEntry
-    = File FileData
-    | Folder FolderData
-    | Deletion DeletionData
+    = File FileMetadata
+    | Folder FolderMetadata
+    | Deletion DeletedMetadata
 
 
 key : FileEntry -> String
@@ -85,15 +115,15 @@ decoderFor : String -> Decoder FileEntry
 decoderFor tag =
     case tag of
         "file" ->
-            map3 FileData (field "key" string) (field "path" string) (field "size" <| nullable int)
+            map3 FileMetadata (field "key" string) (field "path" string) (field "size" <| nullable int)
                 |> map File
 
         "folder" ->
-            map2 FolderData (field "key" string) (field "path" string)
+            map2 FolderMetadata (field "key" string) (field "path" string)
                 |> map Folder
 
         "delete" ->
-            map2 DeletionData (field "key" string) (field "path" string)
+            map2 DeletedMetadata (field "key" string) (field "path" string)
                 |> map Deletion
 
         _ ->

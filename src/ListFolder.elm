@@ -1,15 +1,18 @@
 port module ListFolder exposing (..)
 
-import Dropbox exposing (UserAuth)
 import FileEntry exposing (..)
 import Json.Encode
 import Json.Decode exposing (..)
 
 
 -- Elm -> JS
--- from https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder
 
 
+{-| listFolder parameters.
+
+Doesn't implement include_media_info, include_has_explicit_shared_members, include_mounted_folders.
+
+-}
 type alias ListFolderParameters =
     { path : String
     , recursive : Bool
@@ -18,6 +21,9 @@ type alias ListFolderParameters =
 
 
 {-| Request that JavaScript start initiating requests to Dropbox.
+
+See: // See <https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder>
+
 -}
 port listFolder : ( String, ListFolderParameters ) -> Cmd msg
 
