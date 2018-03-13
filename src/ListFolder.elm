@@ -28,7 +28,7 @@ See: // See <https://www.dropbox.com/developers/documentation/http/documentation
 port listFolder : ( String, ListFolderParameters ) -> Cmd msg
 
 
-port saveFilesCache : String -> Cmd msg
+port saveFilesCache : Json.Encode.Value -> Cmd msg
 
 
 

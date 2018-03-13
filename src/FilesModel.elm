@@ -14,6 +14,9 @@ import Message exposing (..)
 import ListFolder exposing (..)
 
 
+-- UPDATE
+
+
 type alias FilesModel =
     { fileTree : FileTree
     , hasMore : Bool
@@ -31,6 +34,10 @@ init =
     , requestCount = 0
     , errorMessage = Nothing
     }
+
+
+
+-- UPDATE
 
 
 update : Dropbox.UserAuth -> Msg -> FilesModel -> ( FilesModel, Cmd msg )
@@ -56,7 +63,7 @@ update auth msg model =
                             if hasMore then
                                 Cmd.none
                             else
-                                saveFilesCache <| FileTree.toString tree
+                                saveFilesCache <| FileTree.encode tree
                     in
                         ( { model
                             | fileTree = tree
@@ -73,6 +80,10 @@ update auth msg model =
 
         _ ->
             model ! []
+
+
+
+-- SUBSCRIPTIONS
 
 
 subscriptions : FilesModel -> Sub Msg

@@ -109,7 +109,6 @@ suite =
         , test "map" <|
             \_ ->
                 FileTree.fromString "/a/1;/a/2;/b"
-                    -- |> FileTree.map (\e -> (fromEntries <| List.singleton <| folder <| itemPath e))
                     -- TODO replace identity by an actual test
                     |> FileTree.map identity
                     |> FileTree.toString

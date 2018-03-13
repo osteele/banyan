@@ -93,7 +93,7 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
 });
 
 app.ports.saveFilesCache.subscribe((cacheValue) => {
-  console.info('write cache', cacheValue.length);
+  console.info('write cache', JSON.stringify(cacheValue).length);
   // localStorage[filesCacheKey] = cacheValue;
 });
 

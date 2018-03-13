@@ -4,6 +4,7 @@ module FileTree
         , addEntries
         , combineSmallerEntries
         , empty
+        , encode
         , fromString
         , get
         , getSubtree
@@ -62,6 +63,7 @@ See the official Dropbox documentation at
 
 import Dict
 import FileEntry exposing (..)
+import Json.Encode as Encode
 import Utils exposing (..)
 
 
@@ -499,3 +501,27 @@ logTrees msg trees =
                 |> Debug.log msg
     in
         trees
+
+
+encode : FileTree -> Encode.Value
+encode tree =
+    let
+        enc t =
+            case t of
+                File { name, size } ->
+                    Encode.object <|
+                        [ ( "n", Encode.string name ) ]
+                            ++ (Maybe.map (\s -> [ ( "s", Encode.int s ) ]) size
+                                    |> Maybe.withDefault []
+                               )
+
+                Dir { name } _ children ->
+                    Encode.object
+                        [ ( "n", Encode.string name )
+                        , ( "c", Encode.list <| List.map enc <| Dict.values children )
+                        ]
+    in
+        Encode.object
+            [ ( "version", Encode.int 1 )
+            , ( "data", enc tree )
+            ]
