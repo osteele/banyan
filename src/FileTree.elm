@@ -13,6 +13,7 @@ module FileTree
         , mapChildLists
         , nodeChildren
         , nodeSize
+        , nodePath
         , toString
         , trimDepth
         )
@@ -71,8 +72,8 @@ less runtime data. I haven't measured whether this is worth it.
 
 -}
 type FileTree
-    = Dir FileEntry Stats (Dict.Dict String FileTree)
-    | File FileEntry
+    = Dir FolderMetadata Stats (Dict.Dict String FileTree)
+    | File FileMetadata
 
 
 {-| The rolled-up file stats. Currently just the size.
@@ -102,7 +103,7 @@ isEmpty tree =
 
 emptyNode : String -> FileTree
 emptyNode name =
-    Dir (FileEntry.Folder { key = name, path = name }) 0 Dict.empty
+    Dir { key = name, path = name } 0 Dict.empty
 
 
 {-| Get the subtree at a file path.
@@ -133,13 +134,13 @@ get path tree =
 
 
 itemEntry : FileTree -> FileEntry
-itemEntry item =
-    case item of
-        Dir e _ _ ->
-            e
+itemEntry tree =
+    case tree of
+        Dir data _ _ ->
+            FileEntry.Folder data
 
-        File e ->
-            e
+        File data ->
+            FileEntry.File data
 
 
 nodeChildren : FileTree -> Dict.Dict String FileTree
@@ -152,14 +153,34 @@ nodeChildren tree =
             Dict.empty
 
 
+nodeKey : FileTree -> String
+nodeKey item =
+    case item of
+        Dir { key } _ _ ->
+            key
+
+        File { key } ->
+            key
+
+
+nodePath : FileTree -> String
+nodePath item =
+    case item of
+        Dir { path } _ _ ->
+            path
+
+        File { path } ->
+            path
+
+
 nodeSize : FileTree -> Int
 nodeSize tree =
     case tree of
         Dir _ size _ ->
             size
 
-        leaf ->
-            itemEntry leaf |> FileEntry.size |> Maybe.withDefault 0
+        File { size } ->
+            Maybe.withDefault 0 size
 
 
 {-| Recompute a node's stats.
@@ -185,18 +206,18 @@ updateTreeItem keys alter path tree =
             emptyNode <| String.join "/" <| path ++ [ k ]
 
         -- construct a directory item for the current node, if not already present
-        withDirItem : (FileEntry -> Stats -> Dict.Dict String FileTree -> a) -> a
+        withDirItem : (FolderMetadata -> Stats -> Dict.Dict String FileTree -> a) -> a
         withDirItem fn =
             case tree of
-                Dir entry size children ->
-                    fn entry size children
+                Dir data size children ->
+                    fn data size children
 
                 _ ->
                     let
                         name =
                             String.join "/" path
                     in
-                        fn (FileEntry.Folder { key = name, path = name }) 0 Dict.empty
+                        fn { key = name, path = name } 0 Dict.empty
     in
         case keys of
             [] ->
@@ -227,24 +248,24 @@ updateTreeItem keys alter path tree =
 insert : FileEntry -> FileTree -> FileTree
 insert entry =
     let
-        updateFile _ =
-            File entry
+        updateFile data _ =
+            File data
 
-        updateDir dir =
+        updateDir data dir =
             case dir of
                 Just (Dir _ size children) ->
-                    Dir entry size children
+                    Dir data size children
 
                 _ ->
-                    Dir entry 0 Dict.empty
+                    Dir data 0 Dict.empty
 
         update =
             case entry of
-                FileEntry.File _ ->
-                    updateFile
+                FileEntry.File data ->
+                    updateFile data
 
-                FileEntry.Folder _ ->
-                    updateDir
+                FileEntry.Folder data ->
+                    updateDir data
 
                 _ ->
                     Debug.crash "unexpected FileEntry case"
@@ -324,7 +345,7 @@ itemKeyHead : FileTree -> String
 itemKeyHead tree =
     let
         key =
-            itemEntry tree |> FileEntry.key
+            nodeKey tree
     in
         splitPath key |> List.head |> Maybe.withDefault key
 
@@ -333,7 +354,7 @@ itemKeyTail : FileTree -> String
 itemKeyTail tree =
     let
         key =
-            itemEntry tree |> FileEntry.key
+            nodeKey tree
     in
         splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
 
@@ -383,7 +404,7 @@ combineSmallerEntries n orphans =
                 let
                     parentKey =
                         List.head children
-                            |> Maybe.map (itemEntry >> FileEntry.path)
+                            |> Maybe.map nodePath
                             |> Maybe.withDefault "/"
                             |> dirname
 
@@ -405,8 +426,7 @@ combineSmallerEntries n orphans =
                             |> List.sum
                             |> Just
                             |> \size ->
-                                FileEntry.File { key = name, path = name, size = size }
-                                    |> File
+                                File { key = name, path = name, size = size }
                 in
                     (List.take n sorted) ++ [ combined ]
 

@@ -1,6 +1,8 @@
 module FileEntry
     exposing
         ( FileEntry(..)
+        , FileMetadata
+        , FolderMetadata
         , folder
         , file
         , key

@@ -109,7 +109,7 @@ suite =
         , test "map" <|
             \_ ->
                 FileTree.fromString "/a/1;/a/2;/b"
-                    -- |> FileTree.map (\e -> (fromEntries <| List.singleton <| folder <| .path <| itemEntry e))
+                    -- |> FileTree.map (\e -> (fromEntries <| List.singleton <| folder <| itemPath e))
                     -- TODO replace identity by an actual test
                     |> FileTree.map identity
                     |> FileTree.toString
@@ -117,7 +117,7 @@ suite =
         , test "mapChildLists" <|
             \_ ->
                 FileTree.fromString "/a/1;/a/2;/b"
-                    |> mapChildLists (List.sortBy (itemEntry >> FileEntry.path) >> List.take 1)
+                    |> mapChildLists (List.sortBy nodePath >> List.take 1)
                     |> FileTree.toString
                     |> Expect.equal "/a/;/a/1"
         , describe "combineSmallerEntries"

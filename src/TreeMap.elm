@@ -22,7 +22,7 @@ renderFileTreeMap : Int -> FileTree -> Cmd msg
 renderFileTreeMap _ tree =
     let
         path =
-            itemEntry tree |> FileEntry.path
+            nodePath tree
 
         title =
             dropPrefix "/" path |> Maybe.withDefault path

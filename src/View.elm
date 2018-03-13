@@ -138,8 +138,7 @@ breadcrumb_ hn sep model =
     in
         model
             |> Model.subtree
-            |> FileTree.itemEntry
-            |> FileEntry.path
+            |> FileTree.nodePath
             |> String.split "/"
             |> withPrefixes
             |> List.map
@@ -302,7 +301,7 @@ subtree model title tree =
         sort =
             case model.order of
                 Alphabetic ->
-                    List.sortBy <| FileTree.itemEntry >> FileEntry.path >> String.toUpper
+                    List.sortBy <| FileTree.nodePath >> String.toLower
 
                 AscendingSize ->
                     List.sortBy FileTree.nodeSize
@@ -323,23 +322,23 @@ subtree model title tree =
                 ]
     in
         case tree of
-            FileTree.File entry ->
+            FileTree.File { path, size } ->
                 div
                     [ class "clearfix" ]
-                    [ text <| takeFileName <| FileEntry.path entry
+                    [ text <| takeFileName path
                     , span [ class "float-right" ]
-                        [ text <| humanize <| Maybe.withDefault 0 <| FileEntry.size entry ]
+                        [ text <| humanize <| Maybe.withDefault 0 size ]
                     ]
 
-            FileTree.Dir entry size _ ->
+            FileTree.Dir { key, path } size _ ->
                 div
                     []
                     (div
                         [ class "clearfix text-primary" ]
                         [ flip Maybe.withDefault title <|
                             Html.a
-                                [ onClick <| Focus <| FileEntry.key entry ]
-                                [ text <| takeFileName <| FileEntry.path entry ]
+                                [ onClick <| Focus key ]
+                                [ text <| takeFileName path ]
                         , span [ class "float-right" ] [ text <| humanize size ]
                         ]
                         :: childViews

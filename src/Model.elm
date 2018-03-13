@@ -87,7 +87,6 @@ subtreeTitle model =
     let
         path =
             subtree model
-                |> FileTree.itemEntry
-                |> FileEntry.path
+                |> FileTree.nodePath
     in
         teamName model ++ path
