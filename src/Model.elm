@@ -27,8 +27,15 @@ type alias Model =
     }
 
 
-init : String -> Navigation.Location -> Model
-init clientId location =
+type alias Flags =
+    { accessToken : Maybe String
+    , clientId : String
+    , files : Maybe String
+    }
+
+
+init : Flags -> Navigation.Location -> Model
+init { clientId, files } location =
     { location = location
     , debug = Nothing
 
@@ -38,7 +45,7 @@ init clientId location =
     , clientId = clientId
 
     -- tree and loading status
-    , files = FilesModel.init
+    , files = FilesModel.fromCache files
 
     -- view state
     , path = "/"

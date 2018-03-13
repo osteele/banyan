@@ -3,6 +3,7 @@ module FileTree
         ( FileTree(..)
         , addEntries
         , combineSmallerEntries
+        , decode
         , empty
         , encode
         , fromString
@@ -63,6 +64,7 @@ See the official Dropbox documentation at
 
 import Dict
 import FileEntry exposing (..)
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Utils exposing (..)
 
@@ -504,24 +506,43 @@ logTrees msg trees =
 
 
 encode : FileTree -> Encode.Value
-encode tree =
-    let
-        enc t =
-            case t of
-                File { name, size } ->
-                    Encode.object <|
-                        [ ( "n", Encode.string name ) ]
-                            ++ (Maybe.map (\s -> [ ( "s", Encode.int s ) ]) size
-                                    |> Maybe.withDefault []
-                               )
+encode =
+    toString >> Encode.string
 
-                Dir { name } _ children ->
-                    Encode.object
-                        [ ( "n", Encode.string name )
-                        , ( "c", Encode.list <| List.map enc <| Dict.values children )
-                        ]
-    in
-        Encode.object
-            [ ( "version", Encode.int 1 )
-            , ( "data", enc tree )
-            ]
+
+decode : Decoder FileTree
+decode =
+    Decode.string |> Decode.andThen (Decode.succeed << fromString)
+
+
+encode2 : FileTree -> Encode.Value
+encode2 tree =
+    case tree of
+        File { name, size } ->
+            Encode.object <|
+                [ ( "n", Encode.string name ) ]
+                    ++ (Maybe.map (\s -> [ ( "s", Encode.int s ) ]) size
+                            |> Maybe.withDefault []
+                       )
+
+        Dir { name } _ children ->
+            Encode.object
+                [ ( "n", Encode.string name )
+                , ( "c", Encode.list <| List.map encode2 <| Dict.values children )
+                ]
+
+
+decode2 : Decoder FileTree
+decode2 =
+    Decode.field "c" (Decode.maybe (Decode.list (Decode.lazy (\_ -> decode2))))
+        |> Decode.andThen
+            (\children ->
+                case children of
+                    Just c ->
+                        Decode.field "n" Decode.string
+                            |> Decode.andThen (\s -> Decode.succeed <| Dir { name = s, key = s, path = s } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList))
+
+                    Nothing ->
+                        Decode.field "n" Decode.string
+                            |> Decode.andThen (\s -> Decode.succeed <| File { name = s, key = s, path = s, size = Nothing })
+            )

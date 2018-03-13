@@ -8,11 +8,12 @@ import chart from './src/chart';
 
 const accessTokenKey = 'accessToken';
 const fileCacheKey = 'fileTree';
-// const filesCacheKey = 'files';
+const filesCacheKey = 'files';
 
 const app = Elm.Main.embed(document.getElementById('app'), {
   accessToken: localStorage[accessTokenKey] || null,
   clientId: process.env.DROPBOX_APP_KEY,
+  files: localStorage[filesCacheKey] || null,
 });
 
 // See https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder
@@ -93,8 +94,10 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
 });
 
 app.ports.saveFilesCache.subscribe((cacheValue) => {
-  console.info('write cache', JSON.stringify(cacheValue).length);
-  // localStorage[filesCacheKey] = cacheValue;
+  const json = JSON.stringify(cacheValue);
+  delete localStorage[fileCacheKey];
+  console.info('write cache', json.length);
+  localStorage[filesCacheKey] = json;
 });
 
 app.ports.getAccountInfo.subscribe(async (accessToken) => {

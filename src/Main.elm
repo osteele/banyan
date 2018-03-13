@@ -12,18 +12,12 @@ import TreeMap exposing (renderFileTreeMap)
 import View exposing (..)
 
 
-type alias Flags =
-    { accessToken : Maybe String
-    , clientId : String
-    }
-
-
 main : Program Flags Model (Dropbox.Msg Msg)
 main =
     Dropbox.programWithFlags
         { init =
             \flags location ->
-                Model.init flags.clientId location ! [ initialCmd flags ]
+                Model.init flags location ! [ initialCmd flags ]
         , update = update
         , subscriptions = subscriptions
         , view = view
@@ -95,7 +89,14 @@ update msg model =
                   ]
 
         SetAccountInfo info ->
-            update ListFolder { model | accountInfo = Just info }
+            let
+                m =
+                    { model | accountInfo = Just info }
+            in
+                if FilesModel.isEmpty model.files then
+                    update ListFolder m
+                else
+                    m ! []
 
         -- list files
         ListFolder ->

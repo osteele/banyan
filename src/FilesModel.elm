@@ -10,6 +10,8 @@ import Dropbox
 import DropboxUtils exposing (extractAccessToken)
 import FileTree exposing (FileTree)
 import ListFolder exposing (listFolder)
+import Json.Encode as Encode
+import Json.Decode as Decode exposing (Decoder)
 import Message exposing (..)
 import ListFolder exposing (..)
 
@@ -36,6 +38,11 @@ init =
     }
 
 
+isEmpty : FilesModel -> Bool
+isEmpty =
+    .fileTree >> FileTree.isEmpty
+
+
 
 -- UPDATE
 
@@ -56,23 +63,21 @@ update auth msg model =
             case result of
                 Result.Ok ( entries, hasMore ) ->
                     let
-                        tree =
-                            FileTree.addEntries entries model.fileTree
+                        m =
+                            { model
+                                | fileTree = FileTree.addEntries entries model.fileTree
+                                , hasMore = hasMore
+                                , syncedEntryCount = model.syncedEntryCount + List.length entries
+                                , requestCount = model.requestCount + 1
+                            }
 
                         cmd =
                             if hasMore then
                                 Cmd.none
                             else
-                                saveFilesCache <| FileTree.encode tree
+                                saveFilesCache <| encode m
                     in
-                        ( { model
-                            | fileTree = tree
-                            , hasMore = hasMore
-                            , syncedEntryCount = model.syncedEntryCount + List.length entries
-                            , requestCount = model.requestCount + 1
-                          }
-                        , cmd
-                        )
+                        ( m, cmd )
 
                 Result.Err msg ->
                     { model | hasMore = False, errorMessage = Just msg }
@@ -92,3 +97,42 @@ subscriptions _ =
         [ receiveFileList (ReceiveListFolderResponse << decodeFileList)
         , receiveFileListError (ReceiveListFolderResponse << Result.Err)
         ]
+
+
+
+-- CACHE
+
+
+encode : FilesModel -> Encode.Value
+encode { fileTree } =
+    Encode.object
+        [ ( "files", FileTree.encode fileTree )
+        , ( "version", Encode.int 1 )
+        ]
+
+
+decode : Decoder FilesModel
+decode =
+    let
+        decodeVersion1 =
+            Decode.field "files" FileTree.decode
+                |> Decode.andThen
+                    (\t -> Decode.succeed { init | fileTree = t })
+    in
+        Decode.field "version" Decode.int
+            |> Decode.andThen
+                (\version ->
+                    case version of
+                        1 ->
+                            decodeVersion1
+
+                        _ ->
+                            Decode.fail <| "Unknown version " ++ toString version
+                )
+
+
+fromCache : Maybe String -> FilesModel
+fromCache =
+    Maybe.map (Decode.decodeString decode)
+        >> Maybe.andThen Result.toMaybe
+        >> Maybe.withDefault init
