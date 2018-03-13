@@ -1,6 +1,8 @@
 module FileEntry
     exposing
         ( FileEntry(..)
+        , folder
+        , file
         , key
         , path
         , size
@@ -67,6 +69,16 @@ type FileEntry
     = File FileMetadata
     | Folder FolderMetadata
     | Deletion DeletedMetadata
+
+
+file : String -> Maybe Int -> FileEntry
+file path size =
+    File { key = String.toLower path, path = path, size = size }
+
+
+folder : String -> FileEntry
+folder path =
+    Folder { key = String.toLower path, path = path }
 
 
 key : FileEntry -> String
