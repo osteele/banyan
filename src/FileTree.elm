@@ -103,7 +103,7 @@ isEmpty tree =
 
 emptyNode : String -> FileTree
 emptyNode name =
-    Dir { key = name, path = name } 0 Dict.empty
+    Dir { key = name, name = takeFileName name, path = name } 0 Dict.empty
 
 
 {-| Get the subtree at a file path.
@@ -217,7 +217,7 @@ updateTreeItem keys alter path tree =
                         name =
                             String.join "/" path
                     in
-                        fn { key = name, path = name } 0 Dict.empty
+                        fn { key = name, name = takeFileName name, path = name } 0 Dict.empty
     in
         case keys of
             [] ->
@@ -314,7 +314,7 @@ addEntries entries tree =
     let
         action entry =
             case entry of
-                FileEntry.Deletion _ ->
+                FileEntry.Deleted _ ->
                     remove entry
 
                 _ ->
@@ -426,7 +426,7 @@ combineSmallerEntries n orphans =
                             |> List.sum
                             |> Just
                             |> \size ->
-                                File { key = name, path = name, size = size }
+                                File { key = name, name = takeFileName name, path = name, size = size }
                 in
                     (List.take n sorted) ++ [ combined ]
 

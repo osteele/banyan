@@ -75,7 +75,7 @@ suite =
             , test "delete /dir deletes the directory node" <|
                 \_ ->
                     [ folder "/dir"
-                    , FileEntry.Deletion { key = "/dir", path = "/dir" }
+                    , deleted "/dir"
                     ]
                         |> fromEntries
                         |> get "/dir"
@@ -84,7 +84,7 @@ suite =
                 \_ ->
                     [ folder "/dir"
                     , folder "/dir/subdir"
-                    , FileEntry.Deletion { key = "/dir", path = "/dir" }
+                    , deleted "/dir"
                     ]
                         |> fromEntries
                         |> get "/dir/subdir"
@@ -93,7 +93,7 @@ suite =
                 \_ ->
                     [ folder "/dir"
                     , folder "/dir/leaf"
-                    , FileEntry.Deletion { key = "/dir/leaf", path = "/dir/leaf" }
+                    , deleted "/dir/leaf"
                     ]
                         |> fromEntries
                         |> Expect.all

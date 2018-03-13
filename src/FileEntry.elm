@@ -5,6 +5,7 @@ module FileEntry
         , FolderMetadata
         , folder
         , file
+        , deleted
         , key
         , path
         , size
@@ -19,6 +20,7 @@ module FileEntry
 
 import Json.Decode exposing (..)
 import Regex
+import Utils exposing (takeFileName)
 
 
 {-| File metadata, as returned from a listFolders request.
@@ -26,13 +28,14 @@ import Regex
 See
 <https://www.dropbox.com/developers/documentation/http/documentation#FileMetadata>.
 
-Doesn't record name, id, client_modified, server_modified, rev, sharing_info,
+Doesn't record id, client_modified, server_modified, rev, sharing_info,
 property_groups, has_explicit_shared_members, content_hash, media_info,
 symlink_info.
 
 -}
 type alias FileMetadata =
     { key : String
+    , name : String
     , path : String
     , size : Maybe Int
     }
@@ -45,11 +48,12 @@ See
 
 Renames path_lower -> key, path_display -> path.
 
-Doesn't record name, id, sharing_info, property_groups.
+Doesn't record id, sharing_info, property_groups.
 
 -}
 type alias FolderMetadata =
     { key : String
+    , name : String
     , path : String
     }
 
@@ -63,6 +67,7 @@ Doesn't record name.
 -}
 type alias DeletedMetadata =
     { key : String
+    , name : String
     , path : String
     }
 
@@ -70,17 +75,22 @@ type alias DeletedMetadata =
 type FileEntry
     = File FileMetadata
     | Folder FolderMetadata
-    | Deletion DeletedMetadata
+    | Deleted DeletedMetadata
+
+
+deleted : String -> FileEntry
+deleted path =
+    Deleted { key = String.toLower path, name = takeFileName path, path = path }
 
 
 file : String -> Maybe Int -> FileEntry
 file path size =
-    File { key = String.toLower path, path = path, size = size }
+    File { key = String.toLower path, name = takeFileName path, path = path, size = size }
 
 
 folder : String -> FileEntry
 folder path =
-    Folder { key = String.toLower path, path = path }
+    Folder { key = String.toLower path, name = takeFileName path, path = path }
 
 
 key : FileEntry -> String
@@ -92,8 +102,21 @@ key entry =
         Folder { key } ->
             key
 
-        Deletion { key } ->
+        Deleted { key } ->
             key
+
+
+name : FileEntry -> String
+name entry =
+    case entry of
+        File { name } ->
+            name
+
+        Folder { name } ->
+            name
+
+        Deleted { name } ->
+            name
 
 
 path : FileEntry -> String
@@ -105,7 +128,7 @@ path entry =
         Folder { path } ->
             path
 
-        Deletion { path } ->
+        Deleted { path } ->
             path
 
 
@@ -129,16 +152,16 @@ decoderFor : String -> Decoder FileEntry
 decoderFor tag =
     case tag of
         "file" ->
-            map3 FileMetadata (field "key" string) (field "path" string) (field "size" <| nullable int)
+            map4 FileMetadata (field "path_lower" string) (field "name" string) (field "path_display" string) (field "size" <| nullable int)
                 |> map File
 
         "folder" ->
-            map2 FolderMetadata (field "key" string) (field "path" string)
+            map3 FolderMetadata (field "path_lower" string) (field "name" string) (field "path_display" string)
                 |> map Folder
 
         "delete" ->
-            map2 DeletedMetadata (field "key" string) (field "path" string)
-                |> map Deletion
+            map3 DeletedMetadata (field "path_lower" string) (field "name" string) (field "path_display" string)
+                |> map Deleted
 
         _ ->
             fail <|
@@ -169,11 +192,7 @@ is an optional size.
 fromString : String -> FileEntry
 fromString path =
     if String.endsWith "/" path then
-        let
-            p =
-                String.dropRight 1 path
-        in
-            Folder { key = String.toLower p, path = p }
+        folder <| String.dropRight 1 path
     else
         let
             ( p, size ) =
@@ -187,7 +206,7 @@ fromString path =
                     _ ->
                         ( path, Nothing )
         in
-            File { key = String.toLower p, path = p, size = size }
+            file p size
 
 
 {-| Turn a tree into a string. See fromString for the format.
@@ -195,7 +214,7 @@ fromString path =
 toString : FileEntry -> String
 toString entry =
     case entry of
-        Deletion { path } ->
+        Deleted { path } ->
             "-" ++ path
 
         File { path, size } ->

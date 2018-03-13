@@ -65,8 +65,9 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
 
     const entries = response.entries.map(entry => ({
       tag: entry['.tag'],
-      key: entry.path_lower,
-      path: entry.path_display,
+      name: entry.name,
+      path_lower: entry.path_lower,
+      path_display: entry.path_display,
       size: entry.size || null,
     }));
     const deleted = response.entries.filter(({ tag }) => tag === 'deleted');
