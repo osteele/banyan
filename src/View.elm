@@ -2,8 +2,8 @@ module View exposing (..)
 
 import Data exposing (..)
 import Dict
-import FileEntry
 import FileTree exposing (FileTree)
+import FilesModel
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
@@ -43,7 +43,7 @@ header model =
                     [ ifJust (isSignedIn model && not model.files.hasMore) <|
                         button
                             [ class "item", onClick ListFolder ]
-                            [ text "Sync" ]
+                            [ text "Re-sync" ]
                     , Just <| signInOut model
                     ]
             ]
@@ -97,22 +97,35 @@ startView =
 
 content : Model -> Html Msg
 content model =
-    div [ class "ui main container" ] <|
-        List.filterMap identity <|
-            [ ifJust (model.files.requestCount > 0) <|
-                progress model
-            , flash model
-            , ifJust (isSignedIn model) <|
-                breadcrumb model
-            , Just <|
-                grid [ class "two column" ]
-                    [ column [] [ treeList model ]
-                    , column [] [ treeMap model ]
+    div [ class "ui main container" ]
+        [ flash model
+        , case model.files.cache of
+            Just _ ->
+                div
+                    [ class "ui segment", style [ ( "min-height", "500px" ) ] ]
+                    [ div [ class "ui active inverted dimmer" ]
+                        [ div [ class "ui text loader" ]
+                            [ text "Loading file cache" ]
+                        ]
+                    , Html.p [] []
                     ]
-            ]
+
+            Nothing ->
+                div []
+                    [ progress model
+                    , if FilesModel.isEmpty model.files then
+                        div [] []
+                      else
+                        breadcrumb model
+                    , grid [ class "two column" ]
+                        [ column [] [ treeList model ]
+                        , column [] [ treeMap model ]
+                        ]
+                    ]
+        ]
 
 
-flash : Model -> Maybe (Html msg)
+flash : Model -> Html msg
 flash model =
     model.files.errorMessage
         |> Maybe.map
@@ -121,6 +134,7 @@ flash model =
                     [ Html.p [ class "lead" ] [ text msg ]
                     ]
             )
+        |> Maybe.withDefault (div [] [])
 
 
 breadcrumb : Model -> Html Msg
@@ -161,16 +175,6 @@ breadcrumb_ hn sep model =
 
 progress : Model -> Html Msg
 progress model =
-    case model.files.cache of
-        Just _ ->
-            div [] [ text "reading cache" ]
-
-        Nothing ->
-            listFoldersProgress model
-
-
-listFoldersProgress : Model -> Html Msg
-listFoldersProgress model =
     let
         files =
             model.files

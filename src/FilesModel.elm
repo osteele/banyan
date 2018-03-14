@@ -105,8 +105,7 @@ update auth msg model =
             case model.cache of
                 Just _ ->
                     -- delay is necessary in order to display the message
-                    { model | errorMessage = Just "restoring from cache" }
-                        ! [ delay (100 * Time.millisecond) RestoreFromCache ]
+                    model ! [ delay (100 * Time.millisecond) RestoreFromCache ]
 
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }
