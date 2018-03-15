@@ -2,7 +2,6 @@ module Model exposing (..)
 
 import Data exposing (..)
 import Dropbox
-import FileEntry
 import FileTree exposing (FileTree)
 import FilesModel exposing (FilesModel)
 import Navigation
