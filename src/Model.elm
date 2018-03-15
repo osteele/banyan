@@ -3,7 +3,7 @@ module Model exposing (..)
 import Data exposing (..)
 import Dropbox
 import FileTree exposing (FileTree)
-import FilesModel exposing (FilesModel)
+import FilesComponent exposing (FilesComponent)
 import Navigation
 
 
@@ -17,7 +17,7 @@ type alias Model =
     , auth : Maybe Dropbox.UserAuth
 
     -- tree and loading status
-    , files : FilesModel
+    , files : FilesComponent
 
     -- view state
     , path : String
@@ -44,7 +44,7 @@ init { clientId, files } location =
     , clientId = clientId
 
     -- tree and loading status
-    , files = FilesModel.fromCache files
+    , files = FilesComponent.fromCache files
 
     -- view state
     , path = "/"
@@ -62,7 +62,7 @@ clearAccountFields model =
     { model
         | auth = Nothing
         , accountInfo = Nothing
-        , files = FilesModel.init
+        , files = FilesComponent.init
         , path = "/"
     }
 

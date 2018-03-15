@@ -1,4 +1,4 @@
-module FilesModel exposing (..)
+module FilesComponent exposing (..)
 
 {-|
 
@@ -22,7 +22,7 @@ import Time exposing (Time)
 -- UPDATE
 
 
-type alias FilesModel =
+type alias FilesComponent =
     { fileTree : FileTree
     , hasMore : Bool
     , syncedEntryCount : Int
@@ -32,7 +32,7 @@ type alias FilesModel =
     }
 
 
-init : FilesModel
+init : FilesComponent
 init =
     { fileTree = FileTree.empty
     , hasMore = False
@@ -43,12 +43,12 @@ init =
     }
 
 
-fromCache : Maybe String -> FilesModel
+fromCache : Maybe String -> FilesComponent
 fromCache c =
     { init | cache = c }
 
 
-isEmpty : FilesModel -> Bool
+isEmpty : FilesComponent -> Bool
 isEmpty =
     .fileTree >> FileTree.isEmpty
 
@@ -57,7 +57,7 @@ isEmpty =
 -- UPDATE
 
 
-update : Dropbox.UserAuth -> Msg -> FilesModel -> ( FilesModel, Cmd Msg )
+update : Dropbox.UserAuth -> Msg -> FilesComponent -> ( FilesComponent, Cmd Msg )
 update auth msg model =
     case msg of
         ListFolder ->
@@ -125,7 +125,7 @@ delay time msg =
 -- SUBSCRIPTIONS
 
 
-subscriptions : FilesModel -> Sub Msg
+subscriptions : FilesComponent -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ receiveFileList (ReceiveListFolderResponse << decodeFileList)
@@ -137,7 +137,7 @@ subscriptions _ =
 -- CACHE
 
 
-encode : FilesModel -> Encode.Value
+encode : FilesComponent -> Encode.Value
 encode { fileTree } =
     Encode.object
         [ ( "files", FileTree.encode fileTree )
@@ -145,7 +145,7 @@ encode { fileTree } =
         ]
 
 
-decode : Decoder FilesModel
+decode : Decoder FilesComponent
 decode =
     let
         decodeVersion1 =
@@ -166,7 +166,7 @@ decode =
 
 
 
--- fromCache : Maybe String -> FilesModel
+-- fromCache : Maybe String -> FilesComponent
 -- fromCache =
 --     Maybe.map (Decode.decodeString decode)
 --         >> Maybe.andThen Result.toMaybe

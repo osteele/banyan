@@ -3,7 +3,7 @@ module View exposing (..)
 import Data exposing (..)
 import Dict
 import FileTree exposing (FileTree)
-import FilesModel
+import FilesComponent
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
@@ -113,7 +113,7 @@ content model =
             Nothing ->
                 div []
                     [ progress model
-                    , if FilesModel.isEmpty model.files then
+                    , if FilesComponent.isEmpty model.files then
                         div [] []
                       else
                         breadcrumb model

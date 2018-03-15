@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Dropbox
 import DropboxUtils exposing (extractAccessToken)
-import FilesModel
+import FilesComponent
 import Message exposing (..)
 import Model exposing (..)
 import Navigation
@@ -93,7 +93,7 @@ update msg model =
                 m =
                     { model | accountInfo = Just info }
             in
-                if FilesModel.isEmpty model.files then
+                if FilesComponent.isEmpty model.files then
                     update RestoreFromCacheOrListFolder m
                 else
                     m ! []
@@ -154,7 +154,7 @@ updateFilesModel msg model =
         Just auth ->
             let
                 ( files, cmd ) =
-                    FilesModel.update auth msg model.files
+                    FilesComponent.update auth msg model.files
             in
                 { model | files = files } ! [ cmd ]
 
@@ -184,5 +184,5 @@ subscriptions model =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
         , setPath Focus
-        , FilesModel.subscriptions model.files
+        , FilesComponent.subscriptions model.files
         ]
