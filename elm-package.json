@@ -1,8 +1,8 @@
 {
   "version": "0.1.0",
-  "summary": "Display file sizes on Dropbox account",
+  "summary": "Visualize Dropbox file and directory sizes",
   "repository": "https://github.com/osteele/banyan.git",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "source-directories": ["src", "shared/elm-dropbox/src"],
   "exposed-modules": [],
   "dependencies": {

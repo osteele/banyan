@@ -1,17 +1,14 @@
 {
-    "version": "0.1.0",
-    "summary": "Display file sizes on Dropbox account",
-    "repository": "https://github.com/osteele/banyan.git",
-    "license": "UNLICENSED",
-    "source-directories": [
-        "../src",
-        "."
-    ],
-    "exposed-modules": [],
-    "dependencies": {
-        "elm-lang/core": "5.1.1 <= v < 6.0.0",
-        "elm-community/elm-test": "4.0.0 <= v < 5.0.0",
-        "myrho/elm-round": "1.0.2 <= v < 2.0.0"
-    },
-    "elm-version": "0.18.0 <= v < 0.19.0"
+  "version": "0.1.0",
+  "summary": "Visualize Dropbox file and directory sizes",
+  "repository": "https://github.com/osteele/banyan.git",
+  "license": "MIT",
+  "source-directories": ["../src", "."],
+  "exposed-modules": [],
+  "dependencies": {
+    "elm-lang/core": "5.1.1 <= v < 6.0.0",
+    "elm-community/elm-test": "4.0.0 <= v < 5.0.0",
+    "myrho/elm-round": "1.0.2 <= v < 2.0.0"
+  },
+  "elm-version": "0.18.0 <= v < 0.19.0"
 }
