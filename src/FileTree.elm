@@ -78,8 +78,16 @@ less runtime data. I haven't measured whether this is worth it.
 
 -}
 type FileTree
-    = Dir FolderMetadata Stats (Dict.Dict String FileTree)
-    | File FileMetadata
+    = Dir FolderData Stats (Dict.Dict String FileTree)
+    | File FileData
+
+
+type alias FolderData =
+    { key : String, name : String, path : String }
+
+
+type alias FileData =
+    { key : String, name : String, path : String, size : Maybe Int }
 
 
 {-| The rolled-up file stats. Currently just the size.
@@ -142,11 +150,11 @@ get path tree =
 itemEntry : FileTree -> FileEntry
 itemEntry tree =
     case tree of
-        Dir data _ _ ->
-            FileEntry.Folder data
+        Dir { key, name, path } _ _ ->
+            FileEntry.Folder { name = name, pathDisplay = path, pathLower = key }
 
-        File data ->
-            FileEntry.File data
+        File { key, name, path, size } ->
+            FileEntry.File { name = name, pathDisplay = path, pathLower = key, size = size }
 
 
 nodeChildren : FileTree -> Dict.Dict String FileTree
@@ -212,7 +220,7 @@ updateTreeItem keys alter path tree =
             emptyNode <| String.join "/" <| path ++ [ k ]
 
         -- construct a directory item for the current node, if not already present
-        withDirItem : (FolderMetadata -> Stats -> Dict.Dict String FileTree -> a) -> a
+        withDirItem : (FolderData -> Stats -> Dict.Dict String FileTree -> a) -> a
         withDirItem fn =
             case tree of
                 Dir data size children ->
@@ -267,11 +275,11 @@ insert entry =
 
         update =
             case entry of
-                FileEntry.File data ->
-                    updateFile data
+                FileEntry.File { name, pathDisplay, pathLower, size } ->
+                    updateFile { name = name, path = pathDisplay, key = pathLower, size = size }
 
-                FileEntry.Folder data ->
-                    updateDir data
+                FileEntry.Folder { name, pathDisplay, pathLower } ->
+                    updateDir { name = name, path = pathDisplay, key = pathLower }
 
                 _ ->
                     Debug.crash "unexpected FileEntry case"

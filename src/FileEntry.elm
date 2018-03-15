@@ -34,9 +34,9 @@ symlink_info.
 
 -}
 type alias FileMetadata =
-    { key : String
-    , name : String
-    , path : String
+    { name : String
+    , pathDisplay : String
+    , pathLower : String
     , size : Maybe Int
     }
 
@@ -46,15 +46,13 @@ type alias FileMetadata =
 See
 <https://www.dropbox.com/developers/documentation/http/documentation#FolderMetadata>.
 
-Renames path_lower -> key, path_display -> path.
-
 Doesn't record id, sharing_info, property_groups.
 
 -}
 type alias FolderMetadata =
-    { key : String
-    , name : String
-    , path : String
+    { name : String
+    , pathDisplay : String
+    , pathLower : String
     }
 
 
@@ -66,9 +64,9 @@ Doesn't record name.
 
 -}
 type alias DeletedMetadata =
-    { key : String
-    , name : String
-    , path : String
+    { name : String
+    , pathDisplay : String
+    , pathLower : String
     }
 
 
@@ -80,30 +78,30 @@ type FileEntry
 
 deleted : String -> FileEntry
 deleted path =
-    Deleted { key = String.toLower path, name = takeFileName path, path = path }
+    Deleted { pathLower = String.toLower path, name = takeFileName path, pathDisplay = path }
 
 
 file : String -> Maybe Int -> FileEntry
 file path size =
-    File { key = String.toLower path, name = takeFileName path, path = path, size = size }
+    File { pathLower = String.toLower path, name = takeFileName path, pathDisplay = path, size = size }
 
 
 folder : String -> FileEntry
 folder path =
-    Folder { key = String.toLower path, name = takeFileName path, path = path }
+    Folder { pathLower = String.toLower path, name = takeFileName path, pathDisplay = path }
 
 
 key : FileEntry -> String
 key entry =
     case entry of
-        File { key } ->
-            key
+        File { pathLower } ->
+            pathLower
 
-        Folder { key } ->
-            key
+        Folder { pathLower } ->
+            pathLower
 
-        Deleted { key } ->
-            key
+        Deleted { pathLower } ->
+            pathLower
 
 
 name : FileEntry -> String
@@ -122,14 +120,14 @@ name entry =
 path : FileEntry -> String
 path entry =
     case entry of
-        File { path } ->
-            path
+        File { pathDisplay } ->
+            pathDisplay
 
-        Folder { path } ->
-            path
+        Folder { pathDisplay } ->
+            pathDisplay
 
-        Deleted { path } ->
-            path
+        Deleted { pathDisplay } ->
+            pathDisplay
 
 
 size : FileEntry -> Maybe Int
@@ -152,15 +150,15 @@ decoderFor : String -> Decoder FileEntry
 decoderFor tag =
     case tag of
         "file" ->
-            map4 FileMetadata (field "path_lower" string) (field "name" string) (field "path_display" string) (field "size" <| nullable int)
+            map4 FileMetadata (field "name" string) (field "path_display" string) (field "path_lower" string) (field "size" <| nullable int)
                 |> map File
 
         "folder" ->
-            map3 FolderMetadata (field "path_lower" string) (field "name" string) (field "path_display" string)
+            map3 FolderMetadata (field "name" string) (field "path_display" string) (field "path_lower" string)
                 |> map Folder
 
         "delete" ->
-            map3 DeletedMetadata (field "path_lower" string) (field "name" string) (field "path_display" string)
+            map3 DeletedMetadata (field "name" string) (field "path_display" string) (field "path_lower" string)
                 |> map Deleted
 
         _ ->
@@ -214,15 +212,15 @@ fromString path =
 toString : FileEntry -> String
 toString entry =
     case entry of
-        Deleted { path } ->
-            "-" ++ path
+        Deleted { pathDisplay } ->
+            "-" ++ pathDisplay
 
-        File { path, size } ->
+        File { pathDisplay, size } ->
             String.join ":" <|
                 List.filterMap identity
-                    [ Just <| path
+                    [ Just <| pathDisplay
                     , Maybe.map Basics.toString <| size
                     ]
 
-        Folder { path } ->
-            path ++ "/"
+        Folder { pathDisplay } ->
+            pathDisplay ++ "/"
