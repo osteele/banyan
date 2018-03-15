@@ -7,7 +7,7 @@ import Elm from './src/Main.elm';
 import chart from './src/chart';
 
 const accessTokenKey = 'accessToken';
-const fileCacheKey = 'fileTree';
+const oldFileCacheKey = 'fileTree';
 const filesCacheKey = 'files';
 
 const app = Elm.Main.embed(document.getElementById('app'), {
@@ -18,40 +18,16 @@ const app = Elm.Main.embed(document.getElementById('app'), {
 
 // See https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder
 app.ports.listFolder.subscribe(async ([accessToken, params]) => {
-  const useCache = false;
   if (!accessToken) {
     app.ports.receiveFileListError.send('internal error: access token not set');
     return;
   }
   const dbx = new Dropbox({ accessToken });
-
-  // If there's a cached entry, return it first.
-  // TODO Make this a separate function.
-  let cache = null;
-  if (useCache && localStorage[fileCacheKey]) {
-    cache = JSON.parse(localStorage[fileCacheKey]);
-    console.info('read cache', (localStorage[fileCacheKey] || '').length);
-  }
-  if (cache && cache.accessToken !== accessToken) {
-    console.info('reset cache');
-    cache = null;
-  }
-  cache = cache || { accessToken, entries: {} };
-  {
-    const entries = Object.values(cache.entries);
-    if (entries.length) {
-      console.info('initial send', entries.length, 'entries');
-      app.ports.receiveFileList.send([entries, false]);
-    }
-  }
-
-  let query = cache.cursor
-    ? dbx.filesListFolderContinue({ cursor: cache.cursor })
-    : dbx.filesListFolder({
-      path: params.path,
-      recursive: params.recursive,
-      include_deleted: params.includeDeleted,
-    });
+  let query = dbx.filesListFolder({
+    path: params.path,
+    recursive: params.recursive,
+    include_deleted: params.includeDeleted,
+  });
 
   // eslint-disable-next-line no-await-in-loop
   while (query) {
@@ -71,20 +47,6 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
       path_display: entry.path_display,
       size: entry.size || null,
     }));
-    const deleted = response.entries.filter(({ tag }) => tag === 'deleted');
-    if (deleted.length) {
-      console.info('deleted', deleted);
-    }
-
-    cache.cursor = response.cursor;
-    if (useCache) {
-      entries.forEach((entry) => {
-        cache.entries[entry.key] = entry;
-      });
-      localStorage[fileCacheKey] = JSON.stringify(cache);
-      console.info('wrote cache', localStorage[fileCacheKey].length);
-    }
-
     const hasMore = Boolean(response.has_more);
     // initiate the query before processing these entries, in case this allows
     // for greater parallelism
@@ -95,7 +57,7 @@ app.ports.listFolder.subscribe(async ([accessToken, params]) => {
 
 app.ports.saveFilesCache.subscribe((cacheValue) => {
   const json = JSON.stringify(cacheValue);
-  delete localStorage[fileCacheKey];
+  delete localStorage[oldFileCacheKey];
   console.info('write cache', json.length);
   localStorage[filesCacheKey] = json;
 });
