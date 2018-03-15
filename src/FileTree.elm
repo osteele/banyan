@@ -18,6 +18,8 @@ module FileTree
         , nodePath
         , toString
         , trimDepth
+        , decodeJson
+        , encodeJson
         )
 
 {-|
@@ -515,34 +517,57 @@ decode =
     Decode.string |> Decode.andThen (Decode.succeed << fromString)
 
 
-encode2 : FileTree -> Encode.Value
-encode2 tree =
-    case tree of
-        File { name, size } ->
-            Encode.object <|
-                [ ( "n", Encode.string name ) ]
-                    ++ (Maybe.map (\s -> [ ( "s", Encode.int s ) ]) size
-                            |> Maybe.withDefault []
-                       )
+encodeJson : FileTree -> Encode.Value
+encodeJson node =
+    let
+        maybeToList =
+            Maybe.map List.singleton >> Maybe.withDefault []
 
-        Dir { name } _ children ->
-            Encode.object
-                [ ( "n", Encode.string name )
-                , ( "c", Encode.list <| List.map encode2 <| Dict.values children )
-                ]
+        maybeKey name key =
+            let
+                k =
+                    splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
+            in
+                if String.toLower name == k then
+                    Nothing
+                else
+                    Just ( "k", Encode.string key )
+
+        maybeSize size =
+            Maybe.map (\s -> ( "s", Encode.int s )) size
+    in
+        case node of
+            Dir { name, key } _ children ->
+                Encode.object <|
+                    [ ( "n", Encode.string name )
+                    , ( "c", Encode.list <| List.map encodeJson <| Dict.values children )
+                    ]
+                        ++ (maybeToList <| maybeKey name key)
+
+            File { name, key, size } ->
+                Encode.object <|
+                    [ ( "n", Encode.string name ) ]
+                        ++ (maybeToList <| maybeKey name key)
+                        ++ (maybeToList <| maybeSize size)
 
 
-decode2 : Decoder FileTree
-decode2 =
-    Decode.field "c" (Decode.maybe (Decode.list (Decode.lazy (\_ -> decode2))))
-        |> Decode.andThen
-            (\children ->
-                case children of
-                    Just c ->
-                        Decode.field "n" Decode.string
-                            |> Decode.andThen (\s -> Decode.succeed <| Dir { name = s, key = s, path = s } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList))
+decodeJson : Decoder FileTree
+decodeJson =
+    let
+        dec : String -> Decoder FileTree
+        dec prefix =
+            Decode.map2
+                node
+                (Decode.field "n" Decode.string)
+                (Decode.field "c" (Decode.maybe (Decode.list (Decode.lazy (\_ -> dec prefix)))))
 
-                    Nothing ->
-                        Decode.field "n" Decode.string
-                            |> Decode.andThen (\s -> Decode.succeed <| File { name = s, key = s, path = s, size = Nothing })
-            )
+        node : String -> Maybe (List FileTree) -> FileTree
+        node name children =
+            case children of
+                Just c ->
+                    Dir { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList)
+
+                Nothing ->
+                    File { name = name, key = name, path = name, size = Nothing }
+    in
+        dec ""

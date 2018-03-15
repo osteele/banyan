@@ -3,12 +3,14 @@ module FileTreeTests exposing (..)
 import Expect exposing (Expectation)
 import FileEntry exposing (..)
 import FileTree exposing (..)
+import Json.Decode as Decode
+import Json.Encode as Encode
 import Test exposing (..)
 
 
 suite : Test
 suite =
-    describe "FileTree"
+    describe "FileTree" <|
         [ describe "fromString"
             [ test "creates an unsized file" <|
                 \_ ->
@@ -140,6 +142,111 @@ suite =
                     |> FileTree.toString
                     |> Expect.equal "/a/;/b/"
         ]
+            ++ encoderTests
+
+
+encoderTests : List Test
+encoderTests =
+    let
+        encoded =
+            Encode.object
+                [ ( "n", Encode.string "" )
+                , ( "c"
+                  , Encode.list
+                        [ Encode.object
+                            [ ( "n", Encode.string "dir" )
+                            , ( "c", Encode.list [] )
+                            ]
+                        , Encode.object
+                            [ ( "n", Encode.string "file1" )
+                            ]
+                        , Encode.object
+                            [ ( "n", Encode.string "file2" )
+                            , ( "s", Encode.int 10 )
+                            ]
+                        ]
+                  )
+                ]
+
+        encodedLeaf =
+            Encode.object
+                [ ( "n", Encode.string "" )
+                , ( "c"
+                  , Encode.list
+                        [ Encode.object
+                            [ ( "n", Encode.string "dir" )
+                            , ( "c"
+                              , Encode.list
+                                    [ Encode.object [ ( "n", Encode.string "file" ) ]
+                                    ]
+                              )
+                            ]
+                        ]
+                  )
+                ]
+
+        encodedUppercase =
+            Encode.object
+                [ ( "n", Encode.string "" )
+                , ( "c"
+                  , Encode.list
+                        [ Encode.object
+                            [ ( "n", Encode.string "Dir" )
+                            , ( "c"
+                              , Encode.list
+                                    [ Encode.object [ ( "n", Encode.string "File" ) ]
+                                    ]
+                              )
+                            ]
+                        ]
+                  )
+                ]
+    in
+        [ describe "encode"
+            [ test "files and directory" <|
+                \_ ->
+                    FileTree.fromString "/file1;file2:10;/dir/"
+                        |> FileTree.encodeJson
+                        |> expectJsonEqual encoded
+            , test "file path" <|
+                \_ ->
+                    FileTree.fromString "/dir/file"
+                        |> FileTree.encodeJson
+                        |> expectJsonEqual encodedLeaf
+            , pending test "uppercase name" <|
+                \_ ->
+                    FileTree.fromString "/Dir/File"
+                        |> FileTree.encodeJson
+                        |> expectJsonEqual encodedUppercase
+            ]
+        , pending describe
+            "decode"
+            [ test "files and directory" <|
+                \_ ->
+                    Decode.decodeString FileTree.decodeJson (Encode.encode 0 encoded)
+                        |> Result.map FileTree.toString
+                        |> Expect.equal (Result.Ok "")
+            ]
+        ]
+
+
+expectJsonEqual : Encode.Value -> Encode.Value -> Expectation
+expectJsonEqual a =
+    Expect.all
+        [ Expect.equal a
+        , flip Expect.equal a
+        ]
+
+
+pending : a -> String -> b -> Test
+pending _ s _ =
+    test s <|
+        \_ ->
+            let
+                _ =
+                    Debug.log "skipping test" s
+            in
+                Expect.pass
 
 
 expectJust : a -> Maybe a -> Expectation
