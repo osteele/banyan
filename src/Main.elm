@@ -94,44 +94,35 @@ update msg model =
                     { model | accountInfo = Just info }
             in
                 if FilesComponent.isEmpty model.files then
-                    update RestoreFromCacheOrListFolder m
+                    update restoreOrSyncFiles m
                 else
                     m ! []
 
-        -- list files
-        ListFolder ->
+        FilesMessage fmsg ->
             let
                 ( m, cmd ) =
-                    updateFilesModel msg model
+                    updateFilesModel fmsg model
             in
-                { m | path = "/" } ! [ cmd ]
+                case fmsg of
+                    FilesComponent.ListFolder ->
+                        { m | path = "/" } ! [ cmd ]
 
-        ReceiveListFolderResponse _ ->
-            let
-                ( m1, cmd1 ) =
-                    updateFilesModel msg model
+                    FilesComponent.ReceiveListFolderResponse _ ->
+                        let
+                            ( m2, cmd2 ) =
+                                update RenderFileTreeMap m
+                        in
+                            m2 ! [ cmd, cmd2 ]
 
-                ( m2, cmd2 ) =
-                    update RenderFileTreeMap m1
-            in
-                m2 ! [ cmd1, cmd2 ]
+                    FilesComponent.RestoreFromCacheOrListFolder ->
+                        { m | path = "/" } ! [ cmd ]
 
-        RestoreFromCacheOrListFolder ->
-            let
-                ( m, cmd ) =
-                    updateFilesModel msg model
-            in
-                { m | path = "/" } ! [ cmd ]
-
-        RestoreFromCache ->
-            let
-                ( m1, cmd1 ) =
-                    updateFilesModel msg model
-
-                ( m2, cmd2 ) =
-                    update RenderFileTreeMap m1
-            in
-                m2 ! [ cmd1, cmd2 ]
+                    FilesComponent.RestoreFromCache ->
+                        let
+                            ( m2, cmd2 ) =
+                                update RenderFileTreeMap m
+                        in
+                            m2 ! [ cmd, cmd2 ]
 
         RenderFileTreeMap ->
             model
@@ -148,7 +139,7 @@ update msg model =
             { model | depth = n } ! []
 
 
-updateFilesModel : Msg -> Model -> ( Model, Cmd Msg )
+updateFilesModel : FilesComponent.Msg -> Model -> ( Model, Cmd Msg )
 updateFilesModel msg model =
     case model.auth of
         Just auth ->
@@ -156,7 +147,7 @@ updateFilesModel msg model =
                 ( files, cmd ) =
                     FilesComponent.update auth msg model.files
             in
-                { model | files = files } ! [ cmd ]
+                { model | files = files } ! [ Cmd.map FilesMessage cmd ]
 
         Nothing ->
             model ! []
@@ -184,5 +175,5 @@ subscriptions model =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
         , setPath Focus
-        , FilesComponent.subscriptions model.files
+        , Sub.map FilesMessage <| FilesComponent.subscriptions model.files
         ]

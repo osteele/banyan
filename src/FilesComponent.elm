@@ -8,18 +8,18 @@ module FilesComponent exposing (..)
 
 import Dropbox
 import DropboxUtils exposing (extractAccessToken)
+import FileEntry exposing (FileEntry)
 import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import ListFolder exposing (..)
 import ListFolder exposing (listFolder)
-import Message exposing (..)
 import Process
 import Task
 import Time exposing (Time)
 
 
--- UPDATE
+-- MODEL
 
 
 type alias FilesComponent =
@@ -51,6 +51,17 @@ fromCache c =
 isEmpty : FilesComponent -> Bool
 isEmpty =
     .fileTree >> FileTree.isEmpty
+
+
+
+-- MESSAGES
+
+
+type Msg
+    = ListFolder
+    | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
+    | RestoreFromCacheOrListFolder
+    | RestoreFromCache
 
 
 
@@ -104,14 +115,11 @@ update auth msg model =
         RestoreFromCacheOrListFolder ->
             case model.cache of
                 Just _ ->
-                    -- delay is necessary in order to display the message
-                    model ! [ delay (100 * Time.millisecond) RestoreFromCache ]
+                    -- the delay is necessary in order to display the message
+                    model ! [ delay (16 * Time.millisecond) RestoreFromCache ]
 
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }
-
-        _ ->
-            model ! []
 
 
 delay : Time -> msg -> Cmd msg

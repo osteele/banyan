@@ -2,7 +2,7 @@ module Message exposing (..)
 
 import Data exposing (..)
 import Dropbox
-import FileEntry exposing (..)
+import FilesComponent
 
 
 type Msg
@@ -11,13 +11,23 @@ type Msg
     | SignIn
     | SignOut
     | SetAccountInfo AccountInfo
-      -- file retrieval
-    | ListFolder
-    | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
-    | RestoreFromCacheOrListFolder
-    | RestoreFromCache
+    | FilesMessage FilesMsg
       -- view controls
     | Focus String
     | RenderFileTreeMap
     | SortOrder Data.SortOrder
     | TreeDepth Int
+
+
+type alias FilesMsg =
+    FilesComponent.Msg
+
+
+restoreOrSyncFiles : Msg
+restoreOrSyncFiles =
+    FilesMessage FilesComponent.RestoreFromCacheOrListFolder
+
+
+syncFilesMsg : Msg
+syncFilesMsg =
+    FilesMessage FilesComponent.ListFolder

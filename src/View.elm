@@ -42,7 +42,7 @@ header model =
                 List.filterMap identity <|
                     [ ifJust (isSignedIn model && not model.files.hasMore) <|
                         button
-                            [ class "item", onClick ListFolder ]
+                            [ class "item", onClick syncFilesMsg ]
                             [ text "Re-sync" ]
                     , Just <| signInOut model
                     ]
