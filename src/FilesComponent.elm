@@ -58,7 +58,8 @@ isEmpty =
 
 
 type Msg
-    = ListFolder
+    = Changed
+    | ListFolder
     | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
     | RestoreFromCacheOrListFolder
     | RestoreFromCache
@@ -71,6 +72,9 @@ type Msg
 update : Dropbox.UserAuth -> Msg -> FilesComponent -> ( FilesComponent, Cmd Msg )
 update auth msg model =
     case msg of
+        Changed ->
+            ( model, Cmd.none )
+
         ListFolder ->
             case extractAccessToken auth of
                 Just token ->

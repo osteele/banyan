@@ -104,25 +104,21 @@ update msg model =
                     updateFilesModel fmsg model
             in
                 case fmsg of
-                    FilesComponent.ListFolder ->
-                        { m | path = "/" } ! [ cmd ]
-
-                    FilesComponent.ReceiveListFolderResponse _ ->
+                    FilesComponent.Changed ->
                         let
                             ( m2, cmd2 ) =
                                 update RenderFileTreeMap m
                         in
                             m2 ! [ cmd, cmd2 ]
+
+                    FilesComponent.ListFolder ->
+                        { m | path = "/" } ! [ cmd ]
 
                     FilesComponent.RestoreFromCacheOrListFolder ->
                         { m | path = "/" } ! [ cmd ]
 
-                    FilesComponent.RestoreFromCache ->
-                        let
-                            ( m2, cmd2 ) =
-                                update RenderFileTreeMap m
-                        in
-                            m2 ! [ cmd, cmd2 ]
+                    _ ->
+                        ( m, cmd )
 
         RenderFileTreeMap ->
             model
