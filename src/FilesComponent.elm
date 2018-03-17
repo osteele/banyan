@@ -7,12 +7,10 @@ module FilesComponent exposing (..)
 -}
 
 import Dropbox
-import DropboxUtils exposing (extractAccessToken)
 import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import ListFolder exposing (..)
-import ListFolder exposing (listFolder)
 import Process
 import Task
 import Time exposing (Time)
@@ -59,7 +57,7 @@ isEmpty =
 type Msg
     = Changed
     | ListFolder
-    | ReceiveListFolderResponse (Result String ( List Dropbox.Metadata, Bool ))
+    | ReceiveListFolderResponse (Result String Dropbox.ListFolderResponse)
     | RestoreFromCacheOrListFolder
     | RestoreFromCache
 
@@ -75,17 +73,21 @@ update auth msg model =
             ( model, Cmd.none )
 
         ListFolder ->
-            case extractAccessToken auth of
-                Just token ->
-                    { init | hasMore = True }
-                        ! [ curry listFolder token { path = "", recursive = True, includeDeleted = False } ]
-
-                Nothing ->
-                    { model | errorMessage = Just "Failed to extract access token" } ! []
+            let
+                task =
+                    Dropbox.listFolder auth
+                        { path = ""
+                        , recursive = True
+                        , includeDeleted = False
+                        , includeHasExplicitSharedMembers = False
+                        , includeMediaInfo = False
+                        }
+            in
+                ( model, Task.attempt ReceiveListFolderResponse <| Task.mapError toString task )
 
         ReceiveListFolderResponse result ->
             case result of
-                Result.Ok ( entries, hasMore ) ->
+                Result.Ok { entries, cursor, hasMore } ->
                     let
                         m =
                             { model
@@ -97,14 +99,18 @@ update auth msg model =
 
                         cmd =
                             if hasMore then
-                                Cmd.none
+                                let
+                                    task =
+                                        Dropbox.listFolderContinue auth { cursor = cursor }
+                                in
+                                    Task.attempt ReceiveListFolderResponse <| Task.mapError toString task
                             else
                                 saveFilesCache <| encode m
                     in
                         ( m, cmd )
 
                 Result.Err msg ->
-                    { model | hasMore = False, errorMessage = Just msg }
+                    { model | hasMore = False, errorMessage = Just <| toString msg }
                         ! []
 
         RestoreFromCache ->
@@ -138,10 +144,7 @@ delay time msg =
 
 subscriptions : FilesComponent -> Sub Msg
 subscriptions _ =
-    Sub.batch
-        [ receiveFileList (ReceiveListFolderResponse << decodeFileList)
-        , receiveFileListError (ReceiveListFolderResponse << Result.Err)
-        ]
+    Sub.none
 
 
 
@@ -174,11 +177,3 @@ decode =
                         _ ->
                             Decode.fail <| "Unknown version " ++ toString version
                 )
-
-
-
--- fromCache : Maybe String -> FilesComponent
--- fromCache =
---     Maybe.map (Decode.decodeString decode)
---         >> Maybe.andThen Result.toMaybe
---         >> Maybe.withDefault init
