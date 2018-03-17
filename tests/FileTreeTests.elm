@@ -6,6 +6,7 @@ import FileTree exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Test exposing (..)
+import Utils exposing (takeFileName)
 
 
 suite : Test
@@ -252,6 +253,10 @@ pending _ s _ =
 expectJust : a -> Maybe a -> Expectation
 expectJust =
     Expect.equal << Just
+
+
+file path size =
+    FileEntry.file (takeFileName path) path size
 
 
 fromEntries : List FileEntry -> FileTree

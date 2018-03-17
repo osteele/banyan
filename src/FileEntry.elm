@@ -18,9 +18,14 @@ module FileEntry
 {-| See <https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder>.
 -}
 
+import Date
+import Dropbox
 import Json.Decode exposing (..)
 import Regex
-import Utils exposing (takeFileName)
+import Utils exposing (..)
+
+
+-- import Utils exposing (takeFileName)
 
 
 {-| File metadata, as returned from a listFolders request.
@@ -34,11 +39,7 @@ symlink_info.
 
 -}
 type alias FileMetadata =
-    { name : String
-    , pathDisplay : String
-    , pathLower : String
-    , size : Maybe Int
-    }
+    Dropbox.FileMetadata
 
 
 {-| Folder metadata, as returned from a listFolders request.
@@ -50,10 +51,7 @@ Doesn't record id, sharing_info, property_groups.
 
 -}
 type alias FolderMetadata =
-    { name : String
-    , pathDisplay : String
-    , pathLower : String
-    }
+    Dropbox.FolderMetadata
 
 
 {-| File metadata, as returned from a listFolders request.
@@ -64,10 +62,7 @@ Doesn't record name.
 
 -}
 type alias DeletedMetadata =
-    { name : String
-    , pathDisplay : String
-    , pathLower : String
-    }
+    Dropbox.DeletedMetadata
 
 
 type FileEntry
@@ -78,30 +73,89 @@ type FileEntry
 
 deleted : String -> FileEntry
 deleted path =
-    Deleted { pathLower = String.toLower path, name = takeFileName path, pathDisplay = path }
+    Deleted
+        { name = takeFileName path
+        , pathLower = Just <| String.toLower path
+        , pathDisplay = Just path
+        , parentSharedFolderId = Nothing
+        }
 
 
-file : String -> Maybe Int -> FileEntry
-file path size =
-    File { pathLower = String.toLower path, name = takeFileName path, pathDisplay = path, size = size }
+file : String -> String -> Maybe Int -> FileEntry
+file name path size =
+    File
+        { name = name
+        , pathLower = Just <| String.toLower path
+        , pathDisplay = Just <| path
+        , size = Maybe.withDefault 0 size
+        , id = ""
+        , clientModified = Date.fromTime 0
+        , serverModified = Date.fromTime 0
+        , rev = ""
+        , contentHash = Nothing
+        , hasExplicitSharedMembers = Nothing
+        , mediaInfo = Nothing
+        , parentSharedFolderId = Nothing
+        , propertyGroups = Nothing
+        , sharingInfo = Nothing
+        }
+
+
+
+-- file : String -> Maybe Int -> FileEntry
+-- file path size =
+--     File
+--         { name = takeFileName <| path
+--         , pathLower = Just <| String.toLower path
+--         , pathDisplay = Just <| path
+--         , size = Maybe.withDefault 0 size
+--         , id = ""
+--         , clientModified = Date.fromTime 0
+--         , serverModified = Date.fromTime 0
+--         , rev = ""
+--         , contentHash = Nothing
+--         , hasExplicitSharedMembers = Nothing
+--         , mediaInfo = Nothing
+--         , parentSharedFolderId = Nothing
+--         , propertyGroups = Nothing
+--         , sharingInfo = Nothing
+--         }
 
 
 folder : String -> FileEntry
 folder path =
-    Folder { pathLower = String.toLower path, name = takeFileName path, pathDisplay = path }
+    Folder
+        { name = takeFileName path
+        , pathLower = Just <| String.toLower path
+        , pathDisplay = Just path
+        , id = ""
+        , sharedFolderId = Nothing
+        , parentSharedFolderId = Nothing
+        , propertyGroups = Nothing
+        , sharingInfo = Nothing
+        }
 
 
 key : FileEntry -> String
 key entry =
-    case entry of
-        File { pathLower } ->
-            pathLower
+    let
+        k { pathLower } =
+            case pathLower of
+                Just s ->
+                    s
 
-        Folder { pathLower } ->
-            pathLower
+                Nothing ->
+                    Debug.crash "missing key"
+    in
+        case entry of
+            File data ->
+                k data
 
-        Deleted { pathLower } ->
-            pathLower
+            Folder data ->
+                k data
+
+            Deleted data ->
+                k data
 
 
 name : FileEntry -> String
@@ -119,22 +173,26 @@ name entry =
 
 path : FileEntry -> String
 path entry =
-    case entry of
-        File { pathDisplay } ->
-            pathDisplay
+    let
+        displayPath { name, pathDisplay } =
+            Maybe.withDefault ("…/" ++ name) pathDisplay
+    in
+        case entry of
+            File data ->
+                displayPath data
 
-        Folder { pathDisplay } ->
-            pathDisplay
+            Folder data ->
+                displayPath data
 
-        Deleted { pathDisplay } ->
-            pathDisplay
+            Deleted data ->
+                displayPath data
 
 
 size : FileEntry -> Maybe Int
 size entry =
     case entry of
         File { size } ->
-            size
+            Just size
 
         _ ->
             Nothing
@@ -150,16 +208,21 @@ decoderFor : String -> Decoder FileEntry
 decoderFor tag =
     case tag of
         "file" ->
-            map4 FileMetadata (field "name" string) (field "path_display" string) (field "path_lower" string) (field "size" <| nullable int)
-                |> map File
+            map3 file (field "name" string) (field "path_display" string) (field "size" <| nullable int)
 
         "folder" ->
-            map3 FolderMetadata (field "name" string) (field "path_display" string) (field "path_lower" string)
-                |> map Folder
+            let
+                f name pathDisplay pathLower =
+                    folder pathDisplay
+            in
+                map3 f (field "name" string) (field "path_display" string) (field "path_lower" string)
 
         "delete" ->
-            map3 DeletedMetadata (field "name" string) (field "path_display" string) (field "path_lower" string)
-                |> map Deleted
+            let
+                f name pathDisplay pathLower =
+                    deleted pathDisplay
+            in
+                map3 f (field "name" string) (field "path_display" string) (field "path_lower" string)
 
         _ ->
             fail <|
@@ -204,23 +267,27 @@ fromString path =
                     _ ->
                         ( path, Nothing )
         in
-            file p size
+            file (takeFileName p) p size
 
 
 {-| Turn a tree into a string. See fromString for the format.
 -}
 toString : FileEntry -> String
 toString entry =
-    case entry of
-        Deleted { pathDisplay } ->
-            "-" ++ pathDisplay
+    let
+        displayPath { name, pathDisplay } =
+            Maybe.withDefault ("…/" ++ name) pathDisplay
+    in
+        case entry of
+            Deleted data ->
+                "-" ++ displayPath data
 
-        File { pathDisplay, size } ->
-            String.join ":" <|
-                List.filterMap identity
-                    [ Just <| pathDisplay
-                    , Maybe.map Basics.toString <| size
-                    ]
+            File ({ pathDisplay, size } as data) ->
+                String.join ":" <|
+                    List.filterMap identity
+                        [ Just <| displayPath data
+                        , Maybe.map Basics.toString <| maybeToDefault 0 size
+                        ]
 
-        Folder { pathDisplay } ->
-            pathDisplay ++ "/"
+            Folder data ->
+                displayPath data ++ "/"

@@ -6,6 +6,7 @@ module Utils
         , humanize
         , ifJust
         , mapValues
+        , maybeToDefault
         , pluralize
         , prefixes
         , quantify
@@ -30,7 +31,7 @@ you with optional arguments, error handling, and records with optional fields.
 
 # Maybe Helpers
 
-@docs ifJust
+@docs ifJust, maybeToDefault
 
 
 # Paths
@@ -152,6 +153,14 @@ ifJust flag a =
         Just a
     else
         Nothing
+
+
+maybeToDefault : a -> a -> Maybe a
+maybeToDefault d a =
+    if a == d then
+        Nothing
+    else
+        Just a
 
 
 mapValues : (a -> b) -> Dict.Dict comparable a -> Dict.Dict comparable b

@@ -20,6 +20,7 @@ module FileTree
         , trimDepth
         , decodeJson
         , encodeJson
+        , logTree
         )
 
 {-|
@@ -140,7 +141,7 @@ getSubtree path tree =
         get_ (splitPath <| String.toLower path) tree
 
 
-{-| Get the value associated with a file path.
+{-| Get the FileEntry at with a file path.
 -}
 get : String -> FileTree -> Maybe FileEntry
 get path tree =
@@ -151,10 +152,10 @@ itemEntry : FileTree -> FileEntry
 itemEntry tree =
     case tree of
         Dir { key, name, path } _ _ ->
-            FileEntry.Folder { name = name, pathDisplay = path, pathLower = key }
+            FileEntry.folder path
 
         File { key, name, path, size } ->
-            FileEntry.File { name = name, pathDisplay = path, pathLower = key, size = size }
+            FileEntry.file name path size
 
 
 nodeChildren : FileTree -> Dict.Dict String FileTree
@@ -273,13 +274,22 @@ insert entry =
                 _ ->
                     Dir data 0 Dict.empty
 
+        -- FIXME remove the necessity for this
+        maybeRequire m =
+            case m of
+                Just v ->
+                    v
+
+                Nothing ->
+                    Debug.crash "required"
+
         update =
             case entry of
                 FileEntry.File { name, pathDisplay, pathLower, size } ->
-                    updateFile { name = name, path = pathDisplay, key = pathLower, size = size }
+                    updateFile { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower, size = Just size }
 
                 FileEntry.Folder { name, pathDisplay, pathLower } ->
-                    updateDir { name = name, path = pathDisplay, key = pathLower }
+                    updateDir { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower }
 
                 _ ->
                     Debug.crash "unexpected FileEntry case"
@@ -532,17 +542,19 @@ encodeJson node =
             Maybe.map List.singleton >> Maybe.withDefault []
 
         maybeKey name key =
-            let
-                k =
-                    splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
-            in
-                if String.toLower name == k then
-                    Nothing
-                else
-                    Just ( "k", Encode.string key )
+            splitPath key
+                |> List.reverse
+                |> List.head
+                |> Maybe.withDefault key
+                |> maybeToDefault (String.toLower name)
+                |> Maybe.map (\k -> ( "k", Encode.string key ))
 
         maybeSize size =
-            Maybe.map (\s -> ( "s", Encode.int s )) size
+            size
+                |> Maybe.withDefault 0
+                |> maybeToDefault 0
+                |> Maybe.map
+                    (\s -> ( "s", Encode.int s ))
     in
         case node of
             Dir { name, key } _ children ->
