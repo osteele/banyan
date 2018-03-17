@@ -83,7 +83,10 @@ update auth msg model =
                         , includeMediaInfo = False
                         }
             in
-                ( model, Task.attempt ReceiveListFolderResponse <| Task.mapError toString task )
+                { model | fileTree = FileTree.empty }
+                    ! [ Task.attempt ReceiveListFolderResponse <| Task.mapError toString task
+                      , message Changed
+                      ]
 
         ReceiveListFolderResponse result ->
             case result of
@@ -105,7 +108,7 @@ update auth msg model =
                                 in
                                     Task.attempt ReceiveListFolderResponse <| Task.mapError toString task
                             else
-                                saveFilesCache <| encode m
+                                Cmd.batch [ saveFilesCache <| encode m, message Changed ]
                     in
                         ( m, cmd )
 
@@ -116,7 +119,7 @@ update auth msg model =
         RestoreFromCache ->
             case model.cache |> Maybe.map (Decode.decodeString decode) |> Maybe.andThen Result.toMaybe of
                 Just m ->
-                    m ! []
+                    m ! [ message Changed ]
 
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }
@@ -136,6 +139,11 @@ delay time msg =
     Process.sleep time
         |> Task.andThen (always <| Task.succeed msg)
         |> Task.perform identity
+
+
+message : msg -> Cmd msg
+message =
+    Task.perform identity << Task.succeed
 
 
 
