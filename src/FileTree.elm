@@ -67,7 +67,7 @@ See the official Dropbox documentation at
 
 import Dict
 import Dropbox exposing (Metadata(..))
-import FileEntry exposing (..)
+import DropboxExtras exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Utils exposing (..)
@@ -153,10 +153,10 @@ itemEntry : FileTree -> Metadata
 itemEntry tree =
     case tree of
         Dir { key, name, path } _ _ ->
-            FileEntry.folder path
+            DropboxExtras.folder path
 
         File { key, name, path, size } ->
-            FileEntry.file name path size
+            DropboxExtras.file name path size
 
 
 nodeChildren : FileTree -> Dict.Dict String FileTree
@@ -293,9 +293,9 @@ insert entry =
                     updateDir { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower }
 
                 _ ->
-                    Debug.crash "unexpected FileEntry case"
+                    Debug.crash "unexpected Dropbox metadata case"
     in
-        updateTreeItem (splitPath <| FileEntry.key entry) update [ "" ]
+        updateTreeItem (splitPath <| DropboxExtras.key entry) update [ "" ]
 
 
 {-| Remove a value from a tree.
@@ -329,7 +329,7 @@ remove entry =
                         k :: ks ->
                             children |> Dict.update k (Maybe.map <| rm ks) |> Dir entry stats |> recomputeStats
     in
-        rm <| splitPath <| FileEntry.key entry
+        rm <| splitPath <| DropboxExtras.key entry
 
 
 {-| Update a tree from a list of values.
@@ -479,7 +479,7 @@ is an optional size.
 fromString : String -> FileTree
 fromString =
     String.split ";"
-        >> List.map FileEntry.fromString
+        >> List.map DropboxExtras.fromString
         >> flip addEntries empty
 
 
@@ -490,7 +490,7 @@ toString tree =
     let
         paths : FileTree -> List String
         paths tree =
-            [ FileEntry.toString <| itemEntry tree ]
+            [ DropboxExtras.toString <| itemEntry tree ]
                 ++ (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
         paths tree

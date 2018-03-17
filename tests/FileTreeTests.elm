@@ -2,7 +2,7 @@ module FileTreeTests exposing (..)
 
 import Dropbox
 import Expect exposing (Expectation)
-import FileEntry exposing (..)
+import DropboxExtras exposing (..)
 import FileTree exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -257,7 +257,7 @@ expectJust =
 
 
 file path size =
-    FileEntry.file (takeFileName path) path size
+    DropboxExtras.file (takeFileName path) path size
 
 
 fromEntries : List Dropbox.Metadata -> FileTree

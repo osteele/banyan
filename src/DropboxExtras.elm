@@ -1,4 +1,4 @@
-module FileEntry
+module DropboxExtras
     exposing
         ( FileMetadata
         , FolderMetadata
@@ -12,6 +12,7 @@ module FileEntry
         , decodeFileEntry
         , fromString
         , toString
+        , extractAccessToken
         )
 
 {-| See <https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder>.
@@ -235,3 +236,14 @@ toString entry =
 
             Dropbox.FolderMeta data ->
                 displayPath data ++ "/"
+
+
+bearerRegex : Regex.Regex
+bearerRegex =
+    Regex.regex "Bearer \"(.+)\""
+
+
+extractAccessToken : Dropbox.UserAuth -> Maybe String
+extractAccessToken auth =
+    -- TODO extract from JSON instead?
+    auth |> Basics.toString |> firstMatch bearerRegex

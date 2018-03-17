@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Dropbox
-import DropboxUtils exposing (extractAccessToken)
+import DropboxExtras exposing (extractAccessToken)
 import FilesComponent
 import Message exposing (..)
 import Model exposing (..)

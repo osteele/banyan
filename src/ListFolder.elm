@@ -1,7 +1,7 @@
 port module ListFolder exposing (..)
 
 import Dropbox
-import FileEntry exposing (..)
+import DropboxExtras exposing (..)
 import Json.Encode
 import Json.Decode exposing (..)
 
