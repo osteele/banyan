@@ -1,7 +1,6 @@
 module FileEntry
     exposing
-        ( FileEntry(..)
-        , FileMetadata
+        ( FileMetadata
         , FolderMetadata
         , folder
         , file
@@ -19,61 +18,27 @@ module FileEntry
 -}
 
 import Date
-import Dropbox
+import Dropbox exposing (Metadata)
 import Json.Decode exposing (..)
 import Regex
 import Utils exposing (..)
 
 
--- import Utils exposing (takeFileName)
-
-
-{-| File metadata, as returned from a listFolders request.
-
-See
-<https://www.dropbox.com/developers/documentation/http/documentation#FileMetadata>.
-
-Doesn't record id, client_modified, server_modified, rev, sharing_info,
-property_groups, has_explicit_shared_members, content_hash, media_info,
-symlink_info.
-
--}
 type alias FileMetadata =
     Dropbox.FileMetadata
 
 
-{-| Folder metadata, as returned from a listFolders request.
-
-See
-<https://www.dropbox.com/developers/documentation/http/documentation#FolderMetadata>.
-
-Doesn't record id, sharing_info, property_groups.
-
--}
 type alias FolderMetadata =
     Dropbox.FolderMetadata
 
 
-{-| File metadata, as returned from a listFolders request.
-
-See <https://www.dropbox.com/developers/documentation/http/documentation#DeletedMetadata>.
-
-Doesn't record name.
-
--}
 type alias DeletedMetadata =
     Dropbox.DeletedMetadata
 
 
-type FileEntry
-    = File FileMetadata
-    | Folder FolderMetadata
-    | Deleted DeletedMetadata
-
-
-deleted : String -> FileEntry
+deleted : String -> Metadata
 deleted path =
-    Deleted
+    Dropbox.DeletedMeta
         { name = takeFileName path
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just path
@@ -81,9 +46,9 @@ deleted path =
         }
 
 
-file : String -> String -> Maybe Int -> FileEntry
+file : String -> String -> Maybe Int -> Metadata
 file name path size =
-    File
+    Dropbox.FileMeta
         { name = name
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just <| path
@@ -101,30 +66,9 @@ file name path size =
         }
 
 
-
--- file : String -> Maybe Int -> FileEntry
--- file path size =
---     File
---         { name = takeFileName <| path
---         , pathLower = Just <| String.toLower path
---         , pathDisplay = Just <| path
---         , size = Maybe.withDefault 0 size
---         , id = ""
---         , clientModified = Date.fromTime 0
---         , serverModified = Date.fromTime 0
---         , rev = ""
---         , contentHash = Nothing
---         , hasExplicitSharedMembers = Nothing
---         , mediaInfo = Nothing
---         , parentSharedFolderId = Nothing
---         , propertyGroups = Nothing
---         , sharingInfo = Nothing
---         }
-
-
-folder : String -> FileEntry
+folder : String -> Metadata
 folder path =
-    Folder
+    Dropbox.FolderMeta
         { name = takeFileName path
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just path
@@ -136,7 +80,7 @@ folder path =
         }
 
 
-key : FileEntry -> String
+key : Metadata -> String
 key entry =
     let
         k { pathLower } =
@@ -148,63 +92,63 @@ key entry =
                     Debug.crash "missing key"
     in
         case entry of
-            File data ->
+            Dropbox.FileMeta data ->
                 k data
 
-            Folder data ->
+            Dropbox.FolderMeta data ->
                 k data
 
-            Deleted data ->
+            Dropbox.DeletedMeta data ->
                 k data
 
 
-name : FileEntry -> String
+name : Metadata -> String
 name entry =
     case entry of
-        File { name } ->
+        Dropbox.FileMeta { name } ->
             name
 
-        Folder { name } ->
+        Dropbox.FolderMeta { name } ->
             name
 
-        Deleted { name } ->
+        Dropbox.DeletedMeta { name } ->
             name
 
 
-path : FileEntry -> String
+path : Metadata -> String
 path entry =
     let
         displayPath { name, pathDisplay } =
             Maybe.withDefault ("…/" ++ name) pathDisplay
     in
         case entry of
-            File data ->
+            Dropbox.FileMeta data ->
                 displayPath data
 
-            Folder data ->
+            Dropbox.FolderMeta data ->
                 displayPath data
 
-            Deleted data ->
+            Dropbox.DeletedMeta data ->
                 displayPath data
 
 
-size : FileEntry -> Maybe Int
+size : Metadata -> Maybe Int
 size entry =
     case entry of
-        File { size } ->
+        Dropbox.FileMeta { size } ->
             Just size
 
         _ ->
             Nothing
 
 
-decodeFileEntry : Decoder FileEntry
+decodeFileEntry : Decoder Metadata
 decodeFileEntry =
     field "tag" string
         |> andThen decoderFor
 
 
-decoderFor : String -> Decoder FileEntry
+decoderFor : String -> Decoder Metadata
 decoderFor tag =
     case tag of
         "file" ->
@@ -230,10 +174,10 @@ decoderFor tag =
                     ++ tag
 
 
-isDir : FileEntry -> Bool
+isDir : Metadata -> Bool
 isDir entry =
     case entry of
-        Folder _ ->
+        Dropbox.FolderMeta _ ->
             True
 
         _ ->
@@ -250,7 +194,7 @@ is an optional size.
     fromString "/dir/" -- folder
 
 -}
-fromString : String -> FileEntry
+fromString : String -> Metadata
 fromString path =
     if String.endsWith "/" path then
         folder <| String.dropRight 1 path
@@ -272,22 +216,22 @@ fromString path =
 
 {-| Turn a tree into a string. See fromString for the format.
 -}
-toString : FileEntry -> String
+toString : Metadata -> String
 toString entry =
     let
         displayPath { name, pathDisplay } =
             Maybe.withDefault ("…/" ++ name) pathDisplay
     in
         case entry of
-            Deleted data ->
+            Dropbox.DeletedMeta data ->
                 "-" ++ displayPath data
 
-            File ({ pathDisplay, size } as data) ->
+            Dropbox.FileMeta ({ pathDisplay, size } as data) ->
                 String.join ":" <|
                     List.filterMap identity
                         [ Just <| displayPath data
                         , Maybe.map Basics.toString <| maybeToDefault 0 size
                         ]
 
-            Folder data ->
+            Dropbox.FolderMeta data ->
                 displayPath data ++ "/"

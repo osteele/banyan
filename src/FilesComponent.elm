@@ -8,7 +8,6 @@ module FilesComponent exposing (..)
 
 import Dropbox
 import DropboxUtils exposing (extractAccessToken)
-import FileEntry exposing (FileEntry)
 import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -60,7 +59,7 @@ isEmpty =
 type Msg
     = Changed
     | ListFolder
-    | ReceiveListFolderResponse (Result String ( List FileEntry, Bool ))
+    | ReceiveListFolderResponse (Result String ( List Dropbox.Metadata, Bool ))
     | RestoreFromCacheOrListFolder
     | RestoreFromCache
 

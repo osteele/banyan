@@ -1,5 +1,6 @@
 module FileTreeTests exposing (..)
 
+import Dropbox
 import Expect exposing (Expectation)
 import FileEntry exposing (..)
 import FileTree exposing (..)
@@ -259,6 +260,6 @@ file path size =
     FileEntry.file (takeFileName path) path size
 
 
-fromEntries : List FileEntry -> FileTree
+fromEntries : List Dropbox.Metadata -> FileTree
 fromEntries entries =
     FileTree.empty |> addEntries entries

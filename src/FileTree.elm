@@ -66,6 +66,7 @@ See the official Dropbox documentation at
 -}
 
 import Dict
+import Dropbox exposing (Metadata(..))
 import FileEntry exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -141,14 +142,14 @@ getSubtree path tree =
         get_ (splitPath <| String.toLower path) tree
 
 
-{-| Get the FileEntry at with a file path.
+{-| Get the Dropbox metadata at with a file path.
 -}
-get : String -> FileTree -> Maybe FileEntry
+get : String -> FileTree -> Maybe Metadata
 get path tree =
     getSubtree path tree |> Maybe.map itemEntry
 
 
-itemEntry : FileTree -> FileEntry
+itemEntry : FileTree -> Metadata
 itemEntry tree =
     case tree of
         Dir { key, name, path } _ _ ->
@@ -260,7 +261,7 @@ updateTreeItem keys alter path tree =
 
 {-| Insert a value into a tree.
 -}
-insert : FileEntry -> FileTree -> FileTree
+insert : Metadata -> FileTree -> FileTree
 insert entry =
     let
         updateFile data _ =
@@ -285,10 +286,10 @@ insert entry =
 
         update =
             case entry of
-                FileEntry.File { name, pathDisplay, pathLower, size } ->
+                FileMeta { name, pathDisplay, pathLower, size } ->
                     updateFile { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower, size = Just size }
 
-                FileEntry.Folder { name, pathDisplay, pathLower } ->
+                FolderMeta { name, pathDisplay, pathLower } ->
                     updateDir { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower }
 
                 _ ->
@@ -299,7 +300,7 @@ insert entry =
 
 {-| Remove a value from a tree.
 -}
-remove : FileEntry -> FileTree -> FileTree
+remove : Metadata -> FileTree -> FileTree
 remove entry =
     let
         updateChildren update entry =
@@ -333,12 +334,12 @@ remove entry =
 
 {-| Update a tree from a list of values.
 -}
-addEntries : List FileEntry -> FileTree -> FileTree
+addEntries : List Metadata -> FileTree -> FileTree
 addEntries entries tree =
     let
         action entry =
             case entry of
-                FileEntry.Deleted _ ->
+                DeletedMeta _ ->
                     remove entry
 
                 _ ->
