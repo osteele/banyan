@@ -3,7 +3,7 @@ module Model exposing (..)
 import Data exposing (..)
 import Dropbox
 import FileTree exposing (FileTree)
-import FilesComponent exposing (FilesComponent)
+import FilesComponent
 import Navigation
 
 
@@ -24,6 +24,10 @@ type alias Model =
     , depth : Int
     , order : SortOrder
     }
+
+
+type alias FilesComponent =
+    FilesComponent.Model
 
 
 type alias Flags =

@@ -20,7 +20,7 @@ import Time exposing (Time)
 -- MODEL
 
 
-type alias FilesComponent =
+type alias Model =
     { fileTree : FileTree
     , status : Status
     , errorMessage : Maybe String
@@ -35,7 +35,7 @@ type Status
     | Waiting
 
 
-init : FilesComponent
+init : Model
 init =
     { fileTree = FileTree.empty
     , status = Unsynced
@@ -44,12 +44,12 @@ init =
     }
 
 
-fromCache : Maybe String -> FilesComponent
+fromCache : Maybe String -> Model
 fromCache c =
     { init | cache = c }
 
 
-isEmpty : FilesComponent -> Bool
+isEmpty : Model -> Bool
 isEmpty =
     .fileTree >> FileTree.isEmpty
 
@@ -64,7 +64,7 @@ syncStats status =
             { entries = 0, requests = 0 }
 
 
-syncFraction : FilesComponent -> Float
+syncFraction : Model -> Float
 syncFraction model =
     case model.status of
         Syncing { requests } ->
@@ -81,7 +81,7 @@ syncFraction model =
             0
 
 
-isSyncing : FilesComponent -> Bool
+isSyncing : Model -> Bool
 isSyncing model =
     case model.status of
         Syncing data ->
@@ -110,7 +110,7 @@ type Msg
 -- UPDATE
 
 
-update : Dropbox.UserAuth -> Msg -> FilesComponent -> ( FilesComponent, Cmd Msg )
+update : Dropbox.UserAuth -> Msg -> Model -> ( Model, Cmd Msg )
 update auth msg model =
     case msg of
         Changed ->
@@ -209,7 +209,7 @@ message =
 -- SUBSCRIPTIONS
 
 
-subscriptions : FilesComponent -> Sub Msg
+subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.none
 
@@ -218,7 +218,7 @@ subscriptions _ =
 -- CACHE
 
 
-encode : FilesComponent -> Encode.Value
+encode : Model -> Encode.Value
 encode { fileTree } =
     Encode.object
         [ ( "files", FileTree.encode fileTree )
@@ -226,7 +226,7 @@ encode { fileTree } =
         ]
 
 
-decode : Decoder FilesComponent
+decode : Decoder Model
 decode =
     let
         decodeVersion1 =
