@@ -41,11 +41,11 @@ type alias Model =
 
 
 type Status
-    = Syncing { entries : Int, requests : Int }
+    = Decoding
+    | Started
+    | Syncing { entries : Int, requests : Int }
     | Synced { entries : Int, requests : Int }
     | Unsynced
-    | Started
-    | Decoding
 
 
 init : Model
@@ -116,13 +116,13 @@ syncFraction model =
 isSyncing : Model -> Bool
 isSyncing model =
     case model.status of
-        Syncing data ->
+        Decoding ->
             True
 
         Started ->
             True
 
-        Decoding ->
+        Syncing data ->
             True
 
         _ ->
@@ -139,6 +139,7 @@ type Msg
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder
     | RestoreFromCache
+    | SaveToCache
 
 
 
@@ -179,13 +180,10 @@ update auth msg model =
 
                         cmd =
                             if hasMore then
-                                let
-                                    task =
-                                        Dropbox.listFolderContinue auth { cursor = cursor }
-                                in
-                                    Task.attempt ReceiveListFolderResponse task
+                                Dropbox.listFolderContinue auth { cursor = cursor }
+                                    |> Task.attempt ReceiveListFolderResponse
                             else
-                                Cmd.batch [ saveFilesCache <| encode m, message Changed ]
+                                Cmd.batch [ message SaveToCache, message Changed ]
                     in
                         ( m, cmd )
 
@@ -214,17 +212,8 @@ update auth msg model =
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }
 
-
-delay : Time -> msg -> Cmd msg
-delay time msg =
-    Process.sleep time
-        |> Task.andThen (always <| Task.succeed msg)
-        |> Task.perform identity
-
-
-message : msg -> Cmd msg
-message =
-    Task.perform identity << Task.succeed
+        SaveToCache ->
+            model ! [ saveFilesCache <| encode model ]
 
 
 
@@ -266,3 +255,19 @@ decode =
                         _ ->
                             Decode.fail <| "Unknown version " ++ toString version
                 )
+
+
+
+-- MESSAGE EXTRAS
+
+
+delay : Time -> msg -> Cmd msg
+delay time msg =
+    Process.sleep time
+        |> Task.andThen (always <| Task.succeed msg)
+        |> Task.perform identity
+
+
+message : msg -> Cmd msg
+message =
+    Task.perform identity << Task.succeed
