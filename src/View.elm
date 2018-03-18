@@ -189,7 +189,7 @@ progress model =
                 1.0
 
         width =
-            (frac * 100 |> toString |> flip (++) "%")
+            frac * 100 |> toString |> flip (++) "%"
     in
         div
             [ class <|

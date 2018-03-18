@@ -21,6 +21,7 @@ module FileTree
         , decodeJson
         , encodeJson
         , logTree
+        , logTrees
         )
 
 {-|
@@ -85,11 +86,18 @@ type FileTree
 
 
 type alias FolderData =
-    { key : String, name : String, path : String }
+    { key : String
+    , name : String
+    , path : String
+    }
 
 
 type alias FileData =
-    { key : String, name : String, path : String, size : Maybe Int }
+    { key : String
+    , name : String
+    , path : String
+    , size : Maybe Int
+    }
 
 
 {-| The rolled-up file stats. Currently just the size.
@@ -152,10 +160,10 @@ get path tree =
 itemEntry : FileTree -> Metadata
 itemEntry tree =
     case tree of
-        Dir { key, name, path } _ _ ->
+        Dir { path } _ _ ->
             DropboxExtras.folder path
 
-        File { key, name, path, size } ->
+        File { name, path, size } ->
             DropboxExtras.file name path size
 
 
@@ -301,35 +309,27 @@ insert entry =
 {-| Remove a value from a tree.
 -}
 remove : Metadata -> FileTree -> FileTree
-remove entry =
+remove =
     let
-        updateChildren update entry =
-            case entry of
-                File _ ->
-                    entry
-
-                Dir entry stats children ->
-                    children |> update |> Dir entry stats |> recomputeStats
-
         rm : List String -> FileTree -> FileTree
         rm keys entry =
             case entry of
                 File _ ->
                     empty
 
-                Dir entry stats children ->
+                Dir data stats children ->
                     case keys of
                         [] ->
                             empty
 
                         [ k ] ->
-                            -- updateChildren (Dict.remove k) entry
-                            children |> Dict.remove k |> Dir entry stats |> recomputeStats
+                            -- updateChildren (Dict.remove k) data
+                            children |> Dict.remove k |> Dir data stats |> recomputeStats
 
                         k :: ks ->
-                            children |> Dict.update k (Maybe.map <| rm ks) |> Dir entry stats |> recomputeStats
+                            children |> Dict.update k (Maybe.map <| rm ks) |> Dir data stats |> recomputeStats
     in
-        rm <| splitPath <| DropboxExtras.key entry
+        rm << splitPath << DropboxExtras.key
 
 
 {-| Update a tree from a list of values.
@@ -364,15 +364,6 @@ splitPath path =
         |> dropPrefix "/"
         |> Maybe.withDefault path
         |> String.split "/"
-
-
-itemKeyHead : FileTree -> String
-itemKeyHead tree =
-    let
-        key =
-            nodeKey tree
-    in
-        splitPath key |> List.head |> Maybe.withDefault key
 
 
 itemKeyTail : FileTree -> String
@@ -453,7 +444,7 @@ combineSmallerEntries n orphans =
                             |> \size ->
                                 File { key = name, name = takeFileName name, path = name, size = size }
                 in
-                    (List.take n sorted) ++ [ combined ]
+                    List.take n sorted ++ [ combined ]
 
 
 {-| Remove leaves at depth > n from the root.
@@ -486,19 +477,19 @@ fromString =
 {-| Turn a tree into a string. See fromString for the format.
 -}
 toString : FileTree -> String
-toString tree =
+toString =
     let
         paths : FileTree -> List String
         paths tree =
-            [ DropboxExtras.toString <| itemEntry tree ]
-                ++ (nodeChildren tree |> Dict.values |> List.concatMap paths)
+            (DropboxExtras.toString <| itemEntry tree)
+                :: (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
-        paths tree
+        paths
             -- the root folder is implicit
-            |> List.filter ((/=) "/")
+            >> List.filter ((/=) "/")
             -- make the string deterministic
-            |> List.sort
-            |> String.join ";"
+            >> List.sort
+            >> String.join ";"
 
 
 {-| Like Debug.log, but uses FileTree.toString to print the tree.
@@ -548,7 +539,7 @@ encodeJson node =
                 |> List.head
                 |> Maybe.withDefault key
                 |> maybeToDefault (String.toLower name)
-                |> Maybe.map (\k -> ( "k", Encode.string key ))
+                |> Maybe.map (\k -> ( "k", Encode.string k ))
 
         maybeSize size =
             size

@@ -113,8 +113,8 @@ update auth msg model =
                     in
                         ( m, cmd )
 
-                Result.Err msg ->
-                    { model | hasMore = False, errorMessage = Just <| toString msg }
+                Result.Err err ->
+                    { model | hasMore = False, errorMessage = Just <| toString err }
                         ! []
 
         RestoreFromCache ->

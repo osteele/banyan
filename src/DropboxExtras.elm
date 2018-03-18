@@ -90,19 +90,6 @@ key entry =
                 k data
 
 
-name : Metadata -> String
-name entry =
-    case entry of
-        FileMeta { name } ->
-            name
-
-        FolderMeta { name } ->
-            name
-
-        DeletedMeta { name } ->
-            name
-
-
 path : Metadata -> String
 path entry =
     let
@@ -143,18 +130,10 @@ decoderFor tag =
             map3 file (field "name" string) (field "path_display" string) (field "size" <| nullable int)
 
         "folder" ->
-            let
-                f name pathDisplay pathLower =
-                    folder pathDisplay
-            in
-                map3 f (field "name" string) (field "path_display" string) (field "path_lower" string)
+            map folder (field "path_display" string)
 
         "delete" ->
-            let
-                f name pathDisplay pathLower =
-                    deleted pathDisplay
-            in
-                map3 f (field "name" string) (field "path_display" string) (field "path_lower" string)
+            map deleted (field "path_display" string)
 
         _ ->
             fail <|
@@ -214,7 +193,7 @@ toString entry =
             DeletedMeta data ->
                 "-" ++ displayPath data
 
-            FileMeta ({ pathDisplay, size } as data) ->
+            FileMeta { pathDisplay, size } ->
                 String.join ":" <|
                     List.filterMap identity
                         [ pathDisplay
