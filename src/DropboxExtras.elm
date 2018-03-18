@@ -26,7 +26,7 @@ import Utils exposing (..)
 
 deleted : String -> Metadata
 deleted path =
-    Dropbox.DeletedMeta
+    DeletedMeta
         { name = takeFileName path
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just path
@@ -36,7 +36,7 @@ deleted path =
 
 file : String -> String -> Maybe Int -> Metadata
 file name path size =
-    Dropbox.FileMeta
+    FileMeta
         { name = name
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just <| path
@@ -56,7 +56,7 @@ file name path size =
 
 folder : String -> Metadata
 folder path =
-    Dropbox.FolderMeta
+    FolderMeta
         { name = takeFileName path
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just path
@@ -80,26 +80,26 @@ key entry =
                     Debug.crash "missing key"
     in
         case entry of
-            Dropbox.FileMeta data ->
+            FileMeta data ->
                 k data
 
-            Dropbox.FolderMeta data ->
+            FolderMeta data ->
                 k data
 
-            Dropbox.DeletedMeta data ->
+            DeletedMeta data ->
                 k data
 
 
 name : Metadata -> String
 name entry =
     case entry of
-        Dropbox.FileMeta { name } ->
+        FileMeta { name } ->
             name
 
-        Dropbox.FolderMeta { name } ->
+        FolderMeta { name } ->
             name
 
-        Dropbox.DeletedMeta { name } ->
+        DeletedMeta { name } ->
             name
 
 
@@ -110,20 +110,20 @@ path entry =
             Maybe.withDefault ("…/" ++ name) pathDisplay
     in
         case entry of
-            Dropbox.FileMeta data ->
+            FileMeta data ->
                 displayPath data
 
-            Dropbox.FolderMeta data ->
+            FolderMeta data ->
                 displayPath data
 
-            Dropbox.DeletedMeta data ->
+            DeletedMeta data ->
                 displayPath data
 
 
 size : Metadata -> Maybe Int
 size entry =
     case entry of
-        Dropbox.FileMeta { size } ->
+        FileMeta { size } ->
             Just size
 
         _ ->
@@ -165,7 +165,7 @@ decoderFor tag =
 isDir : Metadata -> Bool
 isDir entry =
     case entry of
-        Dropbox.FolderMeta _ ->
+        FolderMeta _ ->
             True
 
         _ ->
@@ -211,17 +211,17 @@ toString entry =
             Maybe.withDefault ("…/" ++ name) pathDisplay
     in
         case entry of
-            Dropbox.DeletedMeta data ->
+            DeletedMeta data ->
                 "-" ++ displayPath data
 
-            Dropbox.FileMeta ({ pathDisplay, size } as data) ->
+            FileMeta ({ pathDisplay, size } as data) ->
                 String.join ":" <|
                     List.filterMap identity
-                        [ Just <| displayPath data
+                        [ pathDisplay
                         , Maybe.map Basics.toString <| maybeToDefault 0 size
                         ]
 
-            Dropbox.FolderMeta data ->
+            FolderMeta data ->
                 displayPath data ++ "/"
 
 
@@ -230,7 +230,7 @@ bearerRegex =
     Regex.regex "Bearer \"(.+)\""
 
 
-extractAccessToken : Dropbox.UserAuth -> Maybe String
+extractAccessToken : UserAuth -> Maybe String
 extractAccessToken auth =
     -- TODO extract from JSON instead?
     auth |> Basics.toString |> firstMatch bearerRegex
