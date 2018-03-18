@@ -3,7 +3,7 @@ module View exposing (..)
 import Data exposing (..)
 import Dict
 import FileTree exposing (FileTree)
-import FilesComponent
+import FilesComponent exposing (isSyncing)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
@@ -40,7 +40,7 @@ header model =
             [ Html.h1 [ class "header item" ] [ text "Banyan" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
-                    [ ifJust (isSignedIn model && not model.files.hasMore) <|
+                    [ ifJust (isSignedIn model && not (isSyncing model.files)) <|
                         button
                             [ class "item", onClick syncFilesMsg ]
                             [ text "Re-sync" ]
@@ -179,51 +179,66 @@ progress model =
         files =
             model.files
 
-        requestsF =
-            toFloat files.requestCount
-
-        frac =
-            if files.hasMore then
-                requestsF / (requestsF + 1.0)
-            else
-                1.0
+        total =
+            humanize <| FileTree.nodeSize files.fileTree
 
         width =
-            frac * 100 |> toString |> flip (++) "%"
-    in
-        div
-            [ class <|
-                "ui progress"
-                    ++ (if files.hasMore then
-                            ""
-                        else
-                            " success"
-                       )
-            ]
-            [ div
-                [ class "bar"
-                , style [ ( "width", width ) ]
-                ]
-                [ div [ class "progress" ] [] ]
-            , div [ class "label" ]
-                [ text <|
+            let
+                frac =
+                    FilesComponent.syncFraction files
+            in
+                frac * 100 |> toString |> flip (++) "%"
+
+        msg =
+            case files.status of
+                FilesComponent.Syncing { entries, requests } ->
                     String.join "" <|
                         [ "Loaded "
-                        , toStringWithCommas files.syncedEntryCount
+                        , toStringWithCommas entries
                         , " entries totalling "
-                        , humanize <| FileTree.nodeSize files.fileTree
+                        , total
+                        , " in "
+                        , quantify " request" requests
+                        , "…"
                         ]
-                            ++ (if files.hasMore then
-                                    [ " in "
-                                    , quantify " request" files.requestCount
-                                    , "…"
-                                    ]
-                                else
-                                    [ "."
-                                    ]
-                               )
+
+                FilesComponent.Synced { entries, requests } ->
+                    String.join "" <|
+                        [ "Loaded "
+                        , toStringWithCommas entries
+                        , " entries totalling "
+                        , total
+                        , " in "
+                        , quantify " request" requests
+                        , "."
+                        ]
+
+                FilesComponent.Unsynced ->
+                    "Unsyced"
+
+                FilesComponent.Waiting ->
+                    "Starting sync…"
+
+        progressView classes width msg =
+            div
+                [ class <| String.join " " <| "ui progress" :: classes ]
+                [ div
+                    [ class "bar"
+                    , style [ ( "width", width ) ]
+                    ]
+                    [ div [ class "progress" ] [] ]
+                , div [ class "label" ]
+                    [ text msg ]
                 ]
-            ]
+    in
+        progressView
+            (if isSyncing files then
+                []
+             else
+                [ "success" ]
+            )
+            width
+            msg
 
 
 
