@@ -13,13 +13,14 @@ module DropboxExtras
         , fromString
         , toString
         , extractAccessToken
+        , listFolderToContinueError
         )
 
 {-| See <https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder>.
 -}
 
 import Date
-import Dropbox exposing (Metadata)
+import Dropbox exposing (..)
 import Json.Decode exposing (..)
 import Regex
 import Utils exposing (..)
@@ -247,3 +248,16 @@ extractAccessToken : Dropbox.UserAuth -> Maybe String
 extractAccessToken auth =
     -- TODO extract from JSON instead?
     auth |> Basics.toString |> firstMatch bearerRegex
+
+
+listFolderToContinueError : ListFolderError -> ListFolderContinueError
+listFolderToContinueError error =
+    case error of
+        PathListError e ->
+            PathListContinueError e
+
+        OtherListError s v ->
+            OtherListContinueError s v
+
+        OtherListFailure e ->
+            OtherListContinueFailure e

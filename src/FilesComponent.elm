@@ -6,7 +6,8 @@ module FilesComponent exposing (..)
 ## The synced file state and the syncronization status.
 -}
 
-import Dropbox
+import Dropbox exposing (..)
+import DropboxExtras exposing (listFolderToContinueError)
 import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -57,7 +58,7 @@ isEmpty =
 type Msg
     = Changed
     | ListFolder
-    | ReceiveListFolderResponse (Result String Dropbox.ListFolderResponse)
+    | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder
     | RestoreFromCache
 
@@ -84,7 +85,7 @@ update auth msg model =
                         }
             in
                 { model | fileTree = FileTree.empty }
-                    ! [ Task.attempt ReceiveListFolderResponse <| Task.mapError toString task
+                    ! [ Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
                       , message Changed
                       ]
 
@@ -106,7 +107,7 @@ update auth msg model =
                                     task =
                                         Dropbox.listFolderContinue auth { cursor = cursor }
                                 in
-                                    Task.attempt ReceiveListFolderResponse <| Task.mapError toString task
+                                    Task.attempt ReceiveListFolderResponse task
                             else
                                 Cmd.batch [ saveFilesCache <| encode m, message Changed ]
                     in
