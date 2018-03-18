@@ -180,7 +180,7 @@ progress model =
             model.files
 
         total =
-            humanize <| FileTree.nodeSize files.fileTree
+            humanize <| FileTree.nodeSize files.files
 
         width =
             let
@@ -306,7 +306,7 @@ treeList model =
         List.filterMap identity <|
             [ ifJust (isSignedIn model) <|
                 toolbar model
-            , ifJust (not <| FileTree.isEmpty model.files.fileTree) <|
+            , ifJust (not <| FileTree.isEmpty model.files.files) <|
                 div [ class "tree" ]
                     [ Model.subtree model
                         |> FileTree.trimDepth model.depth

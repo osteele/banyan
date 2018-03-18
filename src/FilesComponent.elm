@@ -1,4 +1,16 @@
-module FilesComponent exposing (..)
+module FilesComponent
+    exposing
+        ( Model
+        , Msg(..)
+        , Status(..)
+        , fromCache
+        , init
+        , isEmpty
+        , isSyncing
+        , subscriptions
+        , syncFraction
+        , update
+        )
 
 {-|
 
@@ -21,7 +33,7 @@ import Time exposing (Time)
 
 
 type alias Model =
-    { fileTree : FileTree
+    { files : FileTree
     , status : Status
     , errorMessage : Maybe String
     , cache : Maybe String
@@ -37,7 +49,7 @@ type Status
 
 init : Model
 init =
-    { fileTree = FileTree.empty
+    { files = FileTree.empty
     , status = Unsynced
     , errorMessage = Nothing
     , cache = Nothing
@@ -51,7 +63,7 @@ fromCache c =
 
 isEmpty : Model -> Bool
 isEmpty =
-    .fileTree >> FileTree.isEmpty
+    .files >> FileTree.isEmpty
 
 
 syncStats : Status -> { entries : Int, requests : Int }
@@ -127,7 +139,7 @@ update auth msg model =
                         , includeMediaInfo = False
                         }
             in
-                { model | fileTree = FileTree.empty, status = Waiting }
+                { model | files = FileTree.empty, status = Waiting }
                     ! [ Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
                       , message Changed
                       ]
@@ -138,7 +150,7 @@ update auth msg model =
                     let
                         m =
                             { model
-                                | fileTree = FileTree.addEntries entries model.fileTree
+                                | files = FileTree.addEntries entries model.files
                                 , status =
                                     (if hasMore then
                                         Syncing
@@ -219,9 +231,9 @@ subscriptions _ =
 
 
 encode : Model -> Encode.Value
-encode { fileTree } =
+encode { files } =
     Encode.object
-        [ ( "files", FileTree.encode fileTree )
+        [ ( "files", FileTree.encode files )
         , ( "version", Encode.int 1 )
         ]
 
@@ -232,7 +244,7 @@ decode =
         decodeVersion1 =
             Decode.field "files" FileTree.decode
                 |> Decode.andThen
-                    (\t -> Decode.succeed { init | fileTree = t })
+                    (\t -> Decode.succeed { init | files = t })
     in
         Decode.field "version" Decode.int
             |> Decode.andThen

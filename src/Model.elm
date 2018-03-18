@@ -58,7 +58,7 @@ init { clientId, files } location =
 
 
 
--- account
+-- ACCOUNT
 
 
 clearAccountFields : Model -> Model
@@ -82,14 +82,14 @@ teamName model =
 
 
 
--- files
+-- FILES
 
 
 subtree : Model -> FileTree
 subtree model =
-    model.files.fileTree
+    model.files.files
         |> FileTree.getSubtree model.path
-        |> Maybe.withDefault model.files.fileTree
+        |> Maybe.withDefault model.files.files
 
 
 subtreeTitle : Model -> String
