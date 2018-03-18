@@ -67,6 +67,25 @@ isEmpty =
     .files >> FileTree.isEmpty
 
 
+
+--- STATUS
+
+
+nextStatus : Status -> { c | entries : List a, hasMore : Bool } -> Status
+nextStatus status { entries, hasMore } =
+    let
+        data =
+            syncStats status
+
+        state =
+            if hasMore then
+                Syncing
+            else
+                Synced
+    in
+        state { entries = List.length entries + data.entries, requests = 1 + data.requests }
+
+
 syncStats : Status -> { entries : Int, requests : Int }
 syncStats status =
     case status of
@@ -150,26 +169,13 @@ update auth msg model =
 
         ReceiveListFolderResponse result ->
             case result of
-                Result.Ok { entries, cursor, hasMore } ->
+                Result.Ok ({ entries, cursor, hasMore } as data) ->
                     let
                         m =
                             { model
                                 | files = FileTree.addEntries entries model.files
-                                , status =
-                                    (if hasMore then
-                                        Syncing
-                                     else
-                                        Synced
-                                    )
-                                        stats
+                                , status = nextStatus model.status data
                             }
-
-                        stats =
-                            let
-                                data =
-                                    syncStats model.status
-                            in
-                                { entries = List.length entries + data.entries, requests = 1 + data.requests }
 
                         cmd =
                             if hasMore then
