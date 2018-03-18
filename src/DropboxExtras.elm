@@ -1,8 +1,6 @@
 module DropboxExtras
     exposing
-        ( FileMetadata
-        , FolderMetadata
-        , folder
+        ( folder
         , file
         , deleted
         , key
@@ -24,18 +22,6 @@ import Dropbox exposing (..)
 import Json.Decode exposing (..)
 import Regex
 import Utils exposing (..)
-
-
-type alias FileMetadata =
-    Dropbox.FileMetadata
-
-
-type alias FolderMetadata =
-    Dropbox.FolderMetadata
-
-
-type alias DeletedMetadata =
-    Dropbox.DeletedMetadata
 
 
 deleted : String -> Metadata
