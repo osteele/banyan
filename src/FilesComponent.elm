@@ -44,7 +44,8 @@ type Status
     = Syncing { entries : Int, requests : Int }
     | Synced { entries : Int, requests : Int }
     | Unsynced
-    | Waiting
+    | Started
+    | Decoding
 
 
 init : Model
@@ -99,7 +100,10 @@ isSyncing model =
         Syncing data ->
             True
 
-        Waiting ->
+        Started ->
+            True
+
+        Decoding ->
             True
 
         _ ->
@@ -139,7 +143,7 @@ update auth msg model =
                         , includeMediaInfo = False
                         }
             in
-                { model | files = FileTree.empty, status = Waiting }
+                { model | files = FileTree.empty, status = Started }
                     ! [ Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
                       , message Changed
                       ]
@@ -199,7 +203,7 @@ update auth msg model =
             case model.cache of
                 Just _ ->
                     -- the delay is necessary in order to display the message
-                    model ! [ delay (16 * Time.millisecond) RestoreFromCache ]
+                    { model | status = Decoding } ! [ delay (16 * Time.millisecond) RestoreFromCache ]
 
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }

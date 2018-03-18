@@ -99,8 +99,8 @@ content : Model -> Html Msg
 content model =
     div [ class "ui main container" ]
         [ flash model
-        , case model.files.cache of
-            Just _ ->
+        , case model.files.status of
+            FilesComponent.Decoding ->
                 div
                     [ class "ui segment", style [ ( "min-height", "500px" ) ] ]
                     [ div [ class "ui active inverted dimmer" ]
@@ -110,7 +110,7 @@ content model =
                     , Html.p [] []
                     ]
 
-            Nothing ->
+            _ ->
                 div []
                     [ progress model
                     , if FilesComponent.isEmpty model.files then
@@ -216,8 +216,11 @@ progress model =
                 FilesComponent.Unsynced ->
                     "Unsyced"
 
-                FilesComponent.Waiting ->
+                FilesComponent.Started ->
                     "Starting sync…"
+
+                FilesComponent.Decoding ->
+                    "Loading cache…"
 
         progressView classes width msg =
             div
