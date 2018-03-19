@@ -17,7 +17,7 @@ suite =
                     FromCache 695200000000
                         |> encodeStatus
                         |> toString
-                        |> Expect.equal "\"<Sun Jan 12 1992 02:06:40 GMT-0500 (EST)>\""
+                        |> Expect.equal "\"1992-01-12T07:06:40.000Z\""
             , test "other" <|
                 \_ ->
                     Started
@@ -28,7 +28,7 @@ suite =
         , describe "statusDecoder"
             [ test "FromCache" <|
                 \_ ->
-                    "\"<Sun Jan 12 1992 02:06:40 GMT-0500 (EST)>\""
+                    "\"1992-01-12T07:06:40.000Z\""
                         |> decodeString statusDecoder
                         |> Expect.equal (Result.Ok <| FromCache 695200000000)
             ]
@@ -59,4 +59,4 @@ testModel =
 
 testModelEncoding : String
 testModelEncoding =
-    """{"version":1,"files":"/dir","status":"<Sun Jan 12 1992 02:06:40 GMT-0500 (EST)>"}"""
+    """{"version":1,"files":"/dir","status":"1992-01-12T07:06:40.000Z"}"""

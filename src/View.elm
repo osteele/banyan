@@ -1,6 +1,8 @@
 module View exposing (..)
 
 import Data exposing (..)
+import Date
+import Date.Extra as Date
 import Dict
 import FileTree exposing (FileTree)
 import FilesComponent exposing (Status(..), isSyncing)
@@ -105,7 +107,7 @@ content model =
                     [ class "ui segment", style [ ( "min-height", "500px" ) ] ]
                     [ div [ class "ui active inverted dimmer" ]
                         [ div [ class "ui text loader" ]
-                            [ text "Loading file cache" ]
+                            [ text "Loading file list from cache" ]
                         ]
                     , Html.p [] []
                     ]
@@ -213,9 +215,6 @@ progress model =
                         , "."
                         ]
 
-                FromCache _ ->
-                    "FromCache at some date"
-
                 Unsynced ->
                     "Unsyced"
 
@@ -223,7 +222,12 @@ progress model =
                     "Starting sync…"
 
                 Decoding ->
-                    "Loading cache…"
+                    "Loading from cache…"
+
+                FromCache timestamp ->
+                    "Loaded from cache at "
+                        ++ (Date.toFormattedString "h:mm a on EEEE, MMMM d, y" <| Date.fromTime timestamp)
+                        ++ ". Click Re-Sync to re-sync."
 
         progressView classes width msg =
             div

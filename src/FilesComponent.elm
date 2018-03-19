@@ -23,6 +23,7 @@ module FilesComponent
 -}
 
 import Date
+import Date.Extra as Date
 import Dropbox exposing (..)
 import DropboxExtras exposing (listFolderToContinueError)
 import FileTree exposing (FileTree)
@@ -113,6 +114,9 @@ syncFraction model =
             in
                 f / (f + 1.0)
 
+        FromCache _ ->
+            1.0
+
         Synced _ ->
             1.0
 
@@ -190,12 +194,9 @@ update auth msg model =
                                 Dropbox.listFolderContinue auth { cursor = cursor }
                                     |> Task.attempt ReceiveListFolderResponse
                             else
-                                Cmd.batch
-                                    [ Task.perform SaveToCache Time.now
-                                    , message Changed
-                                    ]
+                                Task.perform SaveToCache Time.now
                     in
-                        ( m, cmd )
+                        m ! [ cmd, message Changed ]
 
                 Result.Err err ->
                     { model
@@ -207,8 +208,7 @@ update auth msg model =
         RestoreFromCache ->
             case model.cache |> Maybe.map (Decode.decodeString decoder) of
                 Just (Result.Ok m) ->
-                    { m | status = Synced { entries = 0, requests = 0 } }
-                        ! [ message Changed ]
+                    m ! [ message Changed ]
 
                 Just (Result.Err err) ->
                     update auth
@@ -251,7 +251,7 @@ encodeStatus : Status -> Encode.Value
 encodeStatus status =
     case status of
         FromCache timestamp ->
-            timestamp |> Date.fromTime |> toString |> Encode.string
+            timestamp |> Date.fromTime |> Date.toUtcIsoString |> Encode.string
 
         _ ->
             Encode.null
@@ -260,7 +260,7 @@ encodeStatus status =
 statusDecoder : Decoder Status
 statusDecoder =
     Decode.string
-        |> Decode.andThen (Date.fromString >> Decode.fromResult)
+        |> Decode.andThen (Date.fromIsoString >> Decode.fromResult)
         |> Decode.map Date.toTime
         |> Decode.map FromCache
 
