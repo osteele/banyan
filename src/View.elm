@@ -79,6 +79,9 @@ signInOut model =
                 , text "Sign into Dropbox"
                 ]
 
+        SigningIn ->
+            div [ class "item" ] [ text "Signing into Dropbox…" ]
+
 
 startView : Html Msg
 startView =

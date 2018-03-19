@@ -22,6 +22,7 @@ module FilesComponent
 ## The synced file state and the syncronization status.
 -}
 
+import CmdExtras exposing (..)
 import Date
 import Date.Extra as Date
 import Dropbox exposing (..)
@@ -31,7 +32,6 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Extra as Decode
 import Json.Encode as Encode
 import ListFolder exposing (..)
-import Process
 import Task
 import Time exposing (Time)
 
@@ -225,7 +225,7 @@ update auth msg model =
             case model.cache of
                 Just _ ->
                     -- delay, in order to update the display
-                    { model | status = Decoding } ! [ delay (32 * Time.millisecond) RestoreFromCache ]
+                    { model | status = Decoding } ! [ nextFrame RestoreFromCache ]
 
                 Nothing ->
                     update auth ListFolder model
@@ -304,19 +304,3 @@ decodeRequireVersion version decoder =
                 else
                     Decode.fail <| "Unknown version " ++ toString v
             )
-
-
-
--- MESSAGE EXTRAS
-
-
-delay : Time -> msg -> Cmd msg
-delay time msg =
-    Process.sleep time
-        |> Task.andThen (always <| Task.succeed msg)
-        |> Task.perform identity
-
-
-message : msg -> Cmd msg
-message =
-    Task.perform identity << Task.succeed

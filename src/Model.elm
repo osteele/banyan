@@ -13,6 +13,7 @@ type alias FilesModel =
 
 type SignInStatus
     = SignedOut
+    | SigningIn
     | SignedIn
 
 

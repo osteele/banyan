@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import CmdExtras exposing (..)
 import Dropbox
 import DropboxExtras exposing (extractAccessToken)
 import FilesComponent
@@ -7,7 +8,6 @@ import Message exposing (..)
 import Model exposing (..)
 import Navigation
 import Ports exposing (..)
-import Task
 import TreeMap exposing (renderFileTreeMap)
 import View exposing (..)
 
@@ -34,13 +34,11 @@ main =
 
 initialCmd : Flags -> Cmd Msg
 initialCmd flags =
-    AccessToken flags.accessToken
-        |> Task.succeed
-        |> Task.perform identity
+    message <| AccessToken flags.accessToken
 
 
 
--- messages
+-- MESSAGES
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -52,7 +50,7 @@ update msg model =
                 Just tokenString ->
                     { model
                         | auth = Just <| Dropbox.authorizationFromAccessToken tokenString
-                        , status = SignedIn
+                        , status = SigningIn
                     }
                         ! [ getAccountInfo tokenString ]
 
@@ -60,7 +58,7 @@ update msg model =
                     model ! []
 
         AuthResponse (Dropbox.AuthorizeOk auth) ->
-            { model | auth = Just auth.userAuth }
+            { model | auth = Just auth.userAuth, status = SignedIn }
                 ! (case auth.userAuth |> extractAccessToken of
                     Just token ->
                         [ getAccountInfo token
@@ -73,12 +71,12 @@ update msg model =
                   )
 
         AuthResponse _ ->
-            { model | auth = Nothing, status = SignedIn } ! []
+            -- TODO display the error message
+            { model | auth = Nothing, status = SignedOut } ! []
 
         SignIn ->
             model
-                ! [ --
-                    Dropbox.authorize
+                ! [ Dropbox.authorize
                         { clientId = model.clientId
                         , state = Nothing
                         , requireRole = Nothing
@@ -99,7 +97,7 @@ update msg model =
         SetAccountInfo info ->
             let
                 m =
-                    { model | accountInfo = Just info }
+                    { model | accountInfo = Just info, status = SignedIn }
             in
                 if FilesComponent.isEmpty model.files then
                     update restoreOrSyncFiles m
@@ -171,7 +169,7 @@ clearLocationHash model =
 
 
 
--- subscriptions
+-- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg
