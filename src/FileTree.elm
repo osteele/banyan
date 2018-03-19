@@ -3,7 +3,7 @@ module FileTree
         ( FileTree(..)
         , addEntries
         , combineSmallerEntries
-        , decode
+        , decoder
         , empty
         , encode
         , fromString
@@ -18,7 +18,7 @@ module FileTree
         , nodePath
         , toString
         , trimDepth
-        , decodeJson
+        , jsonDecoder
         , encodeJson
         , logTree
         , logTrees
@@ -522,8 +522,8 @@ encode =
     toString >> Encode.string
 
 
-decode : Decoder FileTree
-decode =
+decoder : Decoder FileTree
+decoder =
     Decode.string |> Decode.andThen (Decode.succeed << fromString)
 
 
@@ -563,8 +563,8 @@ encodeJson node =
                         ++ (maybeToList <| maybeSize size)
 
 
-decodeJson : Decoder FileTree
-decodeJson =
+jsonDecoder : Decoder FileTree
+jsonDecoder =
     let
         dec : String -> Decoder FileTree
         dec prefix =

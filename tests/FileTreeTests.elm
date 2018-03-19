@@ -225,7 +225,8 @@ encoderTests =
             "decode"
             [ test "files and directory" <|
                 \_ ->
-                    Decode.decodeString FileTree.decodeJson (Encode.encode 0 encoded)
+                    Encode.encode 0 encoded
+                        |> Decode.decodeString FileTree.jsonDecoder
                         |> Result.map FileTree.toString
                         |> Expect.equal (Result.Ok "")
             ]

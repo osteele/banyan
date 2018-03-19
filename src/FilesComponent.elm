@@ -10,6 +10,10 @@ module FilesComponent
         , subscriptions
         , syncFraction
         , update
+        , encode
+        , decoder
+        , encodeStatus
+        , statusDecoder
         )
 
 {-|
@@ -18,10 +22,12 @@ module FilesComponent
 ## The synced file state and the syncronization status.
 -}
 
+import Date
 import Dropbox exposing (..)
 import DropboxExtras exposing (listFolderToContinueError)
 import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Extra as Decode
 import Json.Encode as Encode
 import ListFolder exposing (..)
 import Process
@@ -42,6 +48,7 @@ type alias Model =
 
 type Status
     = Decoding
+    | FromCache Time
     | Started
     | Syncing { entries : Int, requests : Int }
     | Synced { entries : Int, requests : Int }
@@ -139,7 +146,7 @@ type Msg
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder
     | RestoreFromCache
-    | SaveToCache
+    | SaveToCache Time
 
 
 
@@ -183,7 +190,10 @@ update auth msg model =
                                 Dropbox.listFolderContinue auth { cursor = cursor }
                                     |> Task.attempt ReceiveListFolderResponse
                             else
-                                Cmd.batch [ message SaveToCache, message Changed ]
+                                Cmd.batch
+                                    [ Task.perform SaveToCache Time.now
+                                    , message Changed
+                                    ]
                     in
                         ( m, cmd )
 
@@ -195,10 +205,18 @@ update auth msg model =
                         ! []
 
         RestoreFromCache ->
-            case model.cache |> Maybe.map (Decode.decodeString decode) |> Maybe.andThen Result.toMaybe of
-                Just m ->
+            case model.cache |> Maybe.map (Decode.decodeString decoder) of
+                Just (Result.Ok m) ->
                     { m | status = Synced { entries = 0, requests = 0 } }
                         ! [ message Changed ]
+
+                Just (Result.Err err) ->
+                    update auth
+                        ListFolder
+                        { model
+                            | cache = Nothing
+                            , errorMessage = Just <| err
+                        }
 
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }
@@ -212,8 +230,8 @@ update auth msg model =
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }
 
-        SaveToCache ->
-            model ! [ saveFilesCache <| encode model ]
+        SaveToCache timestamp ->
+            model ! [ saveFilesCache <| encode { model | status = FromCache timestamp } ]
 
 
 
@@ -226,35 +244,66 @@ subscriptions _ =
 
 
 
--- CACHE
+-- SERIALIZATION
+
+
+encodeStatus : Status -> Encode.Value
+encodeStatus status =
+    case status of
+        FromCache timestamp ->
+            timestamp |> Date.fromTime |> toString |> Encode.string
+
+        _ ->
+            Encode.null
+
+
+statusDecoder : Decoder Status
+statusDecoder =
+    Decode.string
+        |> Decode.andThen (Date.fromString >> Decode.fromResult)
+        |> Decode.map Date.toTime
+        |> Decode.map FromCache
+
+
+encodingVersion : Int
+encodingVersion =
+    1
 
 
 encode : Model -> Encode.Value
-encode { files } =
+encode { files, status } =
     Encode.object
-        [ ( "files", FileTree.encode files )
-        , ( "version", Encode.int 1 )
+        [ ( "version", Encode.int encodingVersion )
+        , ( "files", FileTree.encode files )
+        , ( "status", encodeStatus status )
         ]
 
 
-decode : Decoder Model
-decode =
+decoder : Decoder Model
+decoder =
     let
-        decodeVersion1 =
-            Decode.field "files" FileTree.decode
-                |> Decode.andThen
-                    (\t -> Decode.succeed { init | files = t })
+        decoder =
+            Decode.map2 (\f s -> { init | files = f, status = s })
+                (Decode.field "files" FileTree.decoder)
+                (Decode.field "status" statusDecoder)
     in
-        Decode.field "version" Decode.int
-            |> Decode.andThen
-                (\version ->
-                    case version of
-                        1 ->
-                            decodeVersion1
+        decodeRequireVersion encodingVersion decoder
 
-                        _ ->
-                            Decode.fail <| "Unknown version " ++ toString version
-                )
+
+
+-- DECODE EXTRAS
+
+
+decodeRequireVersion : Int -> Decoder a -> Decoder a
+decodeRequireVersion version decoder =
+    Decode.field "version" Decode.int
+        |> Decode.andThen
+            (\v ->
+                if v == version then
+                    decoder
+                else
+                    Decode.fail <| "Unknown version " ++ toString v
+            )
 
 
 

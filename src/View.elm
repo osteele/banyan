@@ -3,7 +3,7 @@ module View exposing (..)
 import Data exposing (..)
 import Dict
 import FileTree exposing (FileTree)
-import FilesComponent exposing (isSyncing)
+import FilesComponent exposing (Status(..), isSyncing)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
@@ -191,7 +191,7 @@ progress model =
 
         msg =
             case files.status of
-                FilesComponent.Syncing { entries, requests } ->
+                Syncing { entries, requests } ->
                     String.join "" <|
                         [ "Loaded "
                         , toStringWithCommas entries
@@ -202,7 +202,7 @@ progress model =
                         , "…"
                         ]
 
-                FilesComponent.Synced { entries, requests } ->
+                Synced { entries, requests } ->
                     String.join "" <|
                         [ "Loaded "
                         , toStringWithCommas entries
@@ -213,13 +213,16 @@ progress model =
                         , "."
                         ]
 
-                FilesComponent.Unsynced ->
+                FromCache _ ->
+                    "FromCache at some date"
+
+                Unsynced ->
                     "Unsyced"
 
-                FilesComponent.Started ->
+                Started ->
                     "Starting sync…"
 
-                FilesComponent.Decoding ->
+                Decoding ->
                     "Loading cache…"
 
         progressView classes width msg =
