@@ -7,6 +7,15 @@ import FilesComponent
 import Navigation
 
 
+type alias FilesModel =
+    FilesComponent.Model
+
+
+type SignInStatus
+    = SignedOut
+    | SignedIn
+
+
 type alias Model =
     { location : Navigation.Location
     , clientId : String
@@ -15,9 +24,10 @@ type alias Model =
     -- account
     , accountInfo : Maybe AccountInfo
     , auth : Maybe Dropbox.UserAuth
+    , status : SignInStatus
 
     -- tree and loading status
-    , files : FilesComponent
+    , files : FilesModel
 
     -- view state
     , path : String
@@ -26,18 +36,7 @@ type alias Model =
     }
 
 
-type alias FilesComponent =
-    FilesComponent.Model
-
-
-type alias Flags =
-    { accessToken : Maybe String
-    , clientId : String
-    , files : Maybe String
-    }
-
-
-init : Flags -> Navigation.Location -> Model
+init : { a | clientId : String, files : Maybe String } -> Navigation.Location -> Model
 init { clientId, files } location =
     { location = location
     , debug = Nothing
@@ -46,6 +45,7 @@ init { clientId, files } location =
     , accountInfo = Nothing
     , auth = Nothing
     , clientId = clientId
+    , status = SignedOut
 
     -- tree and loading status
     , files = FilesComponent.fromCache files
@@ -66,14 +66,30 @@ clearAccountFields model =
     { model
         | auth = Nothing
         , accountInfo = Nothing
+        , status = SignedOut
         , files = FilesComponent.init
         , path = "/"
     }
 
 
-isSignedIn : Model -> Bool
-isSignedIn model =
-    model.accountInfo |> Maybe.map (always True) |> Maybe.withDefault False
+signedIn : Model -> Bool
+signedIn model =
+    case model.status of
+        SignedIn ->
+            True
+
+        _ ->
+            False
+
+
+signedOut : Model -> Bool
+signedOut model =
+    case model.status of
+        SignedOut ->
+            True
+
+        _ ->
+            False
 
 
 teamName : Model -> String

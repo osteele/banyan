@@ -224,11 +224,11 @@ update auth msg model =
         RestoreFromCacheOrListFolder ->
             case model.cache of
                 Just _ ->
-                    -- the delay is necessary in order to display the message
-                    { model | status = Decoding } ! [ delay (16 * Time.millisecond) RestoreFromCache ]
+                    -- delay, in order to update the display
+                    { model | status = Decoding } ! [ delay (32 * Time.millisecond) RestoreFromCache ]
 
                 Nothing ->
-                    update auth ListFolder { model | cache = Nothing }
+                    update auth ListFolder model
 
         SaveToCache timestamp ->
             model ! [ saveFilesCache <| encode { model | status = FromCache timestamp } ]

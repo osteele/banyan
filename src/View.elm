@@ -24,10 +24,10 @@ view model =
     div []
         [ header model
         , githubLink
-        , if isSignedIn model then
-            content model
-          else
+        , if signedOut model then
             startView
+          else
+            content model
         ]
 
 
@@ -42,10 +42,10 @@ header model =
             [ Html.h1 [ class "header item" ] [ text "Banyan" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
-                    [ ifJust (isSignedIn model && not (isSyncing model.files)) <|
+                    [ ifJust (signedIn model && not (isSyncing model.files)) <|
                         button
                             [ class "item", onClick syncFilesMsg ]
-                            [ text "Re-sync" ]
+                            [ text "Sync" ]
                     , Just <| signInOut model
                     ]
             ]
@@ -64,18 +64,20 @@ githubLink =
 
 signInOut : Model -> Html Msg
 signInOut model =
-    if isSignedIn model then
-        div
-            [ class "link item", onClick SignOut ]
-            [ icon [ class "large link sign out" ] []
-            , text "Sign out"
-            ]
-    else
-        div
-            [ class "link item", onClick SignIn ]
-            [ icon [ class "large link sign in" ] []
-            , text "Sign into Dropbox"
-            ]
+    case model.status of
+        SignedIn ->
+            div
+                [ class "link item", onClick SignOut ]
+                [ icon [ class "large link sign out" ] []
+                , text "Sign out"
+                ]
+
+        SignedOut ->
+            div
+                [ class "link item", onClick SignIn ]
+                [ icon [ class "large link sign in" ] []
+                , text "Sign into Dropbox"
+                ]
 
 
 startView : Html Msg
@@ -194,40 +196,47 @@ progress model =
         msg =
             case files.status of
                 Syncing { entries, requests } ->
-                    String.join "" <|
-                        [ "Loaded "
-                        , toStringWithCommas entries
-                        , " entries totalling "
-                        , total
-                        , " in "
-                        , quantify " request" requests
-                        , "…"
-                        ]
+                    text <|
+                        String.join "" <|
+                            [ "Loaded "
+                            , toStringWithCommas entries
+                            , " entries totalling "
+                            , total
+                            , " in "
+                            , quantify " request" requests
+                            , "…"
+                            ]
 
                 Synced { entries, requests } ->
-                    String.join "" <|
-                        [ "Loaded "
-                        , toStringWithCommas entries
-                        , " entries totalling "
-                        , total
-                        , " in "
-                        , quantify " request" requests
-                        , "."
-                        ]
+                    text <|
+                        String.join "" <|
+                            [ "Loaded "
+                            , toStringWithCommas entries
+                            , " entries totalling "
+                            , total
+                            , " in "
+                            , quantify " request" requests
+                            , "."
+                            ]
 
                 Unsynced ->
-                    "Unsyced"
+                    text "Unsyced"
 
                 Started ->
-                    "Starting sync…"
+                    text "Starting sync…"
 
                 Decoding ->
-                    "Loading from cache…"
+                    text "Loading from cache…"
 
                 FromCache timestamp ->
-                    "Loaded from cache at "
-                        ++ (Date.toFormattedString "h:mm a on EEEE, MMMM d, y" <| Date.fromTime timestamp)
-                        ++ ". Click Re-Sync to re-sync."
+                    span []
+                        [ text "Loaded from cache at "
+                        , text <| Date.toFormattedString "h:mm a on EEEE, MMMM d, y" <| Date.fromTime timestamp
+                        , text ". "
+                        , Html.a
+                            [ class "item", onClick syncFilesMsg ]
+                            [ text "Sync" ]
+                        ]
 
         progressView classes width msg =
             div
@@ -237,8 +246,7 @@ progress model =
                     , style [ ( "width", width ) ]
                     ]
                     [ div [ class "progress" ] [] ]
-                , div [ class "label" ]
-                    [ text msg ]
+                , div [ class "label" ] [ msg ]
                 ]
     in
         progressView
@@ -312,18 +320,24 @@ sortOrderButton order classes model =
 
 treeList : Model -> Html Msg
 treeList model =
-    div [] <|
-        List.filterMap identity <|
-            [ ifJust (isSignedIn model) <|
-                toolbar model
-            , ifJust (not <| FileTree.isEmpty model.files.files) <|
-                div [ class "tree" ]
-                    [ Model.subtree model
-                        |> FileTree.trimDepth model.depth
-                        |> FileTree.combineSmallerEntries 20 2
-                        |> subtree model (Just <| treeListTitle model)
-                    ]
+    ifDiv (not <| FileTree.isEmpty model.files.files)
+        []
+        [ toolbar model
+        , div [ class "tree" ]
+            [ Model.subtree model
+                |> FileTree.trimDepth model.depth
+                |> FileTree.combineSmallerEntries 20 2
+                |> subtree model (Just <| treeListTitle model)
             ]
+        ]
+
+
+ifDiv : Bool -> List (Html.Attribute msg) -> List (Html msg) -> Html msg
+ifDiv condition =
+    if condition then
+        div
+    else
+        \_ _ -> div [] []
 
 
 treeListTitle : Model -> Html Msg

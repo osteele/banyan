@@ -29,8 +29,18 @@ a.github {
     border: 1px solid lightgray;
 }
 
-.ui.progress.success>.label {
-    color: lightgray;
+.ui.progress.success {
+    .label {
+        color: lightgray;
+        a {
+            color: lightblue;
+            text-decoration: none !important;
+            &:hover {
+                color: blue;
+                text-decoration: underline !important;
+            }
+        }
+    }
 }
 
 a {

@@ -12,6 +12,13 @@ import TreeMap exposing (renderFileTreeMap)
 import View exposing (..)
 
 
+type alias Flags =
+    { accessToken : Maybe String
+    , clientId : String
+    , files : Maybe String
+    }
+
+
 main : Program Flags Model (Dropbox.Msg Msg)
 main =
     Dropbox.programWithFlags
@@ -45,6 +52,7 @@ update msg model =
                 Just tokenString ->
                     { model
                         | auth = Just <| Dropbox.authorizationFromAccessToken tokenString
+                        , status = SignedIn
                     }
                         ! [ getAccountInfo tokenString ]
 
@@ -65,7 +73,7 @@ update msg model =
                   )
 
         AuthResponse _ ->
-            { model | auth = Nothing } ! []
+            { model | auth = Nothing, status = SignedIn } ! []
 
         SignIn ->
             model
