@@ -1,4 +1,4 @@
-module Utils
+module Extras
     exposing
         ( dropPrefix
         , firstMatch

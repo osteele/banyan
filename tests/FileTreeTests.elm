@@ -1,13 +1,13 @@
 module FileTreeTests exposing (..)
 
 import Dropbox
-import Expect exposing (Expectation)
 import DropboxExtras exposing (..)
+import Expect exposing (Expectation)
+import Extras exposing (takeFileName)
 import FileTree exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Test exposing (..)
-import Utils exposing (takeFileName)
 
 
 suite : Test

@@ -2,8 +2,8 @@ port module TreeMap exposing (..)
 
 import Dict
 import DropboxExtras
+import Extras exposing (..)
 import FileTree exposing (..)
-import Utils exposing (..)
 
 
 type alias Node =
@@ -47,7 +47,7 @@ toNodes fileTree =
                     Basics.toString nextId1
 
                 node =
-                    { name = entry |> DropboxExtras.path |> Utils.takeFileName
+                    { name = entry |> DropboxExtras.path |> Extras.takeFileName
                     , id = nodeId
                     , key = ifJust (DropboxExtras.isDir entry) <| DropboxExtras.key entry
                     , parent = parent
@@ -83,7 +83,7 @@ toNodes fileTree =
 --                 nodeId =
 --                     toString nextId
 --                 node =
---                     { name = entry.path |> Utils.takeFileName
+--                     { name = entry.path |> Extras.takeFileName
 --                     , id = nodeId
 --                     , key = ifJust (isDir entry) entry.key
 --                     , parent = parent

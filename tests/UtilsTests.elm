@@ -1,15 +1,15 @@
 module UtilsTests exposing (..)
 
 import Expect exposing (Expectation)
+import Extras exposing (..)
 import Regex
 import Test exposing (..)
 import Tuple exposing (mapFirst)
-import Utils exposing (..)
 
 
 suite : Test
 suite =
-    describe "Utils" <|
+    describe "Extras" <|
         [ describe "takeFileName"
             [ test "returns the final component" <|
                 \_ ->

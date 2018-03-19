@@ -69,9 +69,9 @@ See the official Dropbox documentation at
 import Dict
 import Dropbox exposing (Metadata(..))
 import DropboxExtras exposing (..)
+import Extras exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
-import Utils exposing (..)
 
 
 {-| A Rose tree of FileEntry's, and cache rolled up sizes.

@@ -19,9 +19,9 @@ module DropboxExtras
 
 import Date
 import Dropbox exposing (..)
+import Extras exposing (..)
 import Json.Decode exposing (..)
 import Regex
-import Utils exposing (..)
 
 
 deleted : String -> Metadata

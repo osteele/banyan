@@ -4,6 +4,7 @@ import Data exposing (..)
 import Date
 import Date.Extra as Date
 import Dict
+import Extras exposing (..)
 import FileTree exposing (FileTree)
 import FilesComponent exposing (Status(..), isSyncing)
 import Html exposing (Html, div, span, text)
@@ -11,7 +12,6 @@ import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
 import Message exposing (..)
 import Model exposing (..)
-import Utils exposing (..)
 
 
 githubURL : String
