@@ -110,8 +110,8 @@ path entry =
 size : Metadata -> Maybe Int
 size entry =
     case entry of
-        FileMeta { size } ->
-            Just size
+        FileMeta data ->
+            Just data.size
 
         _ ->
             Nothing
@@ -151,6 +151,11 @@ isDir entry =
             False
 
 
+nameOptionalSizeRe : Regex.Regex
+nameOptionalSizeRe =
+    Regex.regex "^(.+):(\\d*)$"
+
+
 {-| Construct an entry from a string. This is used in testing.
 
 The string is a ;-separated list of paths. Files end in :size, where size
@@ -168,7 +173,7 @@ fromString path =
     else
         let
             ( p, size ) =
-                case path |> Regex.find (Regex.AtMost 1) (Regex.regex "^(.+):(\\d*)$") |> List.head |> Maybe.map .submatches of
+                case path |> Regex.find (Regex.AtMost 1) nameOptionalSizeRe |> List.head |> Maybe.map .submatches of
                     Just ((Just p) :: size :: _) ->
                         ( p
                         , size

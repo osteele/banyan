@@ -133,7 +133,7 @@ isSyncing model =
         Started ->
             True
 
-        Syncing data ->
+        Syncing _ ->
             True
 
         _ ->
@@ -281,13 +281,10 @@ encode { files, status } =
 
 decoder : Decoder Model
 decoder =
-    let
-        decoder =
-            Decode.map2 (\f s -> { init | files = f, status = s })
-                (Decode.field "files" FileTree.decoder)
-                (Decode.field "status" statusDecoder)
-    in
-        decodeRequireVersion encodingVersion decoder
+    decodeRequireVersion encodingVersion <|
+        Decode.map2 (\f s -> { init | files = f, status = s })
+            (Decode.field "files" FileTree.decoder)
+            (Decode.field "status" statusDecoder)
 
 
 
