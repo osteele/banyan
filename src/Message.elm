@@ -13,6 +13,7 @@ type Msg
     | SetAccountInfo AccountInfo
     | FilesMessage FilesMsg
       -- view controls
+    | DismissMessageView Int
     | Focus String
     | RenderFileTreeMap
     | SortOrder Data.SortOrder

@@ -70,9 +70,13 @@ update msg model =
                         []
                   )
 
-        AuthResponse _ ->
-            -- TODO display the error message
-            { model | auth = Nothing, status = SignedOut } ! []
+        AuthResponse err ->
+            { model
+                | auth = Nothing
+                , errors = toString err :: model.errors
+                , status = SignedOut
+            }
+                ! []
 
         SignIn ->
             model
@@ -104,12 +108,15 @@ update msg model =
                 else
                     m ! []
 
-        FilesMessage fmsg ->
+        FilesMessage filesMsg ->
             let
-                ( m, cmd ) =
-                    updateFilesModel fmsg model
+                ( m1, cmd ) =
+                    updateFilesModel filesMsg model
+
+                m =
+                    combineErrors m1
             in
-                case fmsg of
+                case filesMsg of
                     FilesComponent.Changed ->
                         let
                             ( m2, cmd2 ) =
@@ -131,6 +138,16 @@ update msg model =
                 ! [ Model.subtree model |> renderFileTreeMap model.depth ]
 
         -- view commands
+        DismissMessageView n ->
+            -- closing message by index instead of serial number could be
+            -- a race condition, but probably less likely than the display
+            -- updating between user intention and action
+            let
+                remove n lst =
+                    List.take n lst ++ List.drop (n + 1) lst
+            in
+                { model | errors = remove n model.errors } ! []
+
         Focus p ->
             update RenderFileTreeMap { model | path = p }
 

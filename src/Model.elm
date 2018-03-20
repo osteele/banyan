@@ -20,7 +20,7 @@ type SignInStatus
 type alias Model =
     { location : Navigation.Location
     , clientId : String
-    , debug : Maybe String
+    , errors : List String
 
     -- account
     , accountInfo : Maybe AccountInfo
@@ -40,7 +40,7 @@ type alias Model =
 init : { a | clientId : String, files : Maybe String } -> Navigation.Location -> Model
 init { clientId, files } location =
     { location = location
-    , debug = Nothing
+    , errors = []
 
     -- account
     , accountInfo = Nothing
@@ -56,6 +56,23 @@ init { clientId, files } location =
     , depth = 1
     , order = Alphabetic
     }
+
+
+combineErrors : Model -> Model
+combineErrors model =
+    case model.files.error of
+        Nothing ->
+            model
+
+        Just err ->
+            let
+                files =
+                    model.files
+            in
+                { model
+                    | errors = err :: model.errors
+                    , files = { files | error = Nothing }
+                }
 
 
 

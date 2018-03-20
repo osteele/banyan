@@ -105,7 +105,7 @@ startView =
 content : Model -> Html Msg
 content model =
     div [ class "ui main container" ]
-        [ flash model
+        [ errors model
         , case model.files.status of
             FilesComponent.Decoding ->
                 div
@@ -132,16 +132,18 @@ content model =
         ]
 
 
-flash : Model -> Html msg
-flash model =
-    model.files.errorMessage
-        |> Maybe.map
-            (\msg ->
-                div [ class "ui warning message" ]
-                    [ Html.p [ class "lead" ] [ text msg ]
-                    ]
-            )
-        |> Maybe.withDefault (div [] [])
+errors : Model -> Html Msg
+errors model =
+    div []
+        (model.errors
+            |> List.indexedMap
+                (\i msg ->
+                    div [ class "ui warning message" ]
+                        [ icon [ class "close", onClick <| DismissMessageView i ] []
+                        , Html.p [ class "lead" ] [ text msg ]
+                        ]
+                )
+        )
 
 
 breadcrumb : Model -> Html Msg

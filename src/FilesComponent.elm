@@ -42,7 +42,7 @@ import Time exposing (Time)
 type alias Model =
     { files : FileTree
     , status : Status
-    , errorMessage : Maybe String
+    , error : Maybe String
     , cache : Maybe String
     }
 
@@ -60,7 +60,7 @@ init : Model
 init =
     { files = FileTree.empty
     , status = Unsynced
-    , errorMessage = Nothing
+    , error = Nothing
     , cache = Nothing
     }
 
@@ -201,7 +201,7 @@ update auth msg model =
                 Result.Err err ->
                     { model
                         | status = Synced (syncStats model.status)
-                        , errorMessage = Just <| toString err
+                        , error = Just <| toString err
                     }
                         ! []
 
@@ -215,7 +215,7 @@ update auth msg model =
                         ListFolder
                         { model
                             | cache = Nothing
-                            , errorMessage = Just <| err
+                            , error = Just <| err
                         }
 
                 Nothing ->
