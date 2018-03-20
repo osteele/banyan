@@ -1,5 +1,6 @@
 module Message exposing (..)
 
+import AccountInfo exposing (..)
 import Data exposing (..)
 import Dropbox
 import FilesComponent

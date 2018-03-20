@@ -25,9 +25,11 @@ app.ports.saveFilesCache.subscribe((cacheValue) => {
 
 app.ports.getAccountInfo.subscribe(async (accessToken) => {
   const dbx = new Dropbox({ accessToken });
-  const { name, team } = await dbx.usersGetCurrentAccount();
-  const teamName = team ? team.name : 'Personal';
-  app.ports.receiveAccountInfo.send({ teamName, name });
+  const info = await dbx.usersGetCurrentAccount();
+  // pre-condition for Elm, since we don't use a custom decoder
+  info.account_type = info.account_type['.tag'];
+  info.team = info.team || null;
+  app.ports.receiveAccountInfo.send(camelizePropertyNames(info));
 });
 
 app.ports.storeAccessToken.subscribe((token) => {
@@ -42,3 +44,14 @@ app.ports.chart.subscribe(([title, data]) => {
   const onClick = ({ key }) => key && app.ports.setPath.send(key);
   requestAnimationFrame(() => chart(title, data, onClick));
 });
+
+function camelizePropertyNames(obj) {
+  const result = {};
+  Object.entries(obj).forEach(([k, v]) => {
+    const kc = k.replace(/_([a-z])/gi, s => s.slice(1).toUpperCase());
+    result[kc] = isObject(v) ? camelizePropertyNames(v) : v;
+  });
+  return result;
+}
+
+const isObject = v => v !== null && typeof v === 'object';

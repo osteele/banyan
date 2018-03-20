@@ -1,9 +1,11 @@
 module Model exposing (..)
 
+import AccountInfo exposing (..)
 import Data exposing (..)
 import Dropbox
 import FileTree exposing (FileTree)
 import FilesComponent
+import Maybe.Extra as Maybe
 import Navigation
 
 
@@ -112,7 +114,11 @@ signedOut model =
 
 teamName : Model -> String
 teamName model =
-    model.accountInfo |> Maybe.map .teamName |> Maybe.withDefault "Personal"
+    model.accountInfo
+        |> Maybe.map .team
+        |> Maybe.join
+        |> Maybe.map .name
+        |> Maybe.withDefault "Personal"
 
 
 
