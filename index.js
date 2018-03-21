@@ -3,8 +3,7 @@ import 'semantic-ui-css/semantic.min.css';
 import './src/Main.scss';
 
 import Elm from './src/Main.elm';
-// eslint-disable-next-line import/no-named-as-default, import/no-named-as-default-member
-import chart from './src/chart';
+import drawTreemap from './src/treemap';
 
 const accessTokenKey = 'accessToken';
 const oldFileCacheKey = 'fileTree';
@@ -40,9 +39,9 @@ app.ports.removeAccountInfo.subscribe(() => {
   localStorage.clear();
 });
 
-app.ports.chart.subscribe(([title, data]) => {
+app.ports.drawTreemap.subscribe((data) => {
   const onClick = ({ key }) => key && app.ports.setPath.send(key);
-  requestAnimationFrame(() => chart(title, data, onClick));
+  requestAnimationFrame(() => drawTreemap(data, onClick));
 });
 
 function camelizePropertyNames(obj) {

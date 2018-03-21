@@ -156,7 +156,7 @@ update msg model =
             { model | order = ord } ! []
 
         TreeDepth n ->
-            { model | depth = n } ! []
+            update RenderFileTreeMap { model | depth = n }
 
 
 updateFilesModel : FilesComponent.Msg -> Model -> ( Model, Cmd Msg )

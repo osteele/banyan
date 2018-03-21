@@ -12,6 +12,8 @@ import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
 import Message exposing (..)
 import Model exposing (..)
+import Svg exposing (svg)
+import Svg.Attributes as Svg
 
 
 githubURL : String
@@ -270,7 +272,7 @@ progress model =
 
 treeMap : Model -> Html Msg
 treeMap _ =
-    div [ id "treeMap" ] []
+    svg [ id "treeMap" ] []
 
 
 
