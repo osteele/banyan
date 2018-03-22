@@ -2,10 +2,18 @@ port module TreeMap exposing (..)
 
 import Dict
 import FileTree exposing (..)
+import Html exposing (Html, div, span, text)
+import Html.Attributes exposing (attribute, class, href, id, style)
 import Json.Encode exposing (..)
+import Svg exposing (svg)
 
 
 port drawTreemap : Value -> Cmd msg
+
+
+treeMap : m -> Html msg
+treeMap _ =
+    svg [ id "treeMap" ] []
 
 
 renderFileTreeMap : Int -> FileTree -> Cmd msg
@@ -24,20 +32,21 @@ encode tree =
             if Dict.isEmpty children then
                 object
                     [ ( "name", string name )
-                    , ( "key", string key )
+                    , ( "id", string key )
                     , ( "size", int size )
                     ]
             else
                 object
                     [ ( "name", string name )
-                    , ( "key", string key )
+                    , ( "id", string key )
+                    , ( "size", int size )
                     , ( "children", list <| List.map encode <| Dict.values children )
                     ]
 
         File { key, name, size } ->
             object
                 [ ( "name", string name )
-                , ( "key", string key )
+                , ( "id", string key )
                 , ( "size", int <| Maybe.withDefault 0 size )
                 ]
 

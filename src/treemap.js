@@ -20,11 +20,7 @@ export default function drawTreemap(data, onClick) {
 
   const root = d3
     .hierarchy(data)
-    .eachBefore((d) => {
-      // eslint-disable-next-line no-param-reassign
-      d.data.id = (d.parent ? `${d.parent.data.id}.` : '') + d.data.name;
-    })
-    .sum(sumBySize)
+    .sum(d => d.size)
     .sort((a, b) => b.height - a.height || b.value - a.value);
 
   svg.selectAll('g').remove();
@@ -63,38 +59,4 @@ export default function drawTreemap(data, onClick) {
     .text(d => d);
 
   cell.append('title').text(d => `${d.data.id}\n${format(d.value)}`);
-
-  d3
-    .selectAll('input')
-    .data([sumBySize, sumByCount], d => (d ? d.name : this.value))
-    .on('change', changed);
-
-  const timeout = d3.timeout(() => {
-    d3
-      .select('input[value="sumByCount"]')
-      .property('checked', true)
-      .dispatch('change');
-  }, 2000);
-
-  function changed(sum) {
-    timeout.stop();
-
-    treemap(root.sum(sum));
-
-    cell
-      .transition()
-      .duration(750)
-      .attr('transform', d => `translate(${d.x0},${d.y0})`)
-      .select('rect')
-      .attr('width', d => d.x1 - d.x0)
-      .attr('height', d => d.y1 - d.y0);
-  }
-}
-
-function sumByCount(d) {
-  return d.children ? 0 : 1;
-}
-
-function sumBySize(d) {
-  return d.size;
 }
