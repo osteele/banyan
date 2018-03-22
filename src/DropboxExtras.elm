@@ -10,7 +10,6 @@ module DropboxExtras
         , decodeFileEntry
         , fromString
         , toString
-        , extractAccessToken
         , listFolderToContinueError
         )
 
@@ -22,6 +21,9 @@ import Dropbox exposing (..)
 import Extras exposing (..)
 import Json.Decode exposing (..)
 import Regex
+
+
+-- CONSTRUCTORS
 
 
 deleted : String -> Metadata
@@ -66,6 +68,10 @@ folder path =
         , propertyGroups = Nothing
         , sharingInfo = Nothing
         }
+
+
+
+-- PROJECTIONS
 
 
 key : Metadata -> String
@@ -117,6 +123,10 @@ size entry =
             Nothing
 
 
+
+-- SERIALIZATION
+
+
 decodeFileEntry : Decoder Metadata
 decodeFileEntry =
     field "tag" string
@@ -141,6 +151,10 @@ decoderFor tag =
                     ++ tag
 
 
+
+-- PREDICATES
+
+
 isDir : Metadata -> Bool
 isDir entry =
     case entry of
@@ -149,6 +163,10 @@ isDir entry =
 
         _ ->
             False
+
+
+
+-- DEBUGGING
 
 
 nameOptionalSizeRe : Regex.Regex
@@ -209,15 +227,8 @@ toString entry =
                 displayPath data ++ "/"
 
 
-bearerRegex : Regex.Regex
-bearerRegex =
-    Regex.regex "Bearer \"(.+)\""
 
-
-extractAccessToken : UserAuth -> Maybe String
-extractAccessToken auth =
-    -- TODO extract from JSON instead?
-    auth |> Basics.toString |> firstMatch bearerRegex
+-- ERRORS
 
 
 listFolderToContinueError : ListFolderError -> ListFolderContinueError

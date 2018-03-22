@@ -1,5 +1,11 @@
 port module AccountInfo exposing (..)
 
+import Dropbox exposing (..)
+import Extras exposing (..)
+import Regex
+
+
+-- RECORDS
 -- TODO make accountType an enum
 
 
@@ -49,6 +55,25 @@ type alias SharingPolicies =
     , sharedFolderJoinPolicy : String
     , sharedLinkCreatePolicy : String
     }
+
+
+
+-- ACCESS TOKEN
+
+
+bearerRegex : Regex.Regex
+bearerRegex =
+    Regex.regex "Bearer \"(.+)\""
+
+
+extractAccessToken : UserAuth -> Maybe String
+extractAccessToken auth =
+    -- TODO extract from JSON instead?
+    auth |> Basics.toString |> firstMatch bearerRegex
+
+
+
+-- PORTS
 
 
 port getAccountInfo : String -> Cmd msg

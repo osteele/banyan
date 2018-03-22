@@ -1,6 +1,5 @@
 module View exposing (..)
 
-import Data exposing (..)
 import Date
 import Date.Extra as Date
 import Dict

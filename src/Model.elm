@@ -1,7 +1,6 @@
 module Model exposing (..)
 
 import AccountInfo exposing (..)
-import Data exposing (..)
 import Dropbox
 import FileTree exposing (FileTree)
 import FilesComponent
@@ -17,6 +16,12 @@ type SignInStatus
     = SignedOut
     | SigningIn
     | SignedIn
+
+
+type SortOrder
+    = Alphabetic
+    | AscendingSize
+    | DescendingSize
 
 
 type alias Model =

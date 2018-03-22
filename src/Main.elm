@@ -3,7 +3,6 @@ module Main exposing (..)
 import AccountInfo exposing (..)
 import CmdExtras exposing (..)
 import Dropbox
-import DropboxExtras exposing (extractAccessToken)
 import FilesComponent
 import Message exposing (..)
 import Model exposing (..)

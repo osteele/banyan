@@ -45,7 +45,7 @@ See the official Dropbox documentation at
 @docs get, getSubtree, isEmpty
 
 
-### Nodes
+### Node Properties
 
 @docs itemEntry, nodeChildren, nodeSize
 
@@ -55,7 +55,7 @@ See the official Dropbox documentation at
 @docs map, mapChildLists, mapChildren
 
 
-### Tree truncation
+### Truncate
 
 @docs combineSmallerEntries, trimDepth
 
@@ -72,6 +72,9 @@ import DropboxExtras exposing (..)
 import Extras exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
+
+
+-- TYPES
 
 
 {-| A Rose tree of FileEntry's, and cache rolled up sizes.
@@ -106,11 +109,40 @@ type alias Stats =
     Int
 
 
+
+-- BUILD
+
+
 {-| Create an empty tree.
 -}
 empty : FileTree
 empty =
     emptyNode ""
+
+
+emptyNode : String -> FileTree
+emptyNode name =
+    Dir { key = name, name = takeFileName name, path = name } 0 Dict.empty
+
+
+{-| Update a tree from a list of values.
+-}
+addEntries : List Metadata -> FileTree -> FileTree
+addEntries entries tree =
+    let
+        action entry =
+            case entry of
+                DeletedMeta _ ->
+                    remove entry
+
+                _ ->
+                    insert entry
+    in
+        List.foldl action tree entries
+
+
+
+-- PREDICATES
 
 
 {-| Determine if a dictionary is empty.
@@ -125,9 +157,15 @@ isEmpty tree =
             False
 
 
-emptyNode : String -> FileTree
-emptyNode name =
-    Dir { key = name, name = takeFileName name, path = name } 0 Dict.empty
+
+-- QUERY
+
+
+{-| Get the Dropbox metadata at with a file path.
+-}
+get : String -> FileTree -> Maybe Metadata
+get path tree =
+    getSubtree path tree |> Maybe.map itemEntry
 
 
 {-| Get the subtree at a file path.
@@ -150,13 +188,6 @@ getSubtree path tree =
         get_ (splitPath <| String.toLower path) tree
 
 
-{-| Get the Dropbox metadata at with a file path.
--}
-get : String -> FileTree -> Maybe Metadata
-get path tree =
-    getSubtree path tree |> Maybe.map itemEntry
-
-
 itemEntry : FileTree -> Metadata
 itemEntry tree =
     case tree of
@@ -165,6 +196,10 @@ itemEntry tree =
 
         File { name, path, size } ->
             DropboxExtras.file name path size
+
+
+
+-- NODE PROPERTIES
 
 
 nodeChildren : FileTree -> Dict.Dict String FileTree
@@ -205,6 +240,10 @@ nodeSize tree =
 
         File { size } ->
             Maybe.withDefault 0 size
+
+
+
+-- INTERNAL
 
 
 {-| Recompute a node's stats.
@@ -332,20 +371,8 @@ remove =
         rm << splitPath << DropboxExtras.key
 
 
-{-| Update a tree from a list of values.
--}
-addEntries : List Metadata -> FileTree -> FileTree
-addEntries entries tree =
-    let
-        action entry =
-            case entry of
-                DeletedMeta _ ->
-                    remove entry
 
-                _ ->
-                    insert entry
-    in
-        List.foldl action tree entries
+-- MORE INTERNALS
 
 
 dirname : String -> String
@@ -373,6 +400,10 @@ itemKeyTail tree =
             nodeKey tree
     in
         splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
+
+
+
+-- MAP
 
 
 {-| Apply fn to the tree's nodes in postfix order. Don't recompute the statss.
@@ -459,6 +490,10 @@ trimDepth n =
                 []
 
 
+
+-- DEBUG
+
+
 {-| Construct a tree from a string. This is used in testing.
 
 The string is a ;-separated list of paths. Files end in :size, where size
@@ -515,6 +550,10 @@ logTrees msg trees =
                 |> Debug.log msg
     in
         trees
+
+
+
+-- SERIALIZE
 
 
 encode : FileTree -> Encode.Value

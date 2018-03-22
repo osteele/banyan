@@ -1,9 +1,9 @@
 module Message exposing (..)
 
 import AccountInfo exposing (..)
-import Data exposing (..)
 import Dropbox
 import FilesComponent
+import Model exposing (SortOrder)
 
 
 type Msg
@@ -17,7 +17,7 @@ type Msg
     | DismissMessageView Int
     | Focus String
     | RenderFileTreeMap
-    | SortOrder Data.SortOrder
+    | SortOrder SortOrder
     | TreeDepth Int
 
 
