@@ -505,7 +505,7 @@ is an optional size.
 fromString : String -> FileTree
 fromString =
     String.split ";"
-        >> List.map DropboxExtras.fromString
+        >> List.map DropboxExtras.decodeString
         >> flip addEntries empty
 
 
@@ -516,7 +516,7 @@ toString =
     let
         paths : FileTree -> List String
         paths tree =
-            (DropboxExtras.toString <| itemEntry tree)
+            (DropboxExtras.encodeString <| itemEntry tree)
                 :: (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
         paths

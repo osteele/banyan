@@ -8,18 +8,20 @@ module DropboxExtras
         , size
         , isDir
         , decodeFileEntry
-        , fromString
-        , toString
+        , decodeString
+        , encodeString
         , listFolderToContinueError
         )
 
 {-| See <https://www.dropbox.com/developers/documentation/http/documentation#files-list_folder>.
 -}
 
+import Char
 import Date
 import Dropbox exposing (..)
 import Extras exposing (..)
 import Json.Decode exposing (..)
+import Hex
 import Regex
 
 
@@ -166,12 +168,50 @@ isDir entry =
 
 
 
--- DEBUGGING
+-- STRING SERIALIZATION
 
 
 nameOptionalSizeRe : Regex.Regex
 nameOptionalSizeRe =
     Regex.regex "^(.+):(\\d*)$"
+
+
+pathQuoteRe : Regex.Regex
+pathQuoteRe =
+    Regex.regex "[;:%]"
+
+
+pathUnquoteRe : Regex.Regex
+pathUnquoteRe =
+    Regex.regex "%[0-9a-zA-Z]{2}"
+
+
+
+-- Regex.regex "%."
+
+
+quotePath : String -> String
+quotePath =
+    Regex.replace Regex.All
+        pathQuoteRe
+        (\{ match } ->
+            String.toList match
+                |> List.head
+                |> Maybe.map (Char.toCode >> Hex.toString >> (++) "%")
+                |> Maybe.withDefault match
+        )
+
+
+unquotePath : String -> String
+unquotePath =
+    Regex.replace Regex.All
+        pathUnquoteRe
+        (\{ match } ->
+            String.dropLeft 1 match
+                |> Hex.fromString
+                |> Result.map (Char.fromCode >> String.fromChar)
+                |> Result.withDefault match
+        )
 
 
 {-| Construct an entry from a string. This is used in testing.
@@ -184,33 +224,33 @@ is an optional size.
     fromString "/dir/" -- folder
 
 -}
-fromString : String -> Metadata
-fromString path =
+decodeString : String -> Metadata
+decodeString path =
     if String.endsWith "/" path then
-        folder <| String.dropRight 1 path
+        folder <| unquotePath <| String.dropRight 1 path
     else
         let
             ( p, size ) =
                 case path |> Regex.find (Regex.AtMost 1) nameOptionalSizeRe |> List.head |> Maybe.map .submatches of
                     Just ((Just p) :: size :: _) ->
-                        ( p
+                        ( unquotePath p
                         , size
                             |> Maybe.andThen (String.toInt >> Result.toMaybe)
                         )
 
                     _ ->
-                        ( path, Nothing )
+                        ( unquotePath path, Nothing )
         in
             file (takeFileName p) p size
 
 
-{-| Turn a tree into a string. See fromString for the format.
+{-| Turn a tree into a string. See toString for the format.
 -}
-toString : Metadata -> String
-toString entry =
+encodeString : Metadata -> String
+encodeString entry =
     let
         displayPath { name, pathDisplay } =
-            Maybe.withDefault ("…/" ++ name) pathDisplay
+            quotePath <| Maybe.withDefault ("…/" ++ name) pathDisplay
     in
         case entry of
             DeletedMeta data ->

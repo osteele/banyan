@@ -8,6 +8,7 @@ import FileTree exposing (..)
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Test exposing (..)
+import TestExtras exposing (..)
 
 
 suite : Test
@@ -231,30 +232,6 @@ encoderTests =
                         |> Expect.equal (Result.Ok "")
             ]
         ]
-
-
-expectJsonEqual : Encode.Value -> Encode.Value -> Expectation
-expectJsonEqual a =
-    Expect.all
-        [ Expect.equal a
-        , flip Expect.equal a
-        ]
-
-
-pending : a -> String -> b -> Test
-pending _ s _ =
-    test s <|
-        \_ ->
-            let
-                _ =
-                    Debug.log "skipping test" s
-            in
-                Expect.pass
-
-
-expectJust : a -> Maybe a -> Expectation
-expectJust =
-    Expect.equal << Just
 
 
 file path size =
