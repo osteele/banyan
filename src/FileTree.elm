@@ -194,8 +194,8 @@ itemEntry tree =
         Dir { path } _ _ ->
             DropboxExtras.folder path
 
-        File { name, path, size } ->
-            DropboxExtras.file name path size
+        File { path, size } ->
+            DropboxExtras.file path size
 
 
 

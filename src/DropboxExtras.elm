@@ -36,10 +36,10 @@ deleted path =
         }
 
 
-file : String -> String -> Int -> Metadata
-file name path size =
+file : String -> Int -> Metadata
+file path size =
     FileMeta
-        { name = name
+        { name = takeFileName path
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just <| path
         , size = size
@@ -212,7 +212,7 @@ decodeString path =
                     _ ->
                         ( unquotePath path, 0 )
         in
-            file (takeFileName p) p size
+            file p size
 
 
 {-| Turn a tree into a string. See toString for the format.

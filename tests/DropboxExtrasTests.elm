@@ -1,13 +1,8 @@
 module DropboxExtrasTests exposing (..)
 
-import Dropbox
 import DropboxExtras exposing (..)
 import Expect exposing (Expectation)
-import Extras exposing (takeFileName)
-import Json.Decode as Decode
-import Json.Encode as Encode
 import Test exposing (..)
-import TestExtras exposing (..)
 
 
 suite : Test
@@ -17,11 +12,11 @@ suite =
             [ test "decodes file" <|
                 \_ ->
                     DropboxExtras.decodeString "/a/b:12"
-                        |> Expect.equal (file "b" "/a/b" 12)
+                        |> Expect.equal (file "/a/b" 12)
             , test "decodes zero-sized file" <|
                 \_ ->
                     DropboxExtras.decodeString "/a/b"
-                        |> Expect.equal (file "b" "/a/b" 0)
+                        |> Expect.equal (file "/a/b" 0)
             , test "decodes folder" <|
                 \_ ->
                     DropboxExtras.decodeString "/a/b/"
@@ -34,12 +29,12 @@ suite =
         , describe "toString"
             [ test "encodes file" <|
                 \_ ->
-                    file "b" "/a/b" 12
+                    file "/a/b" 12
                         |> DropboxExtras.encodeString
                         |> Expect.equal "/a/b:12"
             , test "encodes zero-size file" <|
                 \_ ->
-                    file "a" "/a/b" 0
+                    file "/a/b" 0
                         |> DropboxExtras.encodeString
                         |> Expect.equal "/a/b"
             , test "encodes folder" <|
