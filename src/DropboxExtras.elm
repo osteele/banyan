@@ -7,7 +7,6 @@ module DropboxExtras
         , path
         , size
         , isDir
-        , decodeFileEntry
         , decodeString
         , encodeString
         , listFolderToContinueError
@@ -20,7 +19,6 @@ import Char
 import Date
 import Dropbox exposing (..)
 import Extras exposing (..)
-import Json.Decode exposing (..)
 import Hex
 import Regex
 
@@ -123,37 +121,6 @@ size entry =
 
         _ ->
             Nothing
-
-
-
--- SERIALIZATION
-
-
-decodeFileEntry : Decoder Metadata
-decodeFileEntry =
-    field "tag" string
-        |> andThen decoderFor
-
-
-decoderFor : String -> Decoder Metadata
-decoderFor tag =
-    case tag of
-        "file" ->
-            map3 (\n p s -> file n p <| Maybe.withDefault 0 s)
-                (field "name" string)
-                (field "path_display" string)
-                (field "size" <| nullable int)
-
-        "folder" ->
-            map folder (field "path_display" string)
-
-        "delete" ->
-            map deleted (field "path_display" string)
-
-        _ ->
-            fail <|
-                "Trying to decode Dropbox file entry, but received unknown tag "
-                    ++ tag
 
 
 

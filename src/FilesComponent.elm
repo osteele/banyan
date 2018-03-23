@@ -31,7 +31,7 @@ import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Extra as Decode
 import Json.Encode as Encode
-import ListFolder exposing (..)
+import Ports exposing (saveFilesCache)
 import Task
 import Time exposing (Time)
 
