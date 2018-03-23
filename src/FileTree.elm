@@ -18,8 +18,6 @@ module FileTree
         , nodePath
         , toString
         , trimDepth
-        , jsonDecoder
-        , encodeJson
         , logTree
         , logTrees
         )
@@ -212,16 +210,6 @@ nodeChildren tree =
             Dict.empty
 
 
-nodeKey : FileTree -> String
-nodeKey item =
-    case item of
-        Folder { key } _ _ ->
-            key
-
-        File { key } ->
-            key
-
-
 nodePath : FileTree -> String
 nodePath item =
     case item of
@@ -385,6 +373,16 @@ dirname path =
         |> String.join "/"
 
 
+itemData : FileTree -> { key : String }
+itemData tree =
+    case tree of
+        File { key } ->
+            { key = key }
+
+        Folder { key } _ _ ->
+            { key = key }
+
+
 splitPath : String -> List String
 splitPath path =
     path
@@ -397,7 +395,7 @@ itemKeyTail : FileTree -> String
 itemKeyTail tree =
     let
         key =
-            nodeKey tree
+            itemData tree |> .key
     in
         splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
 
@@ -565,58 +563,52 @@ decoder =
     Decode.string |> Decode.andThen (Decode.succeed << fromString)
 
 
-encodeJson : FileTree -> Encode.Value
-encodeJson node =
-    let
-        maybeToList =
-            Maybe.map List.singleton >> Maybe.withDefault []
 
-        maybeKey name key =
-            splitPath key
-                |> List.reverse
-                |> List.head
-                |> Maybe.withDefault key
-                |> maybeToDefault (String.toLower name)
-                |> Maybe.map (\k -> ( "k", Encode.string k ))
-
-        maybeSize size =
-            size
-                |> maybeToDefault 0
-                |> Maybe.map
-                    (\s -> ( "s", Encode.int s ))
-    in
-        case node of
-            Folder { name, key } _ children ->
-                Encode.object <|
-                    [ ( "n", Encode.string name )
-                    , ( "c", Encode.list <| List.map encodeJson <| Dict.values children )
-                    ]
-                        ++ (maybeToList <| maybeKey name key)
-
-            File { name, key, size } ->
-                Encode.object <|
-                    [ ( "n", Encode.string name ) ]
-                        ++ (maybeToList <| maybeKey name key)
-                        ++ (maybeToList <| maybeSize size)
-
-
-jsonDecoder : Decoder FileTree
-jsonDecoder =
-    let
-        dec : String -> Decoder FileTree
-        dec prefix =
-            Decode.map2
-                node
-                (Decode.field "n" Decode.string)
-                (Decode.field "c" (Decode.maybe (Decode.list (Decode.lazy (\_ -> dec prefix)))))
-
-        node : String -> Maybe (List FileTree) -> FileTree
-        node name children =
-            case children of
-                Just c ->
-                    Folder { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList)
-
-                Nothing ->
-                    File { name = name, key = name, path = name, size = 0 }
-    in
-        dec ""
+-- encodeJson : FileTree -> Encode.Value
+-- encodeJson node =
+--     let
+--         maybeToList =
+--             Maybe.map List.singleton >> Maybe.withDefault []
+--         maybeKey name key =
+--             splitPath key
+--                 |> List.reverse
+--                 |> List.head
+--                 |> Maybe.withDefault key
+--                 |> maybeToDefault (String.toLower name)
+--                 |> Maybe.map (\k -> ( "k", Encode.string k ))
+--         maybeSize size =
+--             size
+--                 |> maybeToDefault 0
+--                 |> Maybe.map
+--                     (\s -> ( "s", Encode.int s ))
+--     in
+--         case node of
+--             Folder { name, key } _ children ->
+--                 Encode.object <|
+--                     [ ( "n", Encode.string name )
+--                     , ( "c", Encode.list <| List.map encodeJson <| Dict.values children )
+--                     ]
+--                         ++ (maybeToList <| maybeKey name key)
+--             File { name, key, size } ->
+--                 Encode.object <|
+--                     [ ( "n", Encode.string name ) ]
+--                         ++ (maybeToList <| maybeKey name key)
+--                         ++ (maybeToList <| maybeSize size)
+-- jsonDecoder : Decoder FileTree
+-- jsonDecoder =
+--     let
+--         dec : String -> Decoder FileTree
+--         dec prefix =
+--             Decode.map2
+--                 node
+--                 (Decode.field "n" Decode.string)
+--                 (Decode.field "c" (Decode.maybe (Decode.list (Decode.lazy (\_ -> dec prefix)))))
+--         node : String -> Maybe (List FileTree) -> FileTree
+--         node name children =
+--             case children of
+--                 Just c ->
+--                     Folder { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList)
+--                 Nothing ->
+--                     File { name = name, key = name, path = name, size = 0 }
+--     in
+--         dec ""

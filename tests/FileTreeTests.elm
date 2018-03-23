@@ -4,8 +4,6 @@ import Dropbox
 import DropboxExtras exposing (..)
 import Expect exposing (Expectation)
 import FileTree exposing (..)
-import Json.Decode as Decode
-import Json.Encode as Encode
 import Test exposing (..)
 import TestExtras exposing (..)
 
@@ -144,93 +142,92 @@ suite =
                     |> FileTree.toString
                     |> Expect.equal "/a/;/b/"
         ]
-            ++ encoderTests
 
 
-encoderTests : List Test
-encoderTests =
-    let
-        encoded =
-            Encode.object
-                [ ( "n", Encode.string "" )
-                , ( "c"
-                  , Encode.list
-                        [ Encode.object
-                            [ ( "n", Encode.string "dir" )
-                            , ( "c", Encode.list [] )
-                            ]
-                        , Encode.object
-                            [ ( "n", Encode.string "file1" )
-                            ]
-                        , Encode.object
-                            [ ( "n", Encode.string "file2" )
-                            , ( "s", Encode.int 10 )
-                            ]
-                        ]
-                  )
-                ]
 
-        encodedLeaf =
-            Encode.object
-                [ ( "n", Encode.string "" )
-                , ( "c"
-                  , Encode.list
-                        [ Encode.object
-                            [ ( "n", Encode.string "dir" )
-                            , ( "c"
-                              , Encode.list
-                                    [ Encode.object [ ( "n", Encode.string "file" ) ]
-                                    ]
-                              )
-                            ]
-                        ]
-                  )
-                ]
-
-        encodedUppercase =
-            Encode.object
-                [ ( "n", Encode.string "" )
-                , ( "c"
-                  , Encode.list
-                        [ Encode.object
-                            [ ( "n", Encode.string "Dir" )
-                            , ( "c"
-                              , Encode.list
-                                    [ Encode.object [ ( "n", Encode.string "File" ) ]
-                                    ]
-                              )
-                            ]
-                        ]
-                  )
-                ]
-    in
-        [ describe "encode"
-            [ test "files and directory" <|
-                \_ ->
-                    FileTree.fromString "/file1;file2:10;/dir/"
-                        |> FileTree.encodeJson
-                        |> expectJsonEqual encoded
-            , test "file path" <|
-                \_ ->
-                    FileTree.fromString "/dir/file"
-                        |> FileTree.encodeJson
-                        |> expectJsonEqual encodedLeaf
-            , pending test "uppercase name" <|
-                \_ ->
-                    FileTree.fromString "/Dir/File"
-                        |> FileTree.encodeJson
-                        |> expectJsonEqual encodedUppercase
-            ]
-        , pending describe
-            "decode"
-            [ test "files and directory" <|
-                \_ ->
-                    Encode.encode 0 encoded
-                        |> Decode.decodeString FileTree.jsonDecoder
-                        |> Result.map FileTree.toString
-                        |> Expect.equal (Result.Ok "")
-            ]
-        ]
+-- ++ encoderTests
+-- encoderTests : List Test
+-- encoderTests =
+--     let
+--         encoded =
+--             Encode.object
+--                 [ ( "n", Encode.string "" )
+--                 , ( "c"
+--                   , Encode.list
+--                         [ Encode.object
+--                             [ ( "n", Encode.string "dir" )
+--                             , ( "c", Encode.list [] )
+--                             ]
+--                         , Encode.object
+--                             [ ( "n", Encode.string "file1" )
+--                             ]
+--                         , Encode.object
+--                             [ ( "n", Encode.string "file2" )
+--                             , ( "s", Encode.int 10 )
+--                             ]
+--                         ]
+--                   )
+--                 ]
+--         encodedLeaf =
+--             Encode.object
+--                 [ ( "n", Encode.string "" )
+--                 , ( "c"
+--                   , Encode.list
+--                         [ Encode.object
+--                             [ ( "n", Encode.string "dir" )
+--                             , ( "c"
+--                               , Encode.list
+--                                     [ Encode.object [ ( "n", Encode.string "file" ) ]
+--                                     ]
+--                               )
+--                             ]
+--                         ]
+--                   )
+--                 ]
+--         encodedUppercase =
+--             Encode.object
+--                 [ ( "n", Encode.string "" )
+--                 , ( "c"
+--                   , Encode.list
+--                         [ Encode.object
+--                             [ ( "n", Encode.string "Dir" )
+--                             , ( "c"
+--                               , Encode.list
+--                                     [ Encode.object [ ( "n", Encode.string "File" ) ]
+--                                     ]
+--                               )
+--                             ]
+--                         ]
+--                   )
+--                 ]
+--     in
+--         [ describe "encode"
+--             [ test "files and directory" <|
+--                 \_ ->
+--                     FileTree.fromString "/file1;file2:10;/dir/"
+--                         |> FileTree.encodeJson
+--                         |> expectJsonEqual encoded
+--             , test "file path" <|
+--                 \_ ->
+--                     FileTree.fromString "/dir/file"
+--                         |> FileTree.encodeJson
+--                         |> expectJsonEqual encodedLeaf
+--             , pending test "uppercase name" <|
+--                 \_ ->
+--                     FileTree.fromString "/Dir/File"
+--                         |> FileTree.encodeJson
+--                         |> expectJsonEqual encodedUppercase
+--             ]
+--         , pending describe
+--             "decode"
+--             [ test "files and directory" <|
+--                 \_ ->
+--                     Encode.encode 0 encoded
+--                         |> Decode.decodeString FileTree.jsonDecoder
+--                         |> Result.map FileTree.toString
+--                         |> Expect.equal (Result.Ok "")
+--             ]
+--         ]
 
 
 fromEntries : List Dropbox.Metadata -> FileTree
