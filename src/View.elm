@@ -4,7 +4,7 @@ import Date
 import Date.Extra as Date
 import Dict
 import Extras exposing (..)
-import FileTree exposing (FileTree)
+import FileTree exposing (FileTree(..))
 import FilesComponent exposing (Status(..), isSyncing)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
@@ -371,7 +371,7 @@ subtree model title tree =
                 ]
     in
         case tree of
-            FileTree.File { path, size } ->
+            File { path, size } ->
                 div
                     [ class "clearfix" ]
                     [ text <| takeFileName path
@@ -379,7 +379,7 @@ subtree model title tree =
                         [ text <| humanize size ]
                     ]
 
-            FileTree.Dir { key, path } size _ ->
+            Folder { key, path } size _ ->
                 div
                     []
                     (div

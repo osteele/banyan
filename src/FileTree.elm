@@ -84,15 +84,8 @@ less runtime data. I haven't measured whether this is worth it.
 
 -}
 type FileTree
-    = Dir FolderData Stats (Dict.Dict String FileTree)
-    | File FileData
-
-
-type alias FolderData =
-    { key : String
-    , name : String
-    , path : String
-    }
+    = File FileData
+    | Folder FolderData Stats (Dict.Dict String FileTree)
 
 
 type alias FileData =
@@ -100,6 +93,13 @@ type alias FileData =
     , name : String
     , path : String
     , size : Int
+    }
+
+
+type alias FolderData =
+    { key : String
+    , name : String
+    , path : String
     }
 
 
@@ -122,7 +122,7 @@ empty =
 
 emptyNode : String -> FileTree
 emptyNode name =
-    Dir { key = name, name = takeFileName name, path = name } 0 Dict.empty
+    Folder { key = name, name = takeFileName name, path = name } 0 Dict.empty
 
 
 {-| Update a tree from a list of values.
@@ -150,7 +150,7 @@ addEntries entries tree =
 isEmpty : FileTree -> Bool
 isEmpty tree =
     case tree of
-        Dir _ _ children ->
+        Folder _ _ children ->
             Dict.isEmpty children
 
         _ ->
@@ -191,7 +191,7 @@ getSubtree path tree =
 itemEntry : FileTree -> Metadata
 itemEntry tree =
     case tree of
-        Dir { path } _ _ ->
+        Folder { path } _ _ ->
             DropboxExtras.folder path
 
         File { path, size } ->
@@ -205,7 +205,7 @@ itemEntry tree =
 nodeChildren : FileTree -> Dict.Dict String FileTree
 nodeChildren tree =
     case tree of
-        Dir _ _ children ->
+        Folder _ _ children ->
             children
 
         _ ->
@@ -215,7 +215,7 @@ nodeChildren tree =
 nodeKey : FileTree -> String
 nodeKey item =
     case item of
-        Dir { key } _ _ ->
+        Folder { key } _ _ ->
             key
 
         File { key } ->
@@ -225,7 +225,7 @@ nodeKey item =
 nodePath : FileTree -> String
 nodePath item =
     case item of
-        Dir { path } _ _ ->
+        Folder { path } _ _ ->
             path
 
         File { path } ->
@@ -235,7 +235,7 @@ nodePath item =
 nodeSize : FileTree -> Int
 nodeSize tree =
     case tree of
-        Dir _ size _ ->
+        Folder _ size _ ->
             size
 
         File { size } ->
@@ -251,15 +251,15 @@ nodeSize tree =
 recomputeStats : FileTree -> FileTree
 recomputeStats tree =
     case tree of
-        Dir e _ children ->
+        Folder data _ children ->
             let
                 stats =
                     children |> Dict.values |> List.map nodeSize |> List.sum
             in
-                Dir e stats children
+                Folder data stats children
 
-        leaf ->
-            leaf
+        file ->
+            file
 
 
 updateTreeItem : List String -> (Maybe FileTree -> FileTree) -> List String -> FileTree -> FileTree
@@ -272,7 +272,7 @@ updateTreeItem keys alter path tree =
         withDirItem : (FolderData -> Stats -> Dict.Dict String FileTree -> a) -> a
         withDirItem fn =
             case tree of
-                Dir data size children ->
+                Folder data size children ->
                     fn data size children
 
                 _ ->
@@ -290,7 +290,7 @@ updateTreeItem keys alter path tree =
                 withDirItem <|
                     \entry _ children ->
                         Dict.update k (Just << alter) children
-                            |> Dir entry 0
+                            |> Folder entry 0
                             |> recomputeStats
 
             k :: ks ->
@@ -302,7 +302,7 @@ updateTreeItem keys alter path tree =
                     withDirItem <|
                         \entry _ children ->
                             Dict.update k (Just << alt) children
-                                |> Dir entry 0
+                                |> Folder entry 0
                                 |> recomputeStats
 
 
@@ -316,11 +316,11 @@ insert entry =
 
         updateDir data dir =
             case dir of
-                Just (Dir _ size children) ->
-                    Dir data size children
+                Just (Folder _ size children) ->
+                    Folder data size children
 
                 _ ->
-                    Dir data 0 Dict.empty
+                    Folder data 0 Dict.empty
 
         -- FIXME remove the necessity for this
         maybeRequire m =
@@ -356,17 +356,17 @@ remove =
                 File _ ->
                     empty
 
-                Dir data stats children ->
+                Folder data stats children ->
                     case keys of
                         [] ->
                             empty
 
                         [ k ] ->
                             -- updateChildren (Dict.remove k) data
-                            children |> Dict.remove k |> Dir data stats |> recomputeStats
+                            children |> Dict.remove k |> Folder data stats |> recomputeStats
 
                         k :: ks ->
-                            children |> Dict.update k (Maybe.map <| rm ks) |> Dir data stats |> recomputeStats
+                            children |> Dict.update k (Maybe.map <| rm ks) |> Folder data stats |> recomputeStats
     in
         rm << splitPath << DropboxExtras.key
 
@@ -418,16 +418,16 @@ map fn =
 mapChildList : (List FileTree -> List FileTree) -> FileTree -> FileTree
 mapChildList fn tree =
     case tree of
-        Dir entry stats children ->
+        Folder entry stats children ->
             children
                 |> Dict.values
                 |> fn
                 |> List.map (\e -> ( itemKeyTail e, e ))
                 |> Dict.fromList
-                |> Dir entry stats
+                |> Folder entry stats
 
-        leaf ->
-            leaf
+        file ->
+            file
 
 
 {-| Apply fn to node child lists, in postfix order.
@@ -586,7 +586,7 @@ encodeJson node =
                     (\s -> ( "s", Encode.int s ))
     in
         case node of
-            Dir { name, key } _ children ->
+            Folder { name, key } _ children ->
                 Encode.object <|
                     [ ( "n", Encode.string name )
                     , ( "c", Encode.list <| List.map encodeJson <| Dict.values children )
@@ -614,7 +614,7 @@ jsonDecoder =
         node name children =
             case children of
                 Just c ->
-                    Dir { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList)
+                    Folder { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList)
 
                 Nothing ->
                     File { name = name, key = name, path = name, size = 0 }

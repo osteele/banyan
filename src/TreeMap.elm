@@ -28,7 +28,7 @@ renderFileTreeMap depth tree =
 encode : FileTree -> Value
 encode tree =
     case tree of
-        Dir { key, name } size children ->
+        Folder { key, name } size children ->
             if Dict.isEmpty children then
                 object
                     [ ( "name", string name )
