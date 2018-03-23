@@ -376,7 +376,7 @@ subtree model title tree =
                     [ class "clearfix" ]
                     [ text <| takeFileName path
                     , span [ class "float-right" ]
-                        [ text <| humanize <| Maybe.withDefault 0 size ]
+                        [ text <| humanize size ]
                     ]
 
             FileTree.Dir { key, path } size _ ->

@@ -47,7 +47,7 @@ encode tree =
             object
                 [ ( "name", string name )
                 , ( "id", string key )
-                , ( "size", int <| Maybe.withDefault 0 size )
+                , ( "size", int size )
                 ]
 
 

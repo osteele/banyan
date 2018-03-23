@@ -19,12 +19,12 @@ suite =
                 \_ ->
                     FileTree.fromString "/File"
                         |> get "/file"
-                        >> expectJust (file "/File" Nothing)
+                        >> expectJust (file "/File" 0)
             , test "creates a sized file" <|
                 \_ ->
                     FileTree.fromString "/File:12"
                         |> get "/file"
-                        >> expectJust (file "/File" <| Just 12)
+                        >> expectJust (file "/File" 12)
             , test "creates a directory" <|
                 \_ ->
                     FileTree.fromString "/Dir/"
@@ -32,11 +32,11 @@ suite =
                         >> expectJust (folder "/Dir")
             , test "adds all the entries" <|
                 \_ ->
-                    FileTree.fromString "/dir/;/f1;/f2:10"
+                    FileTree.fromString "/dir/;/f1;/f2:12"
                         |> Expect.all
                             [ get "/dir" >> expectJust (folder "/dir")
-                            , get "/f1" >> expectJust (file "/f1" Nothing)
-                            , get "/f2" >> expectJust (file "/f2" <| Just 10)
+                            , get "/f1" >> expectJust (file "/f1" 0)
+                            , get "/f2" >> expectJust (file "/f2" 12)
                             ]
             ]
         , describe "toString"
@@ -234,6 +234,7 @@ encoderTests =
         ]
 
 
+file : String -> Int -> Dropbox.Metadata
 file path size =
     DropboxExtras.file (takeFileName path) path size
 

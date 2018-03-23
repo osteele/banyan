@@ -38,13 +38,13 @@ deleted path =
         }
 
 
-file : String -> String -> Maybe Int -> Metadata
+file : String -> String -> Int -> Metadata
 file name path size =
     FileMeta
         { name = name
         , pathLower = Just <| String.toLower path
         , pathDisplay = Just <| path
-        , size = Maybe.withDefault 0 size
+        , size = size
         , id = ""
         , clientModified = Date.fromTime 0
         , serverModified = Date.fromTime 0
@@ -139,7 +139,10 @@ decoderFor : String -> Decoder Metadata
 decoderFor tag =
     case tag of
         "file" ->
-            map3 file (field "name" string) (field "path_display" string) (field "size" <| nullable int)
+            map3 (\n p s -> file n p <| Maybe.withDefault 0 s)
+                (field "name" string)
+                (field "path_display" string)
+                (field "size" <| nullable int)
 
         "folder" ->
             map folder (field "path_display" string)
@@ -232,14 +235,15 @@ decodeString path =
         let
             ( p, size ) =
                 case path |> Regex.find (Regex.AtMost 1) nameOptionalSizeRe |> List.head |> Maybe.map .submatches of
-                    Just ((Just p) :: size :: _) ->
+                    Just ((Just p) :: sizeStr :: _) ->
                         ( unquotePath p
-                        , size
+                        , sizeStr
                             |> Maybe.andThen (String.toInt >> Result.toMaybe)
+                            |> Maybe.withDefault 0
                         )
 
                     _ ->
-                        ( unquotePath path, Nothing )
+                        ( unquotePath path, 0 )
         in
             file (takeFileName p) p size
 

@@ -99,7 +99,7 @@ type alias FileData =
     { key : String
     , name : String
     , path : String
-    , size : Maybe Int
+    , size : Int
     }
 
 
@@ -239,7 +239,7 @@ nodeSize tree =
             size
 
         File { size } ->
-            Maybe.withDefault 0 size
+            size
 
 
 
@@ -334,7 +334,7 @@ insert entry =
         update =
             case entry of
                 FileMeta { name, pathDisplay, pathLower, size } ->
-                    updateFile { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower, size = Just size }
+                    updateFile { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower, size = size }
 
                 FolderMeta { name, pathDisplay, pathLower } ->
                     updateDir { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower }
@@ -471,7 +471,6 @@ combineSmallerEntries n orphans =
                         List.drop n sorted
                             |> List.map nodeSize
                             |> List.sum
-                            |> Just
                             |> \size ->
                                 File { key = name, name = takeFileName name, path = name, size = size }
                 in
@@ -582,7 +581,6 @@ encodeJson node =
 
         maybeSize size =
             size
-                |> Maybe.withDefault 0
                 |> maybeToDefault 0
                 |> Maybe.map
                     (\s -> ( "s", Encode.int s ))
@@ -619,6 +617,6 @@ jsonDecoder =
                     Dir { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList)
 
                 Nothing ->
-                    File { name = name, key = name, path = name, size = Nothing }
+                    File { name = name, key = name, path = name, size = 0 }
     in
         dec ""
