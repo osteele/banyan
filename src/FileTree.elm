@@ -123,7 +123,7 @@ emptyNode name =
     Folder { key = name, name = takeFileName name, path = name } 0 Dict.empty
 
 
-{-| Update a tree from a list of values.
+{-| Update a tree from file list metadata.
 -}
 addEntries : List Metadata -> FileTree -> FileTree
 addEntries entries tree =
@@ -297,46 +297,42 @@ updateTreeItem keys alter path tree =
 {-| Insert a value into a tree.
 -}
 insert : Metadata -> FileTree -> FileTree
-insert entry =
+insert data =
     let
-        updateFile data _ =
-            File data
+        updateFile d _ =
+            File d
 
-        updateDir data dir =
+        updateDir d dir =
             case dir of
                 Just (Folder _ size children) ->
-                    Folder data size children
+                    Folder d size children
 
                 _ ->
-                    Folder data 0 Dict.empty
+                    Folder d 0 Dict.empty
 
-        -- FIXME remove the necessity for this
-        maybeRequire m =
-            case m of
-                Just v ->
-                    v
+        update pathDisplay pathLower =
+            case data of
+                FileMeta { name, size } ->
+                    updateFile { name = name, path = pathDisplay, key = pathLower, size = size }
 
-                Nothing ->
-                    Debug.crash "required"
-
-        update =
-            case entry of
-                FileMeta { name, pathDisplay, pathLower, size } ->
-                    updateFile { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower, size = size }
-
-                FolderMeta { name, pathDisplay, pathLower } ->
-                    updateDir { name = name, path = maybeRequire pathDisplay, key = maybeRequire pathLower }
+                FolderMeta { name } ->
+                    updateDir { name = name, path = pathDisplay, key = pathLower }
 
                 _ ->
                     Debug.crash "unexpected Dropbox metadata case"
     in
-        updateTreeItem (splitPath <| DropboxExtras.key entry) update [ "" ]
+        case DropboxExtras.record data |> (\{ pathDisplay, pathLower } -> ( pathDisplay, pathLower )) of
+            ( Just pathDisplay, Just pathLower ) ->
+                updateTreeItem (splitPath pathLower) (update pathDisplay pathLower) [ "" ]
+
+            _ ->
+                identity
 
 
 {-| Remove a value from a tree.
 -}
 remove : Metadata -> FileTree -> FileTree
-remove =
+remove data =
     let
         rm : List String -> FileTree -> FileTree
         rm keys entry =
@@ -356,7 +352,12 @@ remove =
                         k :: ks ->
                             children |> Dict.update k (Maybe.map <| rm ks) |> Folder data stats |> recomputeStats
     in
-        rm << splitPath << DropboxExtras.key
+        case DropboxExtras.record data |> .pathLower of
+            Just path ->
+                rm <| splitPath path
+
+            Nothing ->
+                identity
 
 
 

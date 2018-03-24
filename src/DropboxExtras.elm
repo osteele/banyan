@@ -3,7 +3,7 @@ module DropboxExtras
         ( folder
         , file
         , deleted
-        , key
+        , record
         , path
         , size
         , isDir
@@ -26,6 +26,8 @@ import Regex
 -- CONSTRUCTORS
 
 
+{-| Create a DeletedMeta record.
+-}
 deleted : String -> Metadata
 deleted path =
     DeletedMeta
@@ -36,6 +38,8 @@ deleted path =
         }
 
 
+{-| Create a FileMeta record, with empty id and rev, and 0 modified times.
+-}
 file : String -> Int -> Metadata
 file path size =
     FileMeta
@@ -56,6 +60,8 @@ file path size =
         }
 
 
+{-| Create a FileMeta folder, with empty id.
+-}
 folder : String -> Metadata
 folder path =
     FolderMeta
@@ -74,26 +80,38 @@ folder path =
 -- PROJECTIONS
 
 
-key : Metadata -> String
-key entry =
-    let
-        k { pathLower } =
-            case pathLower of
-                Just s ->
-                    s
+{-| Return a record with the common attributes of the union records.
+-}
+record :
+    Metadata
+    ->
+        { name : String
+        , pathLower : Maybe String
+        , pathDisplay : Maybe String
+        , parentSharedFolderId : Maybe String
+        }
+record entry =
+    case entry of
+        FileMeta { name, pathDisplay, pathLower, parentSharedFolderId } ->
+            { name = name
+            , pathDisplay = pathDisplay
+            , pathLower = pathLower
+            , parentSharedFolderId = parentSharedFolderId
+            }
 
-                Nothing ->
-                    Debug.crash "missing key"
-    in
-        case entry of
-            FileMeta data ->
-                k data
+        FolderMeta { name, pathDisplay, pathLower, parentSharedFolderId } ->
+            { name = name
+            , pathDisplay = pathDisplay
+            , pathLower = pathLower
+            , parentSharedFolderId = parentSharedFolderId
+            }
 
-            FolderMeta data ->
-                k data
-
-            DeletedMeta data ->
-                k data
+        DeletedMeta { name, pathDisplay, pathLower, parentSharedFolderId } ->
+            { name = name
+            , pathDisplay = pathDisplay
+            , pathLower = pathLower
+            , parentSharedFolderId = parentSharedFolderId
+            }
 
 
 path : Metadata -> String
