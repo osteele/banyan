@@ -1,8 +1,7 @@
 module Message exposing (..)
 
-import AccountInfo exposing (..)
-import Dropbox
 import AccountInfo exposing (AccountInfo)
+import Dropbox
 import FilesComponent
 import Model exposing (SortOrder)
 
