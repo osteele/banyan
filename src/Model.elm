@@ -1,8 +1,8 @@
 module Model exposing (..)
 
-import AccountInfo exposing (..)
 import Dropbox
-import FileTree exposing (FileTree)
+import Dropbox.AccountInfo exposing (..)
+import Dropbox.FileTree as FileTree exposing (FileTree)
 import FilesComponent
 import Maybe.Extra as Maybe
 import Navigation

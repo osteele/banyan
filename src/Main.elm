@@ -1,8 +1,8 @@
 module Main exposing (..)
 
-import AccountInfo exposing (..)
 import CmdExtras exposing (..)
 import Dropbox
+import Dropbox.AccountInfo exposing (..)
 import FilesComponent
 import Message exposing (..)
 import Model exposing (..)

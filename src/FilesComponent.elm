@@ -22,14 +22,14 @@ module FilesComponent
 ## The synced file state and the syncronization status.
 -}
 
-import AccountInfo exposing (AccountInfo)
 import CmdExtras exposing (..)
 import Date
 import Date.Extra as Date
 import Dropbox exposing (..)
-import DropboxExtras exposing (listFolderToContinueError)
+import Dropbox.AccountInfo exposing (AccountInfo)
+import Dropbox.Extras exposing (listFolderToContinueError)
+import Dropbox.FileTree as FileTree exposing (FileTree)
 import Extras exposing (maybeToDefault)
-import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Extra as Decode
 import Json.Encode as Encode
@@ -292,7 +292,7 @@ updateDecoder state model =
                 files =
                     paths
                         |> List.take n
-                        |> List.map DropboxExtras.decodeString
+                        |> List.map Dropbox.Extras.decodeString
                         |> flip FileTree.addEntries model.files
             in
                 Result.Ok ( { model | files = files }, Just <| FileStrings status <| List.drop n paths )

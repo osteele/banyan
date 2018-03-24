@@ -1,6 +1,6 @@
 module DropboxExtrasTests exposing (..)
 
-import DropboxExtras exposing (..)
+import Dropbox.Extras as DropboxExtras exposing (..)
 import Expect exposing (Expectation)
 import Test exposing (..)
 

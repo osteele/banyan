@@ -1,4 +1,4 @@
-module FileTree
+module Dropbox.FileTree
     exposing
         ( FileTree(..)
         , addEntries
@@ -66,7 +66,7 @@ See the official Dropbox documentation at
 
 import Dict
 import Dropbox exposing (Metadata(..))
-import DropboxExtras exposing (..)
+import Dropbox.Extras exposing (..)
 import Extras exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -188,10 +188,10 @@ itemEntry : FileTree -> Metadata
 itemEntry tree =
     case tree of
         Folder { path } _ _ ->
-            DropboxExtras.folder path
+            Dropbox.Extras.folder path
 
         File { path, size } ->
-            DropboxExtras.file path size
+            Dropbox.Extras.file path size
 
 
 
@@ -319,7 +319,7 @@ insert data =
                 _ ->
                     Debug.crash "unexpected Dropbox metadata case"
     in
-        case DropboxExtras.record data |> .pathDisplay of
+        case Dropbox.Extras.record data |> .pathDisplay of
             Just path ->
                 updateTreeItem (splitPath <| String.toLower path) (update path) [ "" ]
 
@@ -350,7 +350,7 @@ remove data =
                         k :: ks ->
                             children |> Dict.update k (Maybe.map <| rm ks) |> Folder data stats |> recomputeStats
     in
-        case DropboxExtras.record data |> .pathLower of
+        case Dropbox.Extras.record data |> .pathLower of
             Just path ->
                 rm <| splitPath path
 
@@ -501,7 +501,7 @@ is an optional size.
 fromString : String -> FileTree
 fromString =
     String.split ";"
-        >> List.map DropboxExtras.decodeString
+        >> List.map Dropbox.Extras.decodeString
         >> flip addEntries empty
 
 
@@ -512,7 +512,7 @@ toString =
     let
         paths : FileTree -> List String
         paths tree =
-            (DropboxExtras.encodeString <| itemEntry tree)
+            (Dropbox.Extras.encodeString <| itemEntry tree)
                 :: (nodeChildren tree |> Dict.values |> List.concatMap paths)
     in
         paths

@@ -1,9 +1,9 @@
 module FileTreeTests exposing (..)
 
 import Dropbox
-import DropboxExtras exposing (..)
+import Dropbox.Extras exposing (..)
 import Expect exposing (Expectation)
-import FileTree exposing (..)
+import Dropbox.FileTree as FileTree exposing (..)
 import Test exposing (..)
 import TestExtras exposing (..)
 

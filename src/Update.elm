@@ -1,7 +1,7 @@
 module Update exposing (update)
 
-import AccountInfo exposing (..)
 import Dropbox
+import Dropbox.AccountInfo exposing (..)
 import FilesComponent
 import Message exposing (..)
 import Model exposing (..)

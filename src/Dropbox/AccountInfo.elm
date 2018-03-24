@@ -1,4 +1,4 @@
-port module AccountInfo exposing (..)
+port module Dropbox.AccountInfo exposing (..)
 
 import Dropbox exposing (..)
 import Extras exposing (..)

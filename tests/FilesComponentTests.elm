@@ -1,8 +1,8 @@
 module FilesComponentTests exposing (..)
 
+import Dropbox.FileTree as FileTree
 import Expect exposing (Expectation)
 import FilesComponent exposing (..)
-import FileTree
 import Test exposing (..)
 import Json.Decode as Decode exposing (..)
 import Json.Encode as Encode

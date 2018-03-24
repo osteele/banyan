@@ -1,4 +1,4 @@
-module DropboxExtras
+module Dropbox.Extras
     exposing
         ( folder
         , file
