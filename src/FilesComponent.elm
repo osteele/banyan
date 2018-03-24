@@ -156,7 +156,7 @@ type Msg
     | ListFolder
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder AccountInfo
-    | RestoreFromCache CacheDecoderState
+    | LoadCache CacheDecoderState
     | SaveToCache Time
 
 
@@ -215,10 +215,10 @@ update auth msg model =
                     }
                         ! []
 
-        RestoreFromCache state ->
+        LoadCache state ->
             case updateDecoder state model of
                 Result.Ok ( m, Just s ) ->
-                    m ! [ message Changed, message <| RestoreFromCache s ]
+                    m ! [ message Changed, message <| LoadCache s ]
 
                 Result.Ok ( m, Nothing ) ->
                     m ! []
@@ -239,7 +239,7 @@ update auth msg model =
                     Just jsonString ->
                         -- delay in order to update the display
                         { m | status = Decoding }
-                            ! [ nextFrame <| RestoreFromCache (JsonString jsonString) ]
+                            ! [ nextFrame <| LoadCache (JsonString jsonString) ]
 
                     Nothing ->
                         update auth ListFolder m
@@ -263,20 +263,17 @@ subscriptions _ =
 
 type CacheDecoderState
     = JsonString String
-
-
-
--- | PathsString String
+    | PathsString String
 
 
 updateDecoder : CacheDecoderState -> Model -> Result String ( Model, Maybe CacheDecoderState )
 updateDecoder state model =
     case state of
         JsonString s ->
-            case Decode.decodeString decoder s of
-                Result.Ok m ->
-                    if ( model.accountId, model.teamId ) == ( m.accountId, m.teamId ) then
-                        Result.Ok ( m, Nothing )
+            case Decode.decodeString partialModelDecoder s of
+                Result.Ok { files, status, accountId, teamId } ->
+                    if ( model.accountId, model.teamId ) == ( accountId, teamId ) then
+                        Result.Ok ( { model | status = status }, Just <| PathsString files )
                     else
                         Result.Err "Invalid cache; re-syncing…"
 
@@ -284,9 +281,11 @@ updateDecoder state model =
                     -- The err is too long; displaying it hangs the browser
                     Result.Err "Coudn't read the cache; re-syncing…"
 
+        PathsString s ->
+            Result.Ok ( { model | files = FileTree.fromString s }, Nothing )
 
 
--- PathsString s ->
+
 -- SERIALIZATION
 
 
@@ -337,6 +336,23 @@ decoder =
                 }
             )
             (Decode.field "files" FileTree.decoder)
+            (Decode.field "status" statusDecoder)
+            (Decode.field "accountId" Decode.string)
+            (Decode.field "teamId" Decode.string)
+
+
+partialModelDecoder : Decoder { files : String, status : State, accountId : Maybe String, teamId : Maybe String }
+partialModelDecoder =
+    decodeRequireVersion encodingVersion <|
+        Decode.map4
+            (\f s id tid ->
+                { files = f
+                , status = s
+                , accountId = maybeToDefault "" id
+                , teamId = maybeToDefault "" tid
+                }
+            )
+            (Decode.field "files" Decode.string)
             (Decode.field "status" statusDecoder)
             (Decode.field "accountId" Decode.string)
             (Decode.field "teamId" Decode.string)
