@@ -379,14 +379,14 @@ subtree model title tree =
                         [ text <| humanize size ]
                     ]
 
-            Folder { key, path } size _ ->
+            Folder { path } size _ ->
                 div
                     []
                     (div
                         [ class "clearfix text-primary" ]
                         [ flip Maybe.withDefault title <|
                             Html.a
-                                [ onClick <| Focus key ]
+                                [ onClick <| Focus path ]
                                 [ text <| takeFileName path ]
                         , span [ class "float-right" ] [ text <| humanize size ]
                         ]

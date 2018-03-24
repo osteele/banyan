@@ -87,16 +87,14 @@ type FileTree
 
 
 type alias FileData =
-    { key : String
-    , name : String
+    { name : String
     , path : String
     , size : Int
     }
 
 
 type alias FolderData =
-    { key : String
-    , name : String
+    { name : String
     , path : String
     }
 
@@ -120,7 +118,7 @@ empty =
 
 emptyNode : String -> FileTree
 emptyNode name =
-    Folder { key = name, name = takeFileName name, path = name } 0 Dict.empty
+    Folder { name = takeFileName name, path = name } 0 Dict.empty
 
 
 {-| Update a tree from file list metadata.
@@ -265,10 +263,10 @@ updateTreeItem keys alter path tree =
 
                 _ ->
                     let
-                        name =
+                        p =
                             String.join "/" path
                     in
-                        fn { key = name, name = takeFileName name, path = name } 0 Dict.empty
+                        fn { name = takeFileName p, path = p } 0 Dict.empty
     in
         case keys of
             [] ->
@@ -310,20 +308,20 @@ insert data =
                 _ ->
                     Folder d 0 Dict.empty
 
-        update pathDisplay pathLower =
+        update path =
             case data of
                 FileMeta { name, size } ->
-                    updateFile { name = name, path = pathDisplay, key = pathLower, size = size }
+                    updateFile { name = name, path = path, size = size }
 
                 FolderMeta { name } ->
-                    updateDir { name = name, path = pathDisplay, key = pathLower }
+                    updateDir { name = name, path = path }
 
                 _ ->
                     Debug.crash "unexpected Dropbox metadata case"
     in
-        case DropboxExtras.record data |> (\{ pathDisplay, pathLower } -> ( pathDisplay, pathLower )) of
-            ( Just pathDisplay, Just pathLower ) ->
-                updateTreeItem (splitPath pathLower) (update pathDisplay pathLower) [ "" ]
+        case DropboxExtras.record data |> .pathDisplay of
+            Just path ->
+                updateTreeItem (splitPath <| String.toLower path) (update path) [ "" ]
 
             _ ->
                 identity
@@ -374,14 +372,14 @@ dirname path =
         |> String.join "/"
 
 
-itemData : FileTree -> { key : String }
+itemData : FileTree -> { name : String, path : String, size : Int }
 itemData tree =
     case tree of
-        File { key } ->
-            { key = key }
+        File { name, path, size } ->
+            { name = name, path = path, size = size }
 
-        Folder { key } _ _ ->
-            { key = key }
+        Folder { name, path } size _ ->
+            { name = name, path = path, size = size }
 
 
 splitPath : String -> List String
@@ -392,13 +390,13 @@ splitPath path =
         |> String.split "/"
 
 
-itemKeyTail : FileTree -> String
-itemKeyTail tree =
+itemKey : FileTree -> String
+itemKey tree =
     let
-        key =
-            itemData tree |> .key
+        path =
+            itemData tree |> .path |> String.toLower
     in
-        splitPath key |> List.reverse |> List.head |> Maybe.withDefault key
+        splitPath path |> List.reverse |> List.head |> Maybe.withDefault path
 
 
 
@@ -421,7 +419,7 @@ mapChildList fn tree =
             children
                 |> Dict.values
                 |> fn
-                |> List.map (\e -> ( itemKeyTail e, e ))
+                |> List.map (\e -> ( itemKey e, e ))
                 |> Dict.fromList
                 |> Folder entry stats
 
@@ -471,7 +469,7 @@ combineSmallerEntries n orphans =
                             |> List.map nodeSize
                             |> List.sum
                             |> \size ->
-                                File { key = name, name = takeFileName name, path = name, size = size }
+                                File { name = takeFileName name, path = name, size = size }
                 in
                     List.take n sorted ++ [ combined ]
 
@@ -608,7 +606,7 @@ decoder =
 --         node name children =
 --             case children of
 --                 Just c ->
---                     Folder { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKeyTail e, e )) c |> Dict.fromList)
+--                     Folder { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKey e, e )) c |> Dict.fromList)
 --                 Nothing ->
 --                     File { name = name, key = name, path = name, size = 0 }
 --     in
