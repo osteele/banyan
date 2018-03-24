@@ -85,8 +85,8 @@ isEmpty =
 --- STATUS
 
 
-nextStatus : State -> { c | entries : List a, hasMore : Bool } -> State
-nextStatus status { entries, hasMore } =
+nextState : State -> { c | entries : List a, hasMore : Bool } -> State
+nextState status { entries, hasMore } =
     let
         data =
             syncStats status
@@ -196,7 +196,7 @@ update auth msg model =
                         m =
                             { model
                                 | files = FileTree.addEntries entries model.files
-                                , status = nextStatus model.status data
+                                , status = nextState model.status data
                             }
 
                         cmd =
@@ -263,7 +263,7 @@ subscriptions _ =
 
 type CacheDecoderState
     = JsonString String
-    | PathsString String
+    | FileStrings State (List String)
 
 
 updateDecoder : CacheDecoderState -> Model -> Result String ( Model, Maybe CacheDecoderState )
@@ -273,7 +273,7 @@ updateDecoder state model =
             case Decode.decodeString partialModelDecoder s of
                 Result.Ok { files, status, accountId, teamId } ->
                     if ( model.accountId, model.teamId ) == ( accountId, teamId ) then
-                        Result.Ok ( { model | status = status }, Just <| PathsString files )
+                        Result.Ok ( model, Just <| FileStrings status <| String.split ";" files )
                     else
                         Result.Err "Invalid cache; re-syncing…"
 
@@ -281,8 +281,21 @@ updateDecoder state model =
                     -- The err is too long; displaying it hangs the browser
                     Result.Err "Coudn't read the cache; re-syncing…"
 
-        PathsString s ->
-            Result.Ok ( { model | files = FileTree.fromString s }, Nothing )
+        FileStrings status [] ->
+            Result.Ok ( { model | status = status }, Nothing )
+
+        FileStrings status paths ->
+            let
+                n =
+                    100
+
+                files =
+                    paths
+                        |> List.take n
+                        |> List.map DropboxExtras.decodeString
+                        |> flip FileTree.addEntries model.files
+            in
+                Result.Ok ( { model | files = files }, Just <| FileStrings status <| List.drop n paths )
 
 
 
