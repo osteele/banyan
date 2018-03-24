@@ -1,4 +1,4 @@
-module UtilsTests exposing (..)
+module ExtrasTests exposing (..)
 
 import Expect exposing (Expectation)
 import Extras exposing (..)
