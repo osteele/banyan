@@ -54,9 +54,11 @@ testModel =
         { m
             | files = FileTree.fromString "/dir"
             , status = FromCache 695200000000
+            , accountId = Just "1"
+            , teamId = Just "2"
         }
 
 
 testModelEncoding : String
 testModelEncoding =
-    """{"version":1,"files":"/dir","status":"1992-01-12T07:06:40.000Z"}"""
+    """{"version":1,"files":"/dir","status":"1992-01-12T07:06:40.000Z","accountId":"1","teamId":"2"}"""
