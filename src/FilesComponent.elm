@@ -156,7 +156,7 @@ type Msg
     | ListFolder
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder AccountInfo
-    | RestoreFromCache
+    | RestoreFromCache CacheDecoderState
     | SaveToCache Time
 
 
@@ -215,25 +215,16 @@ update auth msg model =
                     }
                         ! []
 
-        RestoreFromCache ->
-            case model.cache |> Maybe.map (Decode.decodeString decoder) of
-                Just (Result.Ok m) ->
-                    if ( model.accountId, model.teamId ) == ( m.accountId, m.teamId ) then
-                        m ! [ message Changed ]
-                    else
-                        update auth ListFolder { model | cache = Nothing, error = Just "Invalid cache; re-syncing…" }
+        RestoreFromCache state ->
+            case updateDecoder state model of
+                Result.Ok ( m, Just s ) ->
+                    m ! [ message Changed, message <| RestoreFromCache s ]
 
-                Just (Result.Err _) ->
-                    -- The err is too long; displaying it hangs the browser
-                    update auth
-                        ListFolder
-                        { model
-                            | cache = Nothing
-                            , error = Just "Coudn't read the cache; re-syncing…"
-                        }
+                Result.Ok ( m, Nothing ) ->
+                    m ! []
 
-                Nothing ->
-                    update auth ListFolder { model | cache = Nothing }
+                Result.Err s ->
+                    { model | error = Just s } ! [ message <| ListFolder ]
 
         RestoreFromCacheOrListFolder accountInfo ->
             let
@@ -241,12 +232,14 @@ update auth msg model =
                     { model
                         | accountId = Just accountInfo.accountId
                         , teamId = accountInfo.team |> Maybe.map .id
+                        , cache = Nothing
                     }
             in
-                case m.cache of
-                    Just _ ->
-                        -- delay, in order to update the display
-                        { m | status = Decoding } ! [ nextFrame RestoreFromCache ]
+                case model.cache of
+                    Just jsonString ->
+                        -- delay in order to update the display
+                        { m | status = Decoding }
+                            ! [ nextFrame <| RestoreFromCache (JsonString jsonString) ]
 
                     Nothing ->
                         update auth ListFolder m
@@ -265,6 +258,35 @@ subscriptions _ =
 
 
 
+-- DECODING
+
+
+type CacheDecoderState
+    = JsonString String
+
+
+
+-- | PathsString String
+
+
+updateDecoder : CacheDecoderState -> Model -> Result String ( Model, Maybe CacheDecoderState )
+updateDecoder state model =
+    case state of
+        JsonString s ->
+            case Decode.decodeString decoder s of
+                Result.Ok m ->
+                    if ( model.accountId, model.teamId ) == ( m.accountId, m.teamId ) then
+                        Result.Ok ( m, Nothing )
+                    else
+                        Result.Err "Invalid cache; re-syncing…"
+
+                Result.Err _ ->
+                    -- The err is too long; displaying it hangs the browser
+                    Result.Err "Coudn't read the cache; re-syncing…"
+
+
+
+-- PathsString s ->
 -- SERIALIZATION
 
 
