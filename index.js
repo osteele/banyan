@@ -4,7 +4,7 @@ import './src/Main.scss';
 
 import Elm from './src/Main.elm';
 // eslint-disable-next-line import/no-named-as-default, import/no-named-as-default-member
-import chart from './src/chart';
+import treemap from './src/treemap';
 
 const accessTokenKey = 'accessToken';
 const oldFileCacheKey = 'fileTree';
@@ -40,9 +40,9 @@ app.ports.removeAccountInfo.subscribe(() => {
   localStorage.clear();
 });
 
-app.ports.chart.subscribe(([title, data]) => {
+app.ports.renderTreemap.subscribe(([title, data]) => {
   const onClick = ({ key }) => key && app.ports.setPath.send(key);
-  requestAnimationFrame(() => chart(title, data, onClick));
+  requestAnimationFrame(() => treemap(title, data, onClick));
 });
 
 function camelizePropertyNames(obj) {

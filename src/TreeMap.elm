@@ -15,7 +15,7 @@ type alias Node =
     }
 
 
-port chart : ( String, List Node ) -> Cmd msg
+port renderTreemap : ( String, List Node ) -> Cmd msg
 
 
 renderFileTreeMap : Int -> FileTree -> Cmd msg
@@ -31,7 +31,7 @@ renderFileTreeMap _ tree =
             |> trimDepth 1
             |> combineSmallerEntries 10 2
             |> toNodes
-            |> curry chart title
+            |> curry renderTreemap title
 
 
 toNodes : FileTree -> List Node
