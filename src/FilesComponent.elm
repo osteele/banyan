@@ -22,11 +22,13 @@ module FilesComponent
 ## The synced file state and the syncronization status.
 -}
 
+import AccountInfo exposing (AccountInfo)
 import CmdExtras exposing (..)
 import Date
 import Date.Extra as Date
 import Dropbox exposing (..)
 import DropboxExtras exposing (listFolderToContinueError)
+import Extras exposing (maybeToDefault)
 import FileTree exposing (FileTree)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Extra as Decode
@@ -43,6 +45,8 @@ type alias Model =
     { files : FileTree
     , status : Status
     , error : Maybe String
+    , accountId : Maybe String
+    , teamId : Maybe String
     , cache : Maybe String
     }
 
@@ -61,6 +65,8 @@ init =
     { files = FileTree.empty
     , status = Unsynced
     , error = Nothing
+    , accountId = Nothing
+    , teamId = Nothing
     , cache = Nothing
     }
 
@@ -146,9 +152,10 @@ isSyncing model =
 
 type Msg
     = Changed
+    | Cleared
     | ListFolder
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
-    | RestoreFromCacheOrListFolder
+    | RestoreFromCacheOrListFolder AccountInfo
     | RestoreFromCache
     | SaveToCache Time
 
@@ -163,6 +170,9 @@ update auth msg model =
         Changed ->
             ( model, Cmd.none )
 
+        Cleared ->
+            ( model, Cmd.none )
+
         ListFolder ->
             let
                 task =
@@ -175,8 +185,8 @@ update auth msg model =
                         }
             in
                 { model | files = FileTree.empty, status = Started }
-                    ! [ Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
-                      , message Changed
+                    ! [ message Cleared
+                      , Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
                       ]
 
         ReceiveListFolderResponse result ->
@@ -208,27 +218,38 @@ update auth msg model =
         RestoreFromCache ->
             case model.cache |> Maybe.map (Decode.decodeString decoder) of
                 Just (Result.Ok m) ->
-                    m ! [ message Changed ]
+                    if ( model.accountId, model.teamId ) == ( m.accountId, m.teamId ) then
+                        m ! [ message Changed ]
+                    else
+                        update auth ListFolder { model | cache = Nothing, error = Just "Invalid cache; re-syncing…" }
 
-                Just (Result.Err err) ->
+                Just (Result.Err _) ->
+                    -- The err is too long; displaying it hangs the browser
                     update auth
                         ListFolder
                         { model
                             | cache = Nothing
-                            , error = Just <| err
+                            , error = Just "Coudn't read the cache; re-syncing…"
                         }
 
                 Nothing ->
                     update auth ListFolder { model | cache = Nothing }
 
-        RestoreFromCacheOrListFolder ->
-            case model.cache of
-                Just _ ->
-                    -- delay, in order to update the display
-                    { model | status = Decoding } ! [ nextFrame RestoreFromCache ]
+        RestoreFromCacheOrListFolder accountInfo ->
+            let
+                m =
+                    { model
+                        | accountId = Just accountInfo.accountId
+                        , teamId = accountInfo.team |> Maybe.map .id
+                    }
+            in
+                case m.cache of
+                    Just _ ->
+                        -- delay, in order to update the display
+                        { m | status = Decoding } ! [ nextFrame RestoreFromCache ]
 
-                Nothing ->
-                    update auth ListFolder model
+                    Nothing ->
+                        update auth ListFolder m
 
         SaveToCache timestamp ->
             model ! [ saveFilesCache <| encode { model | status = FromCache timestamp } ]
@@ -271,20 +292,32 @@ encodingVersion =
 
 
 encode : Model -> Encode.Value
-encode { files, status } =
+encode model =
     Encode.object
         [ ( "version", Encode.int encodingVersion )
-        , ( "files", FileTree.encode files )
-        , ( "status", encodeStatus status )
+        , ( "files", FileTree.encode model.files )
+        , ( "status", encodeStatus model.status )
+        , ( "accountId", Encode.string <| Maybe.withDefault "" model.accountId )
+        , ( "teamId", Encode.string <| Maybe.withDefault "" model.teamId )
         ]
 
 
 decoder : Decoder Model
 decoder =
     decodeRequireVersion encodingVersion <|
-        Decode.map2 (\f s -> { init | files = f, status = s })
+        Decode.map4
+            (\f s id tid ->
+                { init
+                    | files = f
+                    , status = s
+                    , accountId = maybeToDefault "" id
+                    , teamId = maybeToDefault "" tid
+                }
+            )
             (Decode.field "files" FileTree.decoder)
             (Decode.field "status" statusDecoder)
+            (Decode.field "accountId" Decode.string)
+            (Decode.field "teamId" Decode.string)
 
 
 

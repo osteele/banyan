@@ -2,32 +2,33 @@ module Message exposing (..)
 
 import AccountInfo exposing (..)
 import Dropbox
+import AccountInfo exposing (AccountInfo)
 import FilesComponent
 import Model exposing (SortOrder)
 
 
 type Msg
-    = AccessToken (Maybe String)
+    = InitializeAccessToken (Maybe String)
     | AuthResponse Dropbox.AuthorizeResult
     | SignIn
     | SignOut
     | SetAccountInfo AccountInfo
     | FilesMessage FilesMsg
       -- view controls
-    | DismissMessageView Int
-    | Focus String
     | RenderFileTreeMap
-    | SortOrder SortOrder
-    | TreeDepth Int
+    | DismissMessageView Int
+    | SetFocus String
+    | SetSortOrder SortOrder
+    | SetTreeDepth Int
 
 
 type alias FilesMsg =
     FilesComponent.Msg
 
 
-restoreOrSyncFiles : Msg
+restoreOrSyncFiles : AccountInfo -> Msg
 restoreOrSyncFiles =
-    FilesMessage FilesComponent.RestoreFromCacheOrListFolder
+    FilesMessage << FilesComponent.RestoreFromCacheOrListFolder
 
 
 syncFilesMsg : Msg

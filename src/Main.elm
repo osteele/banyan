@@ -24,17 +24,13 @@ main =
     Dropbox.programWithFlags
         { init =
             \flags location ->
-                Model.init flags location ! [ initialCmd flags ]
+                Model.init flags location
+                    ! [ message <| InitializeAccessToken flags.accessToken ]
         , update = update
         , subscriptions = subscriptions
         , view = view
         , onAuth = AuthResponse
         }
-
-
-initialCmd : Flags -> Cmd Msg
-initialCmd flags =
-    message <| AccessToken flags.accessToken
 
 
 
@@ -44,11 +40,12 @@ initialCmd flags =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        -- account
-        AccessToken accessToken ->
+        -- initial load, with saved access token
+        InitializeAccessToken accessToken ->
             case accessToken of
                 Just tokenString ->
                     { model
+                      -- FIXME "You should not use this in a production app."
                         | auth = Just <| Dropbox.authorizationFromAccessToken tokenString
                         , status = SigningIn
                     }
@@ -57,6 +54,7 @@ update msg model =
                 Nothing ->
                     model ! []
 
+        -- on OAuth callback
         AuthResponse (Dropbox.AuthorizeOk auth) ->
             { model | auth = Just auth.userAuth, status = SignedIn }
                 ! (case auth.userAuth |> extractAccessToken of
@@ -78,6 +76,7 @@ update msg model =
             }
                 ! []
 
+        -- user clicks sign in. redirect to OAuth
         SignIn ->
             model
                 ! [ Dropbox.authorize
@@ -92,6 +91,7 @@ update msg model =
                         model.location
                   ]
 
+        -- user clicks sign out
         SignOut ->
             clearAccountFields model
                 ! [ removeAccountInfo ()
@@ -104,7 +104,7 @@ update msg model =
                     { model | accountInfo = Just info, status = SignedIn }
             in
                 if FilesComponent.isEmpty model.files then
-                    update restoreOrSyncFiles m
+                    update (restoreOrSyncFiles info) m
                 else
                     m ! []
 
@@ -124,10 +124,7 @@ update msg model =
                         in
                             m2 ! [ cmd, cmd2 ]
 
-                    FilesComponent.ListFolder ->
-                        { m | path = "/" } ! [ cmd ]
-
-                    FilesComponent.RestoreFromCacheOrListFolder ->
+                    FilesComponent.Cleared ->
                         { m | path = "/" } ! [ cmd ]
 
                     _ ->
@@ -148,13 +145,13 @@ update msg model =
             in
                 { model | errors = remove n model.errors } ! []
 
-        Focus p ->
+        SetFocus p ->
             update RenderFileTreeMap { model | path = p }
 
-        SortOrder ord ->
+        SetSortOrder ord ->
             { model | order = ord } ! []
 
-        TreeDepth n ->
+        SetTreeDepth n ->
             { model | depth = n } ! []
 
 
@@ -193,6 +190,6 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ receiveAccountInfo SetAccountInfo
-        , setPath Focus
+        , setPath SetFocus
         , Sub.map FilesMessage <| FilesComponent.subscriptions model.files
         ]

@@ -168,7 +168,7 @@ breadcrumb_ hn sep model =
                     div
                         [ class "section" ]
                         [ Html.a
-                            [ onClick <| Focus prefix ]
+                            [ onClick <| SetFocus prefix ]
                             [ text <|
                                 if dir == "" then
                                     teamName model
@@ -301,7 +301,7 @@ foldDepthButton model depth =
           else
             class ""
         , class "compact"
-        , onClick <| TreeDepth depth
+        , onClick <| SetTreeDepth depth
         ]
         [ text <| toString depth ]
 
@@ -316,7 +316,7 @@ sortOrderButton order classes model =
                     else
                         ""
                    )
-        , onClick <| SortOrder order
+        , onClick <| SetSortOrder order
         ]
         [ icon [ class <| "sort " ++ classes ] []
         ]
@@ -394,7 +394,7 @@ subtree model title tree =
                         [ class "clearfix text-primary" ]
                         [ flip Maybe.withDefault title <|
                             Html.a
-                                [ onClick <| Focus path ]
+                                [ onClick <| SetFocus path ]
                                 [ text <| takeFileName path ]
                         , span [ class "float-right" ] [ text <| humanize size ]
                         ]
