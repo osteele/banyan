@@ -54,13 +54,16 @@ $ yarn lint
 
 Build with [Elm](http://elm-lang.org/),
 [elm-dropbox](http://package.elm-lang.org/packages/avh4/elm-dropbox/latest),
-[D3](http://d3js.org/), [Semantic UI](https://semantic-ui.com/), and
-[Poi](https://poi.js.org/#/).
+[Highcharts](https://www.highcharts.com/products/highcharts/), [Semantic
+UI](https://semantic-ui.com/), and [Poi](https://poi.js.org/#/).
 
 The [Banyan tree
 image](<https://commons.wikimedia.org/wiki/File:Banyan_tree_(PSF).png>) used in
 this app's Dropbox OAuth page was donated to the Wikimedia Foundation by Pearson
 Scott Foresman. It is in the public domain.
+
+Highcharts is used under the Creative Commons (CC) Attribution-NonCommercial
+licence for personal use and demonstrations.
 
 ## License
 
