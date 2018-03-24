@@ -5,7 +5,7 @@ import Date.Extra as Date
 import Dict
 import Extras exposing (..)
 import FileTree exposing (FileTree(..))
-import FilesComponent exposing (Status(..), isSyncing)
+import FilesComponent exposing (State(..), isSyncing)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)

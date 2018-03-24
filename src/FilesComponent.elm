@@ -2,7 +2,7 @@ module FilesComponent
     exposing
         ( Model
         , Msg(..)
-        , Status(..)
+        , State(..)
         , fromCache
         , init
         , isEmpty
@@ -43,7 +43,7 @@ import Time exposing (Time)
 
 type alias Model =
     { files : FileTree
-    , status : Status
+    , status : State
     , error : Maybe String
     , accountId : Maybe String
     , teamId : Maybe String
@@ -51,7 +51,7 @@ type alias Model =
     }
 
 
-type Status
+type State
     = Decoding
     | FromCache Time
     | Started
@@ -85,7 +85,7 @@ isEmpty =
 --- STATUS
 
 
-nextStatus : Status -> { c | entries : List a, hasMore : Bool } -> Status
+nextStatus : State -> { c | entries : List a, hasMore : Bool } -> State
 nextStatus status { entries, hasMore } =
     let
         data =
@@ -100,7 +100,7 @@ nextStatus status { entries, hasMore } =
         state { entries = List.length entries + data.entries, requests = 1 + data.requests }
 
 
-syncStats : Status -> { entries : Int, requests : Int }
+syncStats : State -> { entries : Int, requests : Int }
 syncStats status =
     case status of
         Syncing data ->
@@ -290,7 +290,7 @@ updateDecoder state model =
 -- SERIALIZATION
 
 
-encodeStatus : Status -> Encode.Value
+encodeStatus : State -> Encode.Value
 encodeStatus status =
     case status of
         FromCache timestamp ->
@@ -300,7 +300,7 @@ encodeStatus status =
             Encode.null
 
 
-statusDecoder : Decoder Status
+statusDecoder : Decoder State
 statusDecoder =
     Decode.string
         |> Decode.andThen (Date.fromIsoString >> Decode.fromResult)
