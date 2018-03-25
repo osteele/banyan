@@ -4,7 +4,6 @@ module Dropbox.Extras
         , file
         , deleted
         , record
-        , path
         , size
         , isDir
         , decodeString
@@ -21,6 +20,18 @@ import Dropbox exposing (..)
 import Extras exposing (..)
 import Hex
 import Regex
+
+
+{-| Fields shared by all records of the Metadata union, that represents
+ListFolders entries.
+-}
+type alias CommonMeta =
+    { name : String
+    , pathLower : Maybe String
+    , pathDisplay : Maybe String
+    , parentSharedFolderId : Maybe String
+    }
+
 
 
 -- CONSTRUCTORS
@@ -60,7 +71,7 @@ file path size =
         }
 
 
-{-| Create a FileMeta folder, with empty id.
+{-| Create a FolderMeta record, with empty id.
 -}
 folder : String -> Metadata
 folder path =
@@ -82,14 +93,7 @@ folder path =
 
 {-| Return a record with the common attributes of the union records.
 -}
-record :
-    Metadata
-    ->
-        { name : String
-        , pathLower : Maybe String
-        , pathDisplay : Maybe String
-        , parentSharedFolderId : Maybe String
-        }
+record : Metadata -> CommonMeta
 record entry =
     case entry of
         FileMeta { name, pathDisplay, pathLower, parentSharedFolderId } ->
@@ -106,12 +110,8 @@ record entry =
             , parentSharedFolderId = parentSharedFolderId
             }
 
-        DeletedMeta { name, pathDisplay, pathLower, parentSharedFolderId } ->
-            { name = name
-            , pathDisplay = pathDisplay
-            , pathLower = pathLower
-            , parentSharedFolderId = parentSharedFolderId
-            }
+        DeletedMeta data ->
+            data
 
 
 path : Metadata -> String

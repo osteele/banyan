@@ -9,7 +9,9 @@ module Dropbox.FileTree
         , fromString
         , get
         , getSubtree
+        , isFolder
         , isEmpty
+        , itemData
         , itemEntry
         , map
         , mapChildLists
@@ -25,7 +27,7 @@ module Dropbox.FileTree
 {-|
 
 
-## Hierarchical mdel of Dropbox files
+## Hierarchical tree of Dropbox file and folder entries
 
 See the official Dropbox documentation at
 <https://www.dropbox.com/developers/documentation/http/documentation>
@@ -144,13 +146,23 @@ addEntries entries tree =
 {-| Determine if a dictionary is empty.
 -}
 isEmpty : FileTree -> Bool
-isEmpty tree =
-    case tree of
+isEmpty node =
+    case node of
+        File _ ->
+            False
+
         Folder _ _ children ->
             Dict.isEmpty children
 
-        _ ->
+
+isFolder : FileTree -> Bool
+isFolder node =
+    case node of
+        File _ ->
             False
+
+        Folder _ _ _ ->
+            True
 
 
 
@@ -196,6 +208,16 @@ itemEntry tree =
 
 
 -- NODE PROPERTIES
+
+
+itemData : FileTree -> { name : String, path : String, size : Int }
+itemData tree =
+    case tree of
+        File { name, path, size } ->
+            { name = name, path = path, size = size }
+
+        Folder { name, path } size _ ->
+            { name = name, path = path, size = size }
 
 
 nodeChildren : FileTree -> Dict.Dict String FileTree
@@ -370,16 +392,6 @@ dirname path =
         |> List.drop 1
         |> List.reverse
         |> String.join "/"
-
-
-itemData : FileTree -> { name : String, path : String, size : Int }
-itemData tree =
-    case tree of
-        File { name, path, size } ->
-            { name = name, path = path, size = size }
-
-        Folder { name, path } size _ ->
-            { name = name, path = path, size = size }
 
 
 splitPath : String -> List String
