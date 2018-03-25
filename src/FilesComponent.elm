@@ -12,14 +12,14 @@ module FilesComponent
         , update
         , encode
         , decoder
-        , encodeStatus
-        , statusDecoder
+        , encodeState
+        , stateDecoder
         )
 
 {-|
 
 
-## The synced file state and the syncronization status.
+## The synced file state and the synchronization status.
 -}
 
 import CmdExtras exposing (..)
@@ -43,7 +43,7 @@ import Time exposing (Time)
 
 type alias Model =
     { files : FileTree
-    , status : State
+    , state : State
     , error : Maybe String
     , accountId : Maybe String
     , teamId : Maybe String
@@ -63,7 +63,7 @@ type State
 init : Model
 init =
     { files = FileTree.empty
-    , status = Unsynced
+    , state = Unsynced
     , error = Nothing
     , accountId = Nothing
     , teamId = Nothing
@@ -86,23 +86,21 @@ isEmpty =
 
 
 nextState : State -> { c | entries : List a, hasMore : Bool } -> State
-nextState status { entries, hasMore } =
+nextState state { entries, hasMore } =
     let
         data =
-            syncStats status
-
-        state =
-            if hasMore then
-                Syncing
-            else
-                Synced
+            syncStats state
     in
-        state { entries = List.length entries + data.entries, requests = 1 + data.requests }
+        { entries = List.length entries + data.entries, requests = 1 + data.requests }
+            |> if hasMore then
+                Syncing
+               else
+                Synced
 
 
 syncStats : State -> { entries : Int, requests : Int }
-syncStats status =
-    case status of
+syncStats state =
+    case state of
         Syncing data ->
             data
 
@@ -112,7 +110,7 @@ syncStats status =
 
 syncFraction : Model -> Float
 syncFraction model =
-    case model.status of
+    case model.state of
         Syncing { requests } ->
             let
                 f =
@@ -132,7 +130,7 @@ syncFraction model =
 
 isSyncing : Model -> Bool
 isSyncing model =
-    case model.status of
+    case model.state of
         Decoding ->
             True
 
@@ -184,7 +182,7 @@ update auth msg model =
                         , includeMediaInfo = False
                         }
             in
-                { model | files = FileTree.empty, status = Started }
+                { model | files = FileTree.empty, state = Started }
                     ! [ message Cleared
                       , Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
                       ]
@@ -196,7 +194,7 @@ update auth msg model =
                         m =
                             { model
                                 | files = FileTree.addEntries entries model.files
-                                , status = nextState model.status data
+                                , state = nextState model.state data
                             }
 
                         cmd =
@@ -210,7 +208,7 @@ update auth msg model =
 
                 Result.Err err ->
                     { model
-                        | status = Synced (syncStats model.status)
+                        | state = Synced (syncStats model.state)
                         , error = Just <| toString err
                     }
                         ! []
@@ -238,14 +236,14 @@ update auth msg model =
                 case model.cache of
                     Just jsonString ->
                         -- delay in order to update the display
-                        { m | status = Decoding }
+                        { m | state = Decoding }
                             ! [ nextFrame <| LoadCache (JsonString jsonString) ]
 
                     Nothing ->
                         update auth ListFolder m
 
         SaveToCache timestamp ->
-            model ! [ saveFilesCache <| encode { model | status = FromCache timestamp } ]
+            model ! [ saveFilesCache <| encode { model | state = FromCache timestamp } ]
 
 
 
@@ -271,9 +269,9 @@ updateDecoder state model =
     case state of
         JsonString s ->
             case Decode.decodeString partialModelDecoder s of
-                Result.Ok { files, status, accountId, teamId } ->
+                Result.Ok { files, state, accountId, teamId } ->
                     if ( model.accountId, model.teamId ) == ( accountId, teamId ) then
-                        Result.Ok ( model, Just <| FileStrings status <| String.split ";" files )
+                        Result.Ok ( model, Just <| FileStrings state <| String.split ";" files )
                     else
                         Result.Err "Invalid cache; re-syncing…"
 
@@ -281,10 +279,10 @@ updateDecoder state model =
                     -- The err is too long; displaying it hangs the browser
                     Result.Err "Coudn't read the cache; re-syncing…"
 
-        FileStrings status [] ->
-            Result.Ok ( { model | status = status }, Nothing )
+        FileStrings state [] ->
+            Result.Ok ( { model | state = state }, Nothing )
 
-        FileStrings status paths ->
+        FileStrings state paths ->
             let
                 n =
                     100
@@ -295,16 +293,16 @@ updateDecoder state model =
                         |> List.map Dropbox.Extras.decodeString
                         |> flip FileTree.addEntries model.files
             in
-                Result.Ok ( { model | files = files }, Just <| FileStrings status <| List.drop n paths )
+                Result.Ok ( { model | files = files }, Just <| FileStrings state <| List.drop n paths )
 
 
 
 -- SERIALIZATION
 
 
-encodeStatus : State -> Encode.Value
-encodeStatus status =
-    case status of
+encodeState : State -> Encode.Value
+encodeState state =
+    case state of
         FromCache timestamp ->
             timestamp |> Date.fromTime |> Date.toUtcIsoString |> Encode.string
 
@@ -312,8 +310,8 @@ encodeStatus status =
             Encode.null
 
 
-statusDecoder : Decoder State
-statusDecoder =
+stateDecoder : Decoder State
+stateDecoder =
     Decode.string
         |> Decode.andThen (Date.fromIsoString >> Decode.fromResult)
         |> Decode.map Date.toTime
@@ -330,7 +328,7 @@ encode model =
     Encode.object
         [ ( "version", Encode.int encodingVersion )
         , ( "files", FileTree.encode model.files )
-        , ( "status", encodeStatus model.status )
+        , ( "state", encodeState model.state )
         , ( "accountId", Encode.string <| Maybe.withDefault "" model.accountId )
         , ( "teamId", Encode.string <| Maybe.withDefault "" model.teamId )
         ]
@@ -343,30 +341,30 @@ decoder =
             (\f s id tid ->
                 { init
                     | files = f
-                    , status = s
+                    , state = s
                     , accountId = maybeToDefault "" id
                     , teamId = maybeToDefault "" tid
                 }
             )
             (Decode.field "files" FileTree.decoder)
-            (Decode.field "status" statusDecoder)
+            (Decode.field "state" stateDecoder)
             (Decode.field "accountId" Decode.string)
             (Decode.field "teamId" Decode.string)
 
 
-partialModelDecoder : Decoder { files : String, status : State, accountId : Maybe String, teamId : Maybe String }
+partialModelDecoder : Decoder { files : String, state : State, accountId : Maybe String, teamId : Maybe String }
 partialModelDecoder =
     decodeRequireVersion encodingVersion <|
         Decode.map4
             (\f s id tid ->
                 { files = f
-                , status = s
+                , state = s
                 , accountId = maybeToDefault "" id
                 , teamId = maybeToDefault "" tid
                 }
             )
             (Decode.field "files" Decode.string)
-            (Decode.field "status" statusDecoder)
+            (Decode.field "state" stateDecoder)
             (Decode.field "accountId" Decode.string)
             (Decode.field "teamId" Decode.string)
 

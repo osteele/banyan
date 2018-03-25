@@ -11,25 +11,25 @@ import Json.Encode as Encode
 suite : Test
 suite =
     describe "FilesComponent" <|
-        [ describe "encodeStatus"
+        [ describe "encodeState"
             [ test "FromCache" <|
                 \_ ->
                     FromCache 695200000000
-                        |> encodeStatus
+                        |> encodeState
                         |> toString
                         |> Expect.equal "\"1992-01-12T07:06:40.000Z\""
             , test "other" <|
                 \_ ->
                     Started
-                        |> encodeStatus
+                        |> encodeState
                         |> toString
                         |> Expect.equal "null"
             ]
-        , describe "statusDecoder"
+        , describe "stateDecoder"
             [ test "FromCache" <|
                 \_ ->
                     "\"1992-01-12T07:06:40.000Z\""
-                        |> decodeString statusDecoder
+                        |> decodeString stateDecoder
                         |> Expect.equal (Result.Ok <| FromCache 695200000000)
             ]
         , test "encode" <|
@@ -53,7 +53,7 @@ testModel =
     in
         { m
             | files = FileTree.fromString "/dir"
-            , status = FromCache 695200000000
+            , state = FromCache 695200000000
             , accountId = Just "1"
             , teamId = Just "2"
         }
@@ -61,4 +61,4 @@ testModel =
 
 testModelEncoding : String
 testModelEncoding =
-    """{"version":1,"files":"/dir","status":"1992-01-12T07:06:40.000Z","accountId":"1","teamId":"2"}"""
+    """{"version":1,"files":"/dir","state":"1992-01-12T07:06:40.000Z","accountId":"1","teamId":"2"}"""

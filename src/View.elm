@@ -105,7 +105,7 @@ content : Model -> Html Msg
 content model =
     div [ class "ui main container" ]
         [ errors model
-        , case model.files.status of
+        , case model.files.state of
             FilesComponent.Decoding ->
                 div
                     [ class "ui segment", style [ ( "min-height", "500px" ) ] ]
@@ -198,7 +198,7 @@ progress model =
                 frac * 100 |> toString |> flip (++) "%"
 
         msg =
-            case files.status of
+            case files.state of
                 Syncing { entries, requests } ->
                     text <|
                         String.join "" <|
