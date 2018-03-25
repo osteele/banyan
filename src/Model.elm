@@ -97,8 +97,8 @@ clearAccountFields model =
     }
 
 
-signedIn : Model -> Bool
-signedIn model =
+isSignedIn : Model -> Bool
+isSignedIn model =
     case model.status of
         SignedIn ->
             True
@@ -107,8 +107,8 @@ signedIn model =
             False
 
 
-signedOut : Model -> Bool
-signedOut model =
+isSignedOut : Model -> Bool
+isSignedOut model =
     case model.status of
         SignedOut ->
             True

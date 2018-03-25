@@ -23,8 +23,8 @@ view model =
     div []
         [ header model
         , githubLink
-        , if signedOut model then
-            startView
+        , if isSignedOut model then
+            signedOut
           else
             content model
         ]
@@ -41,7 +41,7 @@ header model =
             [ Html.h1 [ class "header item" ] [ text "Banyan" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
-                    [ ifJust (signedIn model && not (isSyncing model.files)) <|
+                    [ ifJust (isSignedIn model && not (isSyncing model.files)) <|
                         button
                             [ class "item", onClick syncFilesMsg ]
                             [ text "Sync" ]
@@ -82,8 +82,8 @@ signInOut model =
             div [ class "item" ] [ text "Signing into Dropbox…" ]
 
 
-startView : Html Msg
-startView =
+signedOut : Html Msg
+signedOut =
     div [ class "ui text container" ]
         [ Html.p []
             [ Html.a [ class "link item", onClick SignIn ] [ text "Sign in" ]
@@ -98,36 +98,34 @@ startView =
 
 
 
--- content
+-- CONTENT
 
 
 content : Model -> Html Msg
 content model =
     div [ class "ui main container" ]
         [ errors model
-        , case model.files.state of
-            FilesComponent.Decoding ->
-                div
-                    [ class "ui segment", style [ ( "min-height", "500px" ) ] ]
-                    [ div [ class "ui active inverted dimmer" ]
-                        [ div [ class "ui text loader" ]
-                            [ text "Loading file list from cache" ]
-                        ]
-                    , Html.p [] []
+        , if FilesComponent.isEmpty model.files then
+            div
+                [ class "ui segment", style [ ( "min-height", "500px" ) ] ]
+                [ div [ class "ui active inverted dimmer" ]
+                    [ div [ class "ui text loader" ]
+                        [ text "Loading file entries…" ]
                     ]
-
-            _ ->
-                div []
-                    [ progress model
-                    , if FilesComponent.isEmpty model.files then
-                        div [] []
-                      else
-                        breadcrumb model
-                    , grid [ class "two column" ]
-                        [ column [] [ treeList model ]
-                        , column [] [ treeMap model ]
-                        ]
+                , Html.p [] []
+                ]
+          else
+            div []
+                [ progress model
+                , if FilesComponent.isEmpty model.files then
+                    div [] []
+                  else
+                    breadcrumb model
+                , grid [ class "two column" ]
+                    [ column [] [ treeList model ]
+                    , column [] [ treeMap model ]
                     ]
+                ]
         ]
 
 
@@ -226,20 +224,21 @@ progress model =
                 Unsynced ->
                     text "Unsyced"
 
-                Started ->
+                StartedSync ->
                     text "Starting sync…"
 
-                Decoding ->
-                    text "Loading from cache…"
+                Decoding _ ->
+                    text "Loading file entries from cache…"
 
                 FromCache timestamp ->
                     span []
-                        [ text "Loaded from cache at "
+                        [ text "Cached at "
                         , text <| Date.toFormattedString "h:mm a on EEEE, MMMM d, y" <| Date.fromTime timestamp
                         , text ". "
                         , Html.a
                             [ class "item", onClick syncFilesMsg ]
-                            [ text "Sync" ]
+                            [ text "Re-sync now" ]
+                        , text "."
                         ]
 
         progressView classes width msg =

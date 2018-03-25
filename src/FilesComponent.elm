@@ -52,9 +52,9 @@ type alias Model =
 
 
 type State
-    = Decoding
+    = Decoding Float
     | FromCache Time
-    | Started
+    | StartedSync
     | Syncing { entries : Int, requests : Int }
     | Synced { entries : Int, requests : Int }
     | Unsynced
@@ -111,15 +111,18 @@ syncStats state =
 syncFraction : Model -> Float
 syncFraction model =
     case model.state of
+        Decoding f ->
+            f
+
+        FromCache _ ->
+            1.0
+
         Syncing { requests } ->
             let
                 f =
                     toFloat requests
             in
                 f / (f + 1.0)
-
-        FromCache _ ->
-            1.0
 
         Synced _ ->
             1.0
@@ -131,10 +134,10 @@ syncFraction model =
 isSyncing : Model -> Bool
 isSyncing model =
     case model.state of
-        Decoding ->
+        Decoding _ ->
             True
 
-        Started ->
+        StartedSync ->
             True
 
         Syncing _ ->
@@ -154,7 +157,7 @@ type Msg
     | ListFolder
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder AccountInfo
-    | LoadCache CacheDecoderState
+    | LoadFromCache CacheDecoderState
     | SaveToCache Time
 
 
@@ -182,7 +185,7 @@ update auth msg model =
                         , includeMediaInfo = False
                         }
             in
-                { model | files = FileTree.empty, state = Started }
+                { model | files = FileTree.empty, state = StartedSync }
                     ! [ message Cleared
                       , Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
                       ]
@@ -213,10 +216,10 @@ update auth msg model =
                     }
                         ! []
 
-        LoadCache state ->
-            case updateDecoder state model of
-                Result.Ok ( m, Just s ) ->
-                    m ! [ message Changed, message <| LoadCache s ]
+        LoadFromCache decoderState ->
+            case decodePathBatch decoderState model of
+                Result.Ok ( m, Just nextState ) ->
+                    m ! [ message Changed, nextFrame <| LoadFromCache nextState ]
 
                 Result.Ok ( m, Nothing ) ->
                     m ! []
@@ -236,8 +239,8 @@ update auth msg model =
                 case model.cache of
                     Just jsonString ->
                         -- delay in order to update the display
-                        { m | state = Decoding }
-                            ! [ nextFrame <| LoadCache (JsonString jsonString) ]
+                        { m | state = Decoding 0.0 }
+                            ! [ nextFrame <| LoadFromCache (JsonString jsonString) ]
 
                     Nothing ->
                         update auth ListFolder m
@@ -261,17 +264,21 @@ subscriptions _ =
 
 type CacheDecoderState
     = JsonString String
-    | FileStrings State (List String)
+    | FileStrings State (List String) Int
 
 
-updateDecoder : CacheDecoderState -> Model -> Result String ( Model, Maybe CacheDecoderState )
-updateDecoder state model =
+decodePathBatch : CacheDecoderState -> Model -> Result String ( Model, Maybe CacheDecoderState )
+decodePathBatch state model =
     case state of
         JsonString s ->
             case Decode.decodeString partialModelDecoder s of
                 Result.Ok { files, state, accountId, teamId } ->
                     if ( model.accountId, model.teamId ) == ( accountId, teamId ) then
-                        Result.Ok ( model, Just <| FileStrings state <| String.split ";" files )
+                        let
+                            paths =
+                                String.split ";" files
+                        in
+                            Result.Ok ( model, Just <| FileStrings state paths (List.length paths) )
                     else
                         Result.Err "Invalid cache; re-syncing…"
 
@@ -279,21 +286,30 @@ updateDecoder state model =
                     -- The err is too long; displaying it hangs the browser
                     Result.Err "Coudn't read the cache; re-syncing…"
 
-        FileStrings state [] ->
+        FileStrings state [] _ ->
             Result.Ok ( { model | state = state }, Nothing )
 
-        FileStrings state paths ->
+        FileStrings state paths n ->
             let
-                n =
-                    100
+                batchSize =
+                    1000
 
                 files =
                     paths
-                        |> List.take n
+                        |> List.take batchSize
                         |> List.map Dropbox.Extras.decodeString
                         |> flip FileTree.addEntries model.files
+
+                remainingPaths =
+                    List.drop batchSize paths
+
+                completion =
+                    1.0 - (toFloat (List.length remainingPaths)) / toFloat (max 1 n)
             in
-                Result.Ok ( { model | files = files }, Just <| FileStrings state <| List.drop n paths )
+                Result.Ok
+                    ( { model | files = files, state = Decoding completion }
+                    , Just <| FileStrings state remainingPaths n
+                    )
 
 
 
