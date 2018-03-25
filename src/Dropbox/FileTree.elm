@@ -18,6 +18,7 @@ module Dropbox.FileTree
         , nodeChildren
         , nodeSize
         , nodePath
+        , toListS
         , toString
         , trimDepth
         , logTree
@@ -52,7 +53,7 @@ See the official Dropbox documentation at
 
 ### Mapping
 
-@docs map, mapChildLists, mapChildren
+@docs map, mapChildLists, mapChildren, toListS
 
 
 ### Truncate
@@ -444,6 +445,29 @@ mapChildList fn tree =
 mapChildLists : (List FileTree -> List FileTree) -> FileTree -> FileTree
 mapChildLists fn =
     map <| mapChildList fn
+
+
+{-| Fold the tree into a list, using a curried state monad function. Visit
+nodes in prefix order.
+-}
+toListS :
+    (s -> FileTree -> ( a, s ))
+    -> s
+    -> FileTree
+    -> ( List a, s )
+toListS f s item =
+    let
+        ( h, s1 ) =
+            f s item
+
+        ( t, s2 ) =
+            flatMapS (toListS f) s1 <| Dict.values <| nodeChildren item
+    in
+        ( h :: t, s2 )
+
+
+
+-- TRIM
 
 
 {-| Combine any children after the first n, ordered by descending size, into a

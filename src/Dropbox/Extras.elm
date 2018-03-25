@@ -174,10 +174,6 @@ pathUnquoteRe =
     Regex.regex "%[0-9a-zA-Z]{2}"
 
 
-
--- Regex.regex "%."
-
-
 quotePath : String -> String
 quotePath =
     Regex.replace Regex.All
@@ -202,7 +198,7 @@ unquotePath =
         )
 
 
-{-| Construct an entry from a string. This is used in testing.
+{-| Construct an entry from a string.
 
 The string is a ;-separated list of paths. Files end in :size, where size
 is an optional size.
@@ -233,27 +229,60 @@ decodeString path =
             file p size
 
 
+{-| Transform deleted, folder, and file paths respecively into
+"-path", "path/", and "path"
+-}
+affixPathMetadata : Metadata -> String -> String
+affixPathMetadata entry path =
+    let
+        p =
+            quotePath path
+    in
+        case entry of
+            DeletedMeta _ ->
+                "-" ++ p
+
+            FileMeta { size } ->
+                String.join ":" <|
+                    List.filterMap identity
+                        [ Just p
+                        , Maybe.map Basics.toString <| maybeToDefault 0 size
+                        ]
+
+            FolderMeta _ ->
+                p ++ "/"
+
+
+{-| Encode a file entry as a path, given a current working directory as context.
+Returns a tuple of the path (or null if the entry has no displayPath), and the
+new context.
+-}
+encodeStringS : Maybe String -> Metadata -> ( Maybe String, Maybe String )
+encodeStringS cwd entry =
+    case record entry |> .pathDisplay of
+        Nothing ->
+            ( Nothing, cwd )
+
+        Just path ->
+            let
+                p =
+                    affixPathMetadata entry path
+            in
+                case entry of
+                    FolderMeta _ ->
+                        ( Just p, Just path )
+
+                    _ ->
+                        ( Just p, cwd )
+
+
 {-| Turn a tree into a string. See toString for the format.
 -}
 encodeString : Metadata -> String
 encodeString entry =
-    let
-        displayPath { name, pathDisplay } =
-            quotePath <| Maybe.withDefault ("…/" ++ name) pathDisplay
-    in
-        case entry of
-            DeletedMeta data ->
-                "-" ++ displayPath data
-
-            FileMeta { pathDisplay, size } ->
-                String.join ":" <|
-                    List.filterMap identity
-                        [ pathDisplay
-                        , Maybe.map Basics.toString <| maybeToDefault 0 size
-                        ]
-
-            FolderMeta data ->
-                displayPath data ++ "/"
+    encodeStringS Nothing entry
+        |> Tuple.first
+        |> Maybe.withDefault (record entry |> .name |> (++) "…/" |> affixPathMetadata entry)
 
 
 

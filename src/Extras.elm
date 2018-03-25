@@ -2,7 +2,7 @@ module Extras
     exposing
         ( dropPrefix
         , firstMatch
-        , flatMapM
+        , flatMapS
         , humanize
         , ifJust
         , mapValues
@@ -88,21 +88,23 @@ dropPrefix prefix s =
         Nothing
 
 
-flatMapM : (s -> a -> ( List b, s )) -> s -> List a -> ( List b, s )
-flatMapM f s xs =
+{-| flatMap using a curried state monad function.
+-}
+flatMapS : (s -> a -> ( List b, s )) -> s -> List a -> ( List b, s )
+flatMapS f s xs =
     case xs of
         [] ->
             ( [], s )
 
         h :: t ->
             let
-                ( r1, s2 ) =
+                ( r1, s1 ) =
                     f s h
 
-                ( r2, s3 ) =
-                    flatMapM f s2 t
+                ( r2, s2 ) =
+                    flatMapS f s1 t
             in
-                ( r1 ++ r2, s3 )
+                ( r1 ++ r2, s2 )
 
 
 {-| Find the first matching substring.

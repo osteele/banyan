@@ -29,82 +29,33 @@ renderFileTreeMap _ tree =
         tree
             |> trimDepth 1
             |> combineSmallerEntries 10 2
-            |> toNodes
+            |> toNodeList
             |> curry renderTreemap title
 
 
-toNodes : FileTree -> List Node
-toNodes fileTree =
+toNodeList : FileTree -> List Node
+toNodeList fileTree =
     let
         f : ( Maybe String, Int ) -> FileTree -> ( List Node, ( Maybe String, Int ) )
-        f ( parent, nextId1 ) item =
+        f ( parentId, id ) item =
             let
                 data =
                     itemData item
 
-                nodeId =
-                    Basics.toString nextId1
+                idString =
+                    Basics.toString id
 
                 node =
                     { name = data.name
-                    , id = nodeId
+                    , id = idString
                     , key = ifJust (isFolder item) <| data.path
-                    , parent = parent
+                    , parent = parentId
                     , value = nodeSize item
                     }
 
-                ( childNodes, ( _, nextId2 ) ) =
-                    flatMapM f ( Just nodeId, nextId1 ) <| Dict.values <| nodeChildren item
+                ( childNodes, ( _, id2 ) ) =
+                    Extras.flatMapS f ( Just idString, id ) <| Dict.values <| nodeChildren item
             in
-                ( node :: childNodes, ( parent, nextId2 ) )
+                ( node :: childNodes, ( parentId, id2 ) )
     in
-        Tuple.first <| flatMapM f ( Nothing, 0 ) <| Dict.values <| nodeChildren fileTree
-
-
-
--- toNodes : FileTree -> List Node
--- toNodes fileTree =
---     let
---         f : ( Maybe String, Int ) -> FileTree -> ( List Node, ( Maybe String, Int ) )
---         f ( parent, nextId ) item =
---             let
---                 ( node, s2 ) =
---                     g ( parent, nextId ) item
---                 ( childNodes, ( _, nextId3 ) ) =
---                     flatMapM f s2 <| Dict.values <| nodeChildren item
---             in
---             ( node :: childNodes, ( parent, nextId3 ) )
---         g : ( Maybe String, Int ) -> FileTree -> ( Node, ( Maybe String, Int ) )
---         g ( parent, nextId ) item =
---             let
---                 entry =
---                     itemEntry item
---                 nodeId =
---                     toString nextId
---                 node =
---                     { name = entry.path |> Extras.takeFileName
---                     , id = nodeId
---                     , key = ifJust (isDir entry) entry.key
---                     , parent = parent
---                     , value = nodeSize item
---                     }
---             in
---             ( node, ( parent, nextId + 1 ) )
---     in
---     Tuple.first <| flatMapM f ( Nothing, 0 ) <| Dict.values <| nodeChildren fileTree
-
-
-flatTreeMapM :
-    (s -> FileTree -> ( Node, s ))
-    -> s
-    -> FileTree
-    -> ( List Node, s )
-flatTreeMapM f s item =
-    let
-        ( h, s2 ) =
-            f s item
-
-        ( t, s3 ) =
-            flatMapM (flatTreeMapM f) s2 <| Dict.values <| nodeChildren item
-    in
-        ( h :: t, s3 )
+        Tuple.first <| Extras.flatMapS f ( Nothing, 0 ) <| Dict.values <| nodeChildren fileTree
