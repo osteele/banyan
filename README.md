@@ -2,32 +2,35 @@
 
 Visualize Dropbox file and directory sizes.
 
+Live version: <https://banyan.osteele.com/>
+
 ![](./docs/screenshot.png)
 
 ## Develop
 
 ### Install
 
-Install [yarn](https://yarnpkg.com).
+1.  Install [yarn](https://yarnpkg.com).
+2.  Install npm and elm packages:
 
-```bash
-$ yarn install
-```
+    ```bash
+    $ yarn install
+    ```
 
 ### Create a Dropbox API Key
 
-Sign into Dropbox.
+1.  Sign into Dropbox.
 
-[Create a new app](https://www.dropbox.com/developers/apps/create). Select
-“Dropbox API”, and give it “Full Dropbox” access.
+2.  [Create a new app](https://www.dropbox.com/developers/apps/create). Select
+    “Dropbox API”, and give it “Full Dropbox” access.
 
-![](./docs/dropbox-create-app.png)
+        ![](./docs/dropbox-create-app.png)
 
-Add `http://localhost:4000/` to the list of Redirect URIs.
+3.  Add `http://localhost:4000/` to the list of Redirect URIs.
 
-Set the `DROPBOX_APP_KEY` environment variable to the app's API key (highlighted
-below). If you use [direnv](https://direnv.net/), you can copy `.envrc.template`
-to `.envrc` and edit the key into that file.
+4.  Set the `DROPBOX_APP_KEY` environment variable to the app's API key (highlighted
+    below). If you use [direnv](https://direnv.net/), you can copy `.envrc.template`
+    to `.envrc` and edit the key into that file.
 
 ![](./docs/dropbox-app-settings.png)
 
