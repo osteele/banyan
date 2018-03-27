@@ -20,7 +20,7 @@ suite =
                         |> Expect.equal "\"1992-01-12T07:06:40.000Z\""
             , test "other" <|
                 \_ ->
-                    Started
+                    StartedSync
                         |> encodeState
                         |> toString
                         |> Expect.equal "null"

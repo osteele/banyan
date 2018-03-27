@@ -30,6 +30,6 @@ restoreOrSyncFiles =
     FilesMessage << FilesComponent.RestoreFromCacheOrListFolder
 
 
-syncFilesMsg : Msg
-syncFilesMsg =
-    FilesMessage FilesComponent.ListFolder
+syncFiles : Msg
+syncFiles =
+    FilesMessage FilesComponent.StartSyncFiles

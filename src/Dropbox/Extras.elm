@@ -15,7 +15,7 @@ module Dropbox.Extras
 -}
 
 import Char
-import Date
+import Date exposing (Date)
 import Dropbox exposing (..)
 import Extras exposing (..)
 import Hex
@@ -30,6 +30,8 @@ type alias CommonMeta =
     , pathLower : Maybe String
     , pathDisplay : Maybe String
     , parentSharedFolderId : Maybe String
+    , clientModified : Maybe Date
+    , serverModified : Maybe Date
     }
 
 
@@ -96,22 +98,32 @@ folder path =
 record : Metadata -> CommonMeta
 record entry =
     case entry of
-        FileMeta { name, pathDisplay, pathLower, parentSharedFolderId } ->
-            { name = name
-            , pathDisplay = pathDisplay
-            , pathLower = pathLower
-            , parentSharedFolderId = parentSharedFolderId
+        FileMeta data ->
+            { name = data.name
+            , pathDisplay = data.pathDisplay
+            , pathLower = data.pathLower
+            , parentSharedFolderId = data.parentSharedFolderId
+            , clientModified = Just data.clientModified
+            , serverModified = Just data.serverModified
             }
 
-        FolderMeta { name, pathDisplay, pathLower, parentSharedFolderId } ->
-            { name = name
-            , pathDisplay = pathDisplay
-            , pathLower = pathLower
-            , parentSharedFolderId = parentSharedFolderId
+        FolderMeta data ->
+            { name = data.name
+            , pathDisplay = data.pathDisplay
+            , pathLower = data.pathLower
+            , parentSharedFolderId = data.parentSharedFolderId
+            , clientModified = Nothing
+            , serverModified = Nothing
             }
 
         DeletedMeta data ->
-            data
+            { name = data.name
+            , pathDisplay = data.pathDisplay
+            , pathLower = data.pathLower
+            , parentSharedFolderId = data.parentSharedFolderId
+            , clientModified = Nothing
+            , serverModified = Nothing
+            }
 
 
 path : Metadata -> String

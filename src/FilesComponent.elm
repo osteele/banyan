@@ -82,24 +82,28 @@ isEmpty =
 
 
 
---- STATUS
+--- STATE
 
 
-nextState : State -> { c | entries : List a, hasMore : Bool } -> State
-nextState state { entries, hasMore } =
+nextSyncState : State -> { a | entries : List Metadata, hasMore : Bool } -> State
+nextSyncState state { entries, hasMore } =
     let
-        data =
-            syncStats state
+        data1 =
+            getSyncData state
+
+        data2 =
+            { entries = List.length entries + data1.entries
+            , requests = 1 + data1.requests
+            }
     in
-        { entries = List.length entries + data.entries, requests = 1 + data.requests }
-            |> if hasMore then
-                Syncing
-               else
-                Synced
+        if hasMore then
+            Syncing data2
+        else
+            Synced data2
 
 
-syncStats : State -> { entries : Int, requests : Int }
-syncStats state =
+getSyncData : State -> { entries : Int, requests : Int }
+getSyncData state =
     case state of
         Syncing data ->
             data
@@ -118,12 +122,9 @@ syncFraction model =
             1.0
 
         Syncing { requests } ->
-            let
-                f =
-                    toFloat requests
-            in
-                f / (f + 1.0)
+            toFloat requests / toFloat (requests + 1)
 
+        -- |> \x -> 0.5 + (ln x / ln 2)
         Synced _ ->
             1.0
 
@@ -154,7 +155,7 @@ isSyncing model =
 type Msg
     = Changed
     | Cleared
-    | ListFolder
+    | StartSyncFiles
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder AccountInfo
     | LoadFromCache CacheDecoderState
@@ -174,7 +175,7 @@ update auth msg model =
         Cleared ->
             ( model, Cmd.none )
 
-        ListFolder ->
+        StartSyncFiles ->
             let
                 task =
                     Dropbox.listFolder auth
@@ -197,7 +198,7 @@ update auth msg model =
                         m =
                             { model
                                 | files = FileTree.addEntries entries model.files
-                                , state = nextState model.state data
+                                , state = nextSyncState model.state data
                             }
 
                         cmd =
@@ -211,7 +212,7 @@ update auth msg model =
 
                 Result.Err err ->
                     { model
-                        | state = Synced (syncStats model.state)
+                        | state = nextSyncState model.state { entries = [], hasMore = False }
                         , error = Just <| toString err
                     }
                         ! []
@@ -225,7 +226,7 @@ update auth msg model =
                     m ! []
 
                 Result.Err s ->
-                    { model | error = Just s } ! [ message <| ListFolder ]
+                    { model | error = Just s } ! [ message StartSyncFiles ]
 
         RestoreFromCacheOrListFolder accountInfo ->
             let
@@ -243,7 +244,7 @@ update auth msg model =
                             ! [ nextFrame <| LoadFromCache (JsonString jsonString) ]
 
                     Nothing ->
-                        update auth ListFolder m
+                        m ! [ message StartSyncFiles ]
 
         SaveToCache timestamp ->
             model ! [ saveFilesCache <| encode { model | state = FromCache timestamp } ]

@@ -13,11 +13,6 @@ import Message exposing (..)
 import Model exposing (..)
 
 
-githubURL : String
-githubURL =
-    "https://github.com/osteele/banyan"
-
-
 view : Model -> Html Msg
 view model =
     div []
@@ -30,8 +25,13 @@ view model =
         ]
 
 
+githubURL : String
+githubURL =
+    "https://github.com/osteele/banyan"
 
--- header
+
+
+-- HEADER
 
 
 header : Model -> Html Msg
@@ -43,7 +43,7 @@ header model =
                 List.filterMap identity <|
                     [ ifJust (isSignedIn model && not (isSyncing model.files)) <|
                         button
-                            [ class "item", onClick syncFilesMsg ]
+                            [ class "item", onClick syncFiles ]
                             [ text "Sync" ]
                     , Just <| signInOut model
                     ]
@@ -185,7 +185,7 @@ progress model =
         files =
             model.files
 
-        total =
+        fileSize =
             humanize <| FileTree.nodeSize files.files
 
         width =
@@ -203,9 +203,9 @@ progress model =
                             [ "Loaded "
                             , toStringWithCommas entries
                             , " entries totalling "
-                            , total
+                            , fileSize
                             , " in "
-                            , quantify " request" requests
+                            , quantify "request" requests
                             , "…"
                             ]
 
@@ -215,9 +215,9 @@ progress model =
                             [ "Loaded "
                             , toStringWithCommas entries
                             , " entries totalling "
-                            , total
+                            , fileSize
                             , " in "
-                            , quantify " request" requests
+                            , quantify "request" requests
                             , "."
                             ]
 
@@ -236,7 +236,7 @@ progress model =
                         , text <| Date.toFormattedString "h:mm a on EEEE, MMMM d, y" <| Date.fromTime timestamp
                         , text ". "
                         , Html.a
-                            [ class "item", onClick syncFilesMsg ]
+                            [ class "item", onClick syncFiles ]
                             [ text "Re-sync now" ]
                         , text "."
                         ]
@@ -263,7 +263,7 @@ progress model =
 
 
 
--- tree map view
+-- TREE MAP
 
 
 treeMap : Model -> Html Msg
@@ -272,7 +272,7 @@ treeMap _ =
 
 
 
--- tree list view
+-- TREE LIST
 
 
 toolbar : Model -> Html Msg
@@ -402,7 +402,7 @@ subtree model title tree =
 
 
 
---- helpers
+--- HELPERS
 
 
 type alias Node msg =
