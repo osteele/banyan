@@ -24,12 +24,15 @@ a.github {
     margin-bottom: 10px;
 }
 
-.ui.progress.success .bar {
-    background-color: white !important;
-    border: 1px solid lightgray;
+.ui.progress .bar {
+    transition: height 0.5s;
 }
 
 .ui.progress.success {
+    .bar {
+        background-color: white !important;
+        height: 1px;
+    }
     .label {
         color: lightgray;
         a {
