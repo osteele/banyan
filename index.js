@@ -16,10 +16,12 @@ const app = Elm.Main.embed(document.getElementById('app'), {
   files: localStorage[filesCacheKey] || null,
 });
 
+console.info(`read cache: ${(localStorage[filesCacheKey] || '').length} bytes`);
+
 app.ports.saveFilesCache.subscribe((cacheValue) => {
   const json = JSON.stringify(cacheValue);
   delete localStorage[oldFileCacheKey];
-  console.info('write cache', json.length, 'bytes');
+  console.info(`write cache: ${json.length} bytes`);
   localStorage[filesCacheKey] = json;
 });
 

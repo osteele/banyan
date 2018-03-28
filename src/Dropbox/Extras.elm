@@ -6,8 +6,11 @@ module Dropbox.Extras
         , record
         , size
         , isDir
+        , SerializationState
         , decodeString
         , encodeString
+        , decodeRelString
+        , encodeRelString
         , listFolderToContinueError
         )
 
@@ -29,6 +32,7 @@ type alias CommonMeta =
     { name : String
     , pathLower : Maybe String
     , pathDisplay : Maybe String
+    , size : Maybe Int
     , parentSharedFolderId : Maybe String
     , clientModified : Maybe Date
     , serverModified : Maybe Date
@@ -90,10 +94,10 @@ folder path =
 
 
 
--- PROJECTIONS
+-- PROPERTIES
 
 
-{-| Return a record with the common attributes of the union records.
+{-| Return a record with the common attributes of the Metadata union records.
 -}
 record : Metadata -> CommonMeta
 record entry =
@@ -103,6 +107,7 @@ record entry =
             , pathDisplay = data.pathDisplay
             , pathLower = data.pathLower
             , parentSharedFolderId = data.parentSharedFolderId
+            , size = Just data.size
             , clientModified = Just data.clientModified
             , serverModified = Just data.serverModified
             }
@@ -112,6 +117,7 @@ record entry =
             , pathDisplay = data.pathDisplay
             , pathLower = data.pathLower
             , parentSharedFolderId = data.parentSharedFolderId
+            , size = Nothing
             , clientModified = Nothing
             , serverModified = Nothing
             }
@@ -121,36 +127,22 @@ record entry =
             , pathDisplay = data.pathDisplay
             , pathLower = data.pathLower
             , parentSharedFolderId = data.parentSharedFolderId
+            , size = Nothing
             , clientModified = Nothing
             , serverModified = Nothing
             }
 
 
 path : Metadata -> String
-path entry =
-    let
-        displayPath { name, pathDisplay } =
+path =
+    record
+        >> \{ name, pathDisplay } ->
             Maybe.withDefault ("…/" ++ name) pathDisplay
-    in
-        case entry of
-            FileMeta data ->
-                displayPath data
-
-            FolderMeta data ->
-                displayPath data
-
-            DeletedMeta data ->
-                displayPath data
 
 
 size : Metadata -> Maybe Int
-size entry =
-    case entry of
-        FileMeta data ->
-            Just data.size
-
-        _ ->
-            Nothing
+size =
+    record >> .size
 
 
 
@@ -168,7 +160,11 @@ isDir entry =
 
 
 
--- STRING SERIALIZATION
+-- SERIALIZATION
+
+
+type alias SerializationState =
+    Maybe String
 
 
 nameOptionalSizeRe : Regex.Regex
@@ -210,6 +206,33 @@ unquotePath =
         )
 
 
+decodeRelString : SerializationState -> String -> Metadata
+decodeRelString cwd path =
+    let
+        absPath =
+            if String.startsWith "/" path then
+                path
+            else
+                Maybe.withDefault "/" cwd ++ path
+
+        decodeSize =
+            Maybe.andThen (String.toInt >> Result.toMaybe)
+                >> Maybe.withDefault 0
+
+        ( filePath, fileSize ) =
+            case absPath |> Regex.find (Regex.AtMost 1) nameOptionalSizeRe |> List.head |> Maybe.map .submatches of
+                Just ((Just p) :: sizeStr :: _) ->
+                    ( p, decodeSize sizeStr )
+
+                _ ->
+                    ( absPath, 0 )
+    in
+        if String.endsWith "/" absPath then
+            String.dropRight 1 absPath |> unquotePath |> folder
+        else
+            file (unquotePath filePath) fileSize
+
+
 {-| Construct an entry from a string.
 
 The string is a ;-separated list of paths. Files end in :size, where size
@@ -221,24 +244,8 @@ is an optional size.
 
 -}
 decodeString : String -> Metadata
-decodeString path =
-    if String.endsWith "/" path then
-        folder <| unquotePath <| String.dropRight 1 path
-    else
-        let
-            ( p, size ) =
-                case path |> Regex.find (Regex.AtMost 1) nameOptionalSizeRe |> List.head |> Maybe.map .submatches of
-                    Just ((Just p) :: sizeStr :: _) ->
-                        ( unquotePath p
-                        , sizeStr
-                            |> Maybe.andThen (String.toInt >> Result.toMaybe)
-                            |> Maybe.withDefault 0
-                        )
-
-                    _ ->
-                        ( unquotePath path, 0 )
-        in
-            file p size
+decodeString =
+    decodeRelString Nothing
 
 
 {-| Transform deleted, folder, and file paths respecively into
@@ -269,30 +276,41 @@ affixPathMetadata entry path =
 Returns a tuple of the path (or null if the entry has no displayPath), and the
 new context.
 -}
-encodeStringS : Maybe String -> Metadata -> ( Maybe String, Maybe String )
-encodeStringS cwd entry =
+encodeRelString : SerializationState -> Metadata -> ( Maybe String, SerializationState )
+encodeRelString cwd entry =
     case record entry |> .pathDisplay of
         Nothing ->
             ( Nothing, cwd )
 
-        Just path ->
+        Just absPath ->
             let
-                p =
-                    affixPathMetadata entry path
+                relative prefix to =
+                    if String.startsWith prefix (String.toLower to) then
+                        String.dropLeft (String.length prefix) to
+                    else
+                        to
+
+                relPath =
+                    cwd
+                        |> Maybe.map (flip relative absPath)
+                        |> Maybe.withDefault absPath
+
+                newCwd =
+                    if isDir entry then
+                        Just <| String.toLower <| absPath ++ "/"
+                    else
+                        cwd
             in
-                case entry of
-                    FolderMeta _ ->
-                        ( Just p, Just path )
-
-                    _ ->
-                        ( Just p, cwd )
+                ( Just <| affixPathMetadata entry relPath
+                , newCwd
+                )
 
 
-{-| Turn a tree into a string. See toString for the format.
+{-| Serialize a file entry as a string. See decodeString for the format.
 -}
 encodeString : Metadata -> String
 encodeString entry =
-    encodeStringS Nothing entry
+    encodeRelString Nothing entry
         |> Tuple.first
         |> Maybe.withDefault (record entry |> .name |> (++) "…/" |> affixPathMetadata entry)
 
@@ -301,6 +319,9 @@ encodeString entry =
 -- ERRORS
 
 
+{-| Convert a ListFolderError to a ListFolderContinueError, so that the same
+`case` statement can process responses from ListFolder and ListFolderContinue.
+-}
 listFolderToContinueError : ListFolderError -> ListFolderContinueError
 listFolderToContinueError error =
     case error of

@@ -8,7 +8,7 @@ import Test exposing (..)
 suite : Test
 suite =
     describe "FileTree" <|
-        [ describe "fromString"
+        [ describe "decodeString"
             [ test "decodes file" <|
                 \_ ->
                     DropboxExtras.decodeString "/a/b:12"
@@ -26,7 +26,7 @@ suite =
                     DropboxExtras.decodeString "/a%3ab%3bc%25d/"
                         |> Expect.equal (folder "/a:b;c%d")
             ]
-        , describe "toString"
+        , describe "encodeString"
             [ test "encodes file" <|
                 \_ ->
                     file "/a/b" 12
@@ -47,5 +47,33 @@ suite =
                     folder "/a:b;c%d"
                         |> DropboxExtras.encodeString
                         |> Expect.equal "/a%3ab%3bc%25d/"
+            ]
+        , describe "encodeRelString"
+            [ test "uses context" <|
+                Expect.all
+                    [ \_ ->
+                        DropboxExtras.encodeRelString Nothing (file "/dir/a" 0)
+                            |> Expect.equal ( Just "/dir/a", Nothing )
+                    , \_ ->
+                        DropboxExtras.encodeRelString (Just "/dir/") (file "/dir/a" 0)
+                            |> Expect.equal ( Just "a", Just "/dir/" )
+                    , \_ ->
+                        DropboxExtras.encodeRelString (Just "/dir/") (file "/Dir/a" 0)
+                            |> Expect.equal ( Just "a", Just "/dir/" )
+                    , \_ ->
+                        DropboxExtras.encodeRelString (Just "/dir/") (folder "/Dir/A")
+                            |> Expect.equal ( Just "A/", Just "/dir/a/" )
+                    ]
+            ]
+        , describe "decodeRelString"
+            [ test "uses context" <|
+                Expect.all
+                    [ \_ ->
+                        DropboxExtras.decodeRelString (Just "/dir/") "a/b"
+                            |> Expect.equal (file "/dir/a/b" 0)
+                    , \_ ->
+                        DropboxExtras.decodeRelString (Just "/dir/") "/a/b"
+                            |> Expect.equal (file "/a/b" 0)
+                    ]
             ]
         ]

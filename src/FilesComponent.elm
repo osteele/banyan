@@ -115,8 +115,8 @@ getSyncData state =
 syncFraction : Model -> Float
 syncFraction model =
     case model.state of
-        Decoding f ->
-            f
+        Decoding frac ->
+            frac
 
         FromCache _ ->
             1.0
@@ -124,7 +124,6 @@ syncFraction model =
         Syncing { requests } ->
             toFloat requests / toFloat (requests + 1)
 
-        -- |> \x -> 0.5 + (ln x / ln 2)
         Synced _ ->
             1.0
 
@@ -265,7 +264,12 @@ subscriptions _ =
 
 type CacheDecoderState
     = JsonString String
-    | FileStrings State (List String) Int
+    | FileStrings
+        { paths : List String
+        , decoderState : Dropbox.Extras.SerializationState
+        , total : Int
+        , finalState : State
+        }
 
 
 decodePathBatch : CacheDecoderState -> Model -> Result String ( Model, Maybe CacheDecoderState )
@@ -279,7 +283,16 @@ decodePathBatch state model =
                             paths =
                                 String.split ";" files
                         in
-                            Result.Ok ( model, Just <| FileStrings state paths (List.length paths) )
+                            Result.Ok
+                                ( model
+                                , Just <|
+                                    FileStrings
+                                        { paths = paths
+                                        , total = List.length paths
+                                        , decoderState = Nothing
+                                        , finalState = state
+                                        }
+                                )
                     else
                         Result.Err "Invalid cache; re-syncing…"
 
@@ -287,30 +300,34 @@ decodePathBatch state model =
                     -- The err is too long; displaying it hangs the browser
                     Result.Err "Coudn't read the cache; re-syncing…"
 
-        FileStrings state [] _ ->
-            Result.Ok ( { model | state = state }, Nothing )
+        FileStrings ({ paths, decoderState, total, finalState } as state) ->
+            if List.isEmpty paths then
+                Result.Ok ( { model | state = finalState }, Nothing )
+            else
+                let
+                    batchSize =
+                        1000
 
-        FileStrings state paths n ->
-            let
-                batchSize =
-                    1000
+                    ( files, ds2 ) =
+                        paths
+                            |> List.take batchSize
+                            |> FileTree.addFromStrings model.files decoderState
 
-                files =
-                    paths
-                        |> List.take batchSize
-                        |> List.map Dropbox.Extras.decodeString
-                        |> flip FileTree.addEntries model.files
+                    remainingPaths =
+                        List.drop batchSize paths
 
-                remainingPaths =
-                    List.drop batchSize paths
-
-                completion =
-                    1.0 - (toFloat (List.length remainingPaths)) / toFloat (max 1 n)
-            in
-                Result.Ok
-                    ( { model | files = files, state = Decoding completion }
-                    , Just <| FileStrings state remainingPaths n
-                    )
+                    completion =
+                        1.0 - (toFloat (List.length remainingPaths)) / toFloat (max 1 total)
+                in
+                    Result.Ok
+                        ( { model | files = files, state = Decoding completion }
+                        , Just <|
+                            FileStrings <|
+                                { state
+                                    | paths = remainingPaths
+                                    , decoderState = ds2
+                                }
+                        )
 
 
 

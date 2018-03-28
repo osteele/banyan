@@ -2,6 +2,7 @@ module Extras
     exposing
         ( dropPrefix
         , firstMatch
+        , mapS
         , flatMapS
         , humanize
         , ifJust
@@ -88,7 +89,26 @@ dropPrefix prefix s =
         Nothing
 
 
-{-| flatMap using a curried state monad function.
+{-| Monadic map.
+-}
+mapS : (s -> a -> ( b, s )) -> s -> List a -> ( List b, s )
+mapS f s xs =
+    case xs of
+        [] ->
+            ( [], s )
+
+        x :: xs ->
+            let
+                ( y, s2 ) =
+                    f s x
+
+                ( ys, s3 ) =
+                    mapS f s2 xs
+            in
+                ( y :: ys, s3 )
+
+
+{-| Monadic flatMap.
 -}
 flatMapS : (s -> a -> ( List b, s )) -> s -> List a -> ( List b, s )
 flatMapS f s xs =

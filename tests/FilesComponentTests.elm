@@ -61,4 +61,4 @@ testModel =
 
 testModelEncoding : String
 testModelEncoding =
-    """{"version":1,"files":"/dir","state":"1992-01-12T07:06:40.000Z","accountId":"1","teamId":"2"}"""
+    """{"version":1,"files":"dir","state":"1992-01-12T07:06:40.000Z","accountId":"1","teamId":"2"}"""

@@ -35,13 +35,22 @@ suite =
                             , get "/f1" >> expectJust (file "/f1" 0)
                             , get "/f2" >> expectJust (file "/f2" 12)
                             ]
+            , test "uses context" <|
+                \_ ->
+                    FileTree.fromString "/dir/;f1;f2;/dir2/;f3"
+                        |> Expect.all
+                            [ get "/dir" >> expectJust (folder "/dir")
+                            , get "/dir/f1" >> expectJust (file "/dir/f1" 0)
+                            , get "/dir/f2" >> expectJust (file "/dir/f2" 0)
+                            , get "/dir2/f3" >> expectJust (file "/dir2/f3" 0)
+                            ]
             ]
         , describe "toString"
             [ test "prints files, file sizes, and directories" <|
                 \_ ->
                     FileTree.fromString "/a;/b/;/c:12"
                         |> FileTree.toString
-                        |> Expect.equal "/a;/b/;/c:12"
+                        |> Expect.equal "a;b/;/c:12"
             ]
         , describe "addEntries"
             [ test "/dir/ creates a directory node" <|
@@ -106,7 +115,7 @@ suite =
                 \_ ->
                     FileTree.fromString "/a/;/a/subdir;/a"
                         |> FileTree.toString
-                        >> Expect.equal "/a"
+                        >> Expect.equal "a"
             ]
         , test "map" <|
             \_ ->
@@ -114,33 +123,33 @@ suite =
                     -- TODO replace identity by an actual test
                     |> FileTree.map identity
                     |> FileTree.toString
-                    |> Expect.equal "/a/;/a/1;/a/2;/b"
+                    |> Expect.equal "a/;1;2;/b"
         , test "mapChildLists" <|
             \_ ->
                 FileTree.fromString "/a/1;/a/2;/b"
                     |> mapChildLists (List.sortBy nodePath >> List.take 1)
                     |> FileTree.toString
-                    |> Expect.equal "/a/;/a/1"
+                    |> Expect.equal "a/;1"
         , describe "combineSmallerEntries"
             [ test "combines top-level items" <|
                 \_ ->
                     FileTree.fromString "/a:5;/b:4;/c:3;/d:2"
                         |> combineSmallerEntries 2 1
                         |> FileTree.toString
-                        |> Expect.equal "/a:5;/b:4;/…2 smaller objects…:5"
+                        |> Expect.equal "a:5;b:4;…2 smaller objects…:5"
             , test "combines non-toplevel items" <|
                 \_ ->
                     FileTree.fromString "/d/f1:5;/d/f2:4;/d/f3:3"
                         |> combineSmallerEntries 2 1
                         |> FileTree.toString
-                        |> Expect.equal "/d/;/d/f1:5;/d/f2:4;/d/…1 smaller object…:3"
+                        |> Expect.equal "d/;f1:5;f2:4;…1 smaller object…:3"
             ]
         , test "trimDepth" <|
             \_ ->
                 FileTree.fromString "/a/;/b/c"
                     |> trimDepth 1
                     |> FileTree.toString
-                    |> Expect.equal "/a/;/b/"
+                    |> Expect.equal "a/;/b/"
         ]
 
 

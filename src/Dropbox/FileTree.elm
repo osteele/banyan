@@ -23,6 +23,7 @@ module Dropbox.FileTree
         , trimDepth
         , logTree
         , logTrees
+        , addFromStrings
         )
 
 {-|
@@ -450,11 +451,7 @@ mapChildLists fn =
 {-| Fold the tree into a list, using a curried state monad function. Visit
 nodes in prefix order.
 -}
-toListS :
-    (s -> FileTree -> ( a, s ))
-    -> s
-    -> FileTree
-    -> ( List a, s )
+toListS : (s -> FileTree -> ( a, s )) -> s -> FileTree -> ( List a, s )
 toListS f s item =
     let
         ( h, s1 ) =
@@ -523,40 +520,77 @@ trimDepth n =
 
 
 
--- DEBUG
+-- SERIALIZATION
 
 
-{-| Construct a tree from a string. This is used in testing.
+addFromStrings : FileTree -> SerializationState -> List String -> ( FileTree, SerializationState )
+addFromStrings tree s =
+    let
+        decodeEntry : SerializationState -> String -> ( Metadata, SerializationState )
+        decodeEntry cwd =
+            Dropbox.Extras.decodeRelString cwd
+                >> \entry ->
+                    if isDir entry then
+                        ( entry
+                        , Dropbox.Extras.record entry
+                            |> .pathLower
+                            |> Maybe.map (\s -> s ++ "/")
+                        )
+                    else
+                        ( entry, cwd )
+
+        decodeEntry2 : SerializationState -> String -> ( Metadata, SerializationState )
+        decodeEntry2 cwd =
+            Dropbox.Extras.decodeString >> \e -> ( e, cwd )
+    in
+        mapS decodeEntry s
+            >> Tuple.mapFirst (flip addEntries tree)
+
+
+decodeFromString : SerializationState -> String -> ( FileTree, SerializationState )
+decodeFromString s =
+    String.split ";" >> addFromStrings empty s
+
+
+encodeAsString : SerializationState -> FileTree -> ( String, SerializationState )
+encodeAsString s =
+    let
+        encodeNode : SerializationState -> FileTree -> ( Maybe String, SerializationState )
+        encodeNode s0 =
+            itemEntry >> Dropbox.Extras.encodeRelString s0
+    in
+        toListS encodeNode s
+            >> Tuple.mapFirst
+                (List.filterMap identity
+                    >> -- the root folder is implicit
+                       List.filter ((/=) "/")
+                    >> String.join ";"
+                )
+
+
+
+-- TESTING AND DEBUGGING
+
+
+{-| Construct a tree from a string.
 
 The string is a ;-separated list of paths. Files end in :size, where size
 is an optional size.
 
-       fromString "/dir;/dir/a:;/dir/b:10"
+       fromString "/dir;/dir/a;/dir/b:10;/dir2/"
+       fromString "/dir;a;b:10;/dir2/"
 
 -}
 fromString : String -> FileTree
 fromString =
-    String.split ";"
-        >> List.map Dropbox.Extras.decodeString
-        >> flip addEntries empty
+    decodeFromString Nothing >> Tuple.first
 
 
 {-| Turn a tree into a string. See fromString for the format.
 -}
 toString : FileTree -> String
 toString =
-    let
-        paths : FileTree -> List String
-        paths tree =
-            (Dropbox.Extras.encodeString <| itemEntry tree)
-                :: (nodeChildren tree |> Dict.values |> List.concatMap paths)
-    in
-        paths
-            -- the root folder is implicit
-            >> List.filter ((/=) "/")
-            -- make the string deterministic
-            >> List.sort
-            >> String.join ";"
+    encodeAsString Nothing >> Tuple.first
 
 
 {-| Like Debug.log, but uses FileTree.toString to print the tree.
