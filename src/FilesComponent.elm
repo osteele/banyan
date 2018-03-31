@@ -85,33 +85,6 @@ isEmpty =
 --- STATE
 
 
-nextSyncState : State -> { a | entries : List Metadata, hasMore : Bool } -> State
-nextSyncState state { entries, hasMore } =
-    let
-        data1 =
-            getSyncData state
-
-        data2 =
-            { entries = List.length entries + data1.entries
-            , requests = 1 + data1.requests
-            }
-    in
-        if hasMore then
-            Syncing data2
-        else
-            Synced data2
-
-
-getSyncData : State -> { entries : Int, requests : Int }
-getSyncData state =
-    case state of
-        Syncing data ->
-            data
-
-        _ ->
-            { entries = 0, requests = 0 }
-
-
 completion : Model -> Float
 completion model =
     case model.state of
@@ -176,48 +149,20 @@ update auth msg model =
 
         StartSyncFiles ->
             let
-                task =
-                    Dropbox.listFolder auth
-                        { path = ""
-                        , recursive = True
-                        , includeDeleted = False
-                        , includeHasExplicitSharedMembers = False
-                        , includeMediaInfo = False
-                        }
+                ( m, msg ) =
+                    startListFolder auth model
             in
-                { model | files = FileTree.empty, state = StartedSync }
-                    ! [ message Cleared
-                      , Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
-                      ]
+                m ! [ message Changed, msg ]
 
         ReceiveListFolderResponse result ->
-            case result of
-                Result.Ok ({ entries, cursor, hasMore } as data) ->
-                    let
-                        m =
-                            { model
-                                | files = FileTree.addEntries entries model.files
-                                , state = nextSyncState model.state data
-                            }
-
-                        cmd =
-                            if hasMore then
-                                Dropbox.listFolderContinue auth { cursor = cursor }
-                                    |> Task.attempt ReceiveListFolderResponse
-                            else
-                                Task.perform SaveToCache Time.now
-                    in
-                        m ! [ cmd, message Changed ]
-
-                Result.Err err ->
-                    { model
-                        | state = nextSyncState model.state { entries = [], hasMore = False }
-                        , error = Just <| toString err
-                    }
-                        ! []
+            let
+                ( m, msg ) =
+                    updateFromListFolderResponse auth model result
+            in
+                m ! [ message Changed, msg ]
 
         LoadFromCache decoderState ->
-            case decodePathBatch decoderState model of
+            case decodePathBatch model decoderState of
                 CacheDecoderProgress m nextState ->
                     { m | state = Decoding nextState }
                         ! [ message Changed, nextFrame <| LoadFromCache nextState ]
@@ -264,6 +209,83 @@ subscriptions _ =
 
 
 
+-- LIST FOLDERS
+
+
+startListFolder : Dropbox.UserAuth -> Model -> ( Model, Cmd Msg )
+startListFolder auth model =
+    let
+        task =
+            Dropbox.listFolder auth
+                { path = ""
+                , recursive = True
+                , includeDeleted = False
+                , includeHasExplicitSharedMembers = False
+                , includeMediaInfo = False
+                }
+    in
+        { model | files = FileTree.empty, state = StartedSync }
+            ! [ message Cleared
+              , Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
+              ]
+
+
+updateFromListFolderResponse : Dropbox.UserAuth -> Model -> Result ListFolderContinueError ListFolderResponse -> ( Model, Cmd Msg )
+updateFromListFolderResponse auth model result =
+    case result of
+        Result.Ok ({ entries, cursor, hasMore } as data) ->
+            let
+                m =
+                    { model
+                        | files = FileTree.addEntries entries model.files
+                        , state = nextSyncState model.state data
+                    }
+
+                cmd =
+                    if hasMore then
+                        Dropbox.listFolderContinue auth { cursor = cursor }
+                            |> Task.attempt ReceiveListFolderResponse
+                    else
+                        Task.perform SaveToCache Time.now
+            in
+                m ! [ cmd ]
+
+        Result.Err err ->
+            { model
+                | state = nextSyncState model.state { entries = [], hasMore = False }
+                , error = Just <| toString err
+            }
+                ! []
+
+
+nextSyncState : State -> { a | entries : List Metadata, hasMore : Bool } -> State
+nextSyncState state { entries, hasMore } =
+    let
+        data1 =
+            getSyncData state
+
+        data2 =
+            { entries = List.length entries + data1.entries
+            , requests = 1 + data1.requests
+            }
+    in
+        if hasMore then
+            Syncing data2
+        else
+            Synced data2
+
+
+getSyncData : State -> { entries : Int, requests : Int }
+getSyncData state =
+    case state of
+        Syncing data ->
+            data
+
+        _ ->
+            { entries = 0, requests = 0 }
+
+
+
 -- DECODING
 
 
@@ -283,8 +305,8 @@ type CacheDecoderResult
     | CacheDecoderError String
 
 
-decodePathBatch : CacheDecoderState -> Model -> CacheDecoderResult
-decodePathBatch state model =
+decodePathBatch : Model -> CacheDecoderState -> CacheDecoderResult
+decodePathBatch model state =
     case state of
         JsonString s ->
             case Decode.decodeString partialModelDecoder s of
