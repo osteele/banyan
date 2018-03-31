@@ -10,23 +10,37 @@ import Tuple exposing (mapFirst)
 suite : Test
 suite =
     describe "Extras" <|
-        [ describe "takeFileName"
-            [ test "returns the final component" <|
-                \_ ->
-                    takeFileName "/a/b/base.ext"
-                        |> Expect.equal "base.ext"
-            , test "returns the only component" <|
-                \_ ->
-                    takeFileName "base.ext"
-                        |> Expect.equal "base.ext"
-            , test "matches the directory name" <|
-                \_ ->
-                    takeFileName "test/"
-                        |> Expect.equal ""
-            ]
-        ]
+        listTests
             ++ maybeTests
             ++ stringTests
+            ++ regexTests
+            ++ inflectionTests
+            ++ [ describe "takeFileName"
+                    [ test "returns the final component" <|
+                        \_ ->
+                            takeFileName "/a/b/base.ext"
+                                |> Expect.equal "base.ext"
+                    , test "returns the only component" <|
+                        \_ ->
+                            takeFileName "base.ext"
+                                |> Expect.equal "base.ext"
+                    , test "matches the directory name" <|
+                        \_ ->
+                            takeFileName "test/"
+                                |> Expect.equal ""
+                    ]
+               ]
+
+
+listTests : List Test
+listTests =
+    [ test "remove" <|
+        Expect.all <|
+            [ \_ -> remove 0 [ "a", "b" ] |> Expect.equal [ "b" ]
+            , \_ -> remove 1 [ "a", "b", "c" ] |> Expect.equal [ "a", "c" ]
+            , \_ -> remove 2 [ "a", "b" ] |> Expect.equal [ "a", "b" ]
+            ]
+    ]
 
 
 maybeTests : List Test
@@ -59,7 +73,20 @@ stringTests =
                 dropPrefix "/" ""
                     |> Expect.equal Nothing
         ]
-    , test "firstMatch" <|
+    , test "prefixes" <|
+        \_ ->
+            prefixes [ "a", "b", "c" ]
+                |> Expect.equal
+                    [ [ "a" ]
+                    , [ "a", "b" ]
+                    , [ "a", "b", "c" ]
+                    ]
+    ]
+
+
+regexTests : List Test
+regexTests =
+    [ test "firstMatch" <|
         \_ ->
             [ ( "(\\d)", "a1b" )
             , ( "(\\d)", "a1b2c" )
@@ -72,7 +99,12 @@ stringTests =
                     , Just "1"
                     , Nothing
                     ]
-    , describe "humanize"
+    ]
+
+
+inflectionTests : List Test
+inflectionTests =
+    [ describe "humanize"
         [ test "gigabytes" <|
             \_ ->
                 humanize 1234567890
@@ -113,14 +145,6 @@ stringTests =
                 List.map pluralize [ "boy", "girl", "chair" ]
                     |> Expect.equal [ "boys", "girls", "chairs" ]
         ]
-    , test "prefixes" <|
-        \_ ->
-            prefixes [ "a", "b", "c" ]
-                |> Expect.equal
-                    [ [ "a" ]
-                    , [ "a", "b" ]
-                    , [ "a", "b", "c" ]
-                    ]
     , describe "quantify"
         [ test "0" <|
             \_ ->

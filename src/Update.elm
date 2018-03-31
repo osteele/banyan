@@ -2,6 +2,7 @@ module Update exposing (update)
 
 import Dropbox
 import Dropbox.AccountInfo exposing (..)
+import Extras exposing (remove)
 import FilesComponent
 import Message exposing (..)
 import Model exposing (..)
@@ -111,13 +112,8 @@ update msg model =
         DismissMessageView n ->
             -- closing message by index instead of serial number could be
             -- a race condition, but probably less likely than the display
-            -- updating between user intention and action
-            let
-                -- TODO move to utils
-                remove n lst =
-                    List.take n lst ++ List.drop (n + 1) lst
-            in
-                { model | errors = remove n model.errors } ! []
+            -- updating between userremove : Int -> List a -> List a intention and action
+            { model | errors = remove n model.errors } ! []
 
         SetFocus p ->
             update RenderFileTreeMap { model | path = p }

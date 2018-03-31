@@ -2,15 +2,16 @@ module Extras
     exposing
         ( dropPrefix
         , firstMatch
-        , mapS
         , flatMapS
         , humanize
         , ifJust
+        , mapS
         , mapValues
         , maybeToDefault
         , pluralize
         , prefixes
         , quantify
+        , remove
         , takeFileName
         , toStringWithCommas
         , zip
@@ -181,6 +182,13 @@ flatMapS f s xs =
                     flatMapS f s1 t
             in
                 ( r1 ++ r2, s2 )
+
+
+{-| Remove the nth element from a list.
+-}
+remove : Int -> List a -> List a
+remove n lst =
+    List.take n lst ++ List.drop (n + 1) lst
 
 
 {-| Monadic map.
