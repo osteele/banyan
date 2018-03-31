@@ -232,7 +232,7 @@ pluralize s =
 quantify : String -> number -> String
 quantify s n =
     String.join " "
-        [ toString n
+        [ toStringWithCommas n
         , if n == 1 then
             s
           else

@@ -199,8 +199,19 @@ progress { state } =
                 , "."
                 ]
 
-        Decoding _ ->
-            "Loading file entries from cache…"
+        Decoding s ->
+            case s of
+                FileStrings { addedPathCount, totalPathCount } ->
+                    String.join "" <|
+                        [ "Loaded "
+                        , toStringWithCommas addedPathCount
+                        , " of "
+                        , quantify " file" totalPathCount
+                        , " from the cache…"
+                        ]
+
+                _ ->
+                    "Loading from the cache…"
 
         FromCache timestamp ->
             String.join "" <|
@@ -364,7 +375,8 @@ type CacheDecoderState
     | FileStrings
         { paths : List String
         , decoderState : Dropbox.Extras.SerializationState
-        , total : Int
+        , addedPathCount : Int
+        , totalPathCount : Int
         , finalState : State
         }
 
@@ -389,7 +401,8 @@ decodePathBatch model state =
                             CacheDecoderProgress model <|
                                 FileStrings
                                     { paths = paths
-                                    , total = List.length paths
+                                    , addedPathCount = 0
+                                    , totalPathCount = List.length paths
                                     , decoderState = Nothing
                                     , finalState = state
                                     }
@@ -408,9 +421,11 @@ decodePathBatch model state =
                     batchSize =
                         1000
 
+                    batch =
+                        List.take batchSize paths
+
                     ( files, newDecoderState ) =
-                        paths
-                            |> List.take batchSize
+                        batch
                             |> FileTree.addFromStrings model.files decoderState
 
                     nextState =
@@ -418,6 +433,7 @@ decodePathBatch model state =
                             { state
                                 | paths = List.drop batchSize paths
                                 , decoderState = newDecoderState
+                                , addedPathCount = state.addedPathCount + List.length batch
                             }
                 in
                     CacheDecoderProgress { model | files = files } nextState
@@ -429,8 +445,8 @@ decodingCompletion state =
         JsonString _ ->
             0.0
 
-        FileStrings { paths, total } ->
-            1.0 - (toFloat (List.length paths)) / toFloat (max 1 total)
+        FileStrings { addedPathCount, totalPathCount } ->
+            (toFloat addedPathCount) / toFloat (max 1 totalPathCount)
 
 
 
