@@ -21,10 +21,24 @@ suite =
                 \_ ->
                     DropboxExtras.decodeString "/a/b/"
                         |> Expect.equal (folder "/a/b")
-            , test "encodes escape characters" <|
+            , test "decodes escape characters" <|
                 \_ ->
                     DropboxExtras.decodeString "/a%3ab%3bc%25d/"
                         |> Expect.equal (folder "/a:b;c%d")
+            , test "decodes relative files" <|
+                \_ ->
+                    DropboxExtras.decodeString "…/file"
+                        |> Expect.all
+                            [ record >> .name >> Expect.equal "file"
+                            , record >> .pathDisplay >> Expect.equal Nothing
+                            ]
+            , test "decodes relative folders" <|
+                \_ ->
+                    DropboxExtras.decodeString "…/dir/"
+                        |> Expect.all
+                            [ record >> .name >> Expect.equal "dir"
+                            , record >> .pathDisplay >> Expect.equal Nothing
+                            ]
             ]
         , describe "encodeString"
             [ test "encodes file" <|
@@ -47,6 +61,16 @@ suite =
                     folder "/a:b;c%d"
                         |> DropboxExtras.encodeString
                         |> Expect.equal "/a%3ab%3bc%25d/"
+            , test "encodes relative files" <|
+                \_ ->
+                    file "file" 0
+                        |> DropboxExtras.encodeString
+                        |> Expect.equal "…/file"
+            , test "encodes relative folders" <|
+                \_ ->
+                    folder "folder"
+                        |> DropboxExtras.encodeString
+                        |> Expect.equal "…/folder/"
             ]
         , describe "encodeRelString"
             [ test "uses context" <|

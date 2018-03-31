@@ -47,49 +47,76 @@ type alias CommonMeta =
 -}
 deleted : String -> Metadata
 deleted path =
-    DeletedMeta
-        { name = takeFileName path
-        , pathLower = Just <| String.toLower path
-        , pathDisplay = Just path
-        , parentSharedFolderId = Nothing
-        }
+    let
+        { name, pathLower, pathDisplay } =
+            pathAttrs path
+    in
+        DeletedMeta
+            { name = name
+            , pathLower = pathLower
+            , pathDisplay = pathDisplay
+            , parentSharedFolderId = Nothing
+            }
 
 
 {-| Create a FileMeta record, with empty id and rev, and 0 modified times.
 -}
 file : String -> Int -> Metadata
 file path size =
-    FileMeta
-        { name = takeFileName path
-        , pathLower = Just <| String.toLower path
-        , pathDisplay = Just <| path
-        , size = size
-        , id = ""
-        , clientModified = Date.fromTime 0
-        , serverModified = Date.fromTime 0
-        , rev = ""
-        , contentHash = Nothing
-        , hasExplicitSharedMembers = Nothing
-        , mediaInfo = Nothing
-        , parentSharedFolderId = Nothing
-        , propertyGroups = Nothing
-        , sharingInfo = Nothing
-        }
+    let
+        { name, pathLower, pathDisplay } =
+            pathAttrs path
+    in
+        FileMeta
+            { name = name
+            , pathLower = pathLower
+            , pathDisplay = pathDisplay
+            , size = size
+            , id = ""
+            , clientModified = Date.fromTime 0
+            , serverModified = Date.fromTime 0
+            , rev = ""
+            , contentHash = Nothing
+            , hasExplicitSharedMembers = Nothing
+            , mediaInfo = Nothing
+            , parentSharedFolderId = Nothing
+            , propertyGroups = Nothing
+            , sharingInfo = Nothing
+            }
 
 
 {-| Create a FolderMeta record, with empty id.
 -}
 folder : String -> Metadata
 folder path =
-    FolderMeta
+    let
+        { name, pathLower, pathDisplay } =
+            pathAttrs path
+    in
+        FolderMeta
+            { name = name
+            , pathLower = pathLower
+            , pathDisplay = pathDisplay
+            , id = ""
+            , sharedFolderId = Nothing
+            , parentSharedFolderId = Nothing
+            , propertyGroups = Nothing
+            , sharingInfo = Nothing
+            }
+
+
+pathAttrs : String -> { name : String, pathLower : Maybe String, pathDisplay : Maybe String }
+pathAttrs path =
+    let
+        pathDisplay =
+            if String.startsWith "/" path || path == "" then
+                Just path
+            else
+                Nothing
+    in
         { name = takeFileName path
-        , pathLower = Just <| String.toLower path
-        , pathDisplay = Just path
-        , id = ""
-        , sharedFolderId = Nothing
-        , parentSharedFolderId = Nothing
-        , propertyGroups = Nothing
-        , sharingInfo = Nothing
+        , pathLower = Maybe.map String.toLower pathDisplay
+        , pathDisplay = pathDisplay
         }
 
 
@@ -160,6 +187,11 @@ type alias SerializationState =
     Maybe String
 
 
+relativeFilePrefix : String
+relativeFilePrefix =
+    "…/"
+
+
 nameOptionalSizeRe : Regex.Regex
 nameOptionalSizeRe =
     Regex.regex "^(.+):(\\d*)$"
@@ -203,7 +235,9 @@ decodeRelString : SerializationState -> String -> Metadata
 decodeRelString cwd path =
     let
         absPath =
-            if String.startsWith "/" path then
+            if String.startsWith relativeFilePrefix path then
+                String.dropLeft (String.length relativeFilePrefix) path
+            else if String.startsWith "/" path then
                 path
             else
                 Maybe.withDefault "/" cwd ++ path
@@ -305,7 +339,12 @@ encodeString : Metadata -> String
 encodeString entry =
     encodeRelString Nothing entry
         |> Tuple.first
-        |> Maybe.withDefault (record entry |> .name |> (++) "…/" |> affixPathMetadata entry)
+        |> Maybe.withDefault
+            (record entry
+                |> .name
+                |> (++) relativeFilePrefix
+                |> affixPathMetadata entry
+            )
 
 
 

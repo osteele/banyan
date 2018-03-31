@@ -132,8 +132,8 @@ empty =
 
 
 emptyNode : String -> FileTree
-emptyNode name =
-    Folder { name = takeFileName name, path = name } 0 Dict.empty
+emptyNode path =
+    Folder { name = takeFileName path, path = path } 0 Dict.empty
 
 
 {-| Update a tree from file list metadata.
@@ -295,26 +295,26 @@ updateTreeItem keys alter path tree =
             emptyNode <| String.join "/" <| path ++ [ k ]
 
         -- construct a directory item for the current node, if not already present
-        withDirItem : (FolderData -> Stats -> Dict.Dict String FileTree -> a) -> a
+        withDirItem : (FolderData -> Dict.Dict String FileTree -> a) -> a
         withDirItem fn =
             case tree of
                 Folder data size children ->
-                    fn data size children
+                    fn data children
 
                 _ ->
                     let
                         p =
                             String.join "/" path
                     in
-                        fn { name = takeFileName p, path = p } 0 Dict.empty
+                        fn { name = takeFileName p, path = p } Dict.empty
     in
         case keys of
             [] ->
                 alter <| Just tree
 
-            k :: [] ->
+            [ k ] ->
                 withDirItem <|
-                    \entry _ children ->
+                    \entry children ->
                         Dict.update k (Just << alter) children
                             |> Folder entry 0
                             |> recomputeStats
@@ -326,13 +326,13 @@ updateTreeItem keys alter path tree =
                             << Maybe.withDefault (childAt k)
                 in
                     withDirItem <|
-                        \entry _ children ->
+                        \entry children ->
                             Dict.update k (Just << alt) children
                                 |> Folder entry 0
                                 |> recomputeStats
 
 
-{-| Insert a value into a tree.
+{-| Insert a value into a tree. Silently ignores data without pathDisplay.
 -}
 insert : Metadata -> FileTree -> FileTree
 insert data =
@@ -348,6 +348,7 @@ insert data =
                 _ ->
                     Folder d 0 Dict.empty
 
+        -- return an update function, based on the type of data
         update path =
             case data of
                 FileMeta { name, size } ->
