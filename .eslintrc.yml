@@ -3,5 +3,4 @@ env:
   browser: true
 rules:
   no-console: 0
-  no-use-before-define: 0
-
+  no-use-before-define: [error, {functions: false, classes: true}]

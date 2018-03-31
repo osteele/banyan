@@ -47,6 +47,8 @@ app.ports.renderTreemap.subscribe(([title, data]) => {
   requestAnimationFrame(() => treemap(title, data, onClick));
 });
 
+const isObject = v => v !== null && typeof v === 'object';
+
 function camelizePropertyNames(obj) {
   const result = {};
   Object.entries(obj).forEach(([k, v]) => {
@@ -55,5 +57,3 @@ function camelizePropertyNames(obj) {
   });
   return result;
 }
-
-const isObject = v => v !== null && typeof v === 'object';
