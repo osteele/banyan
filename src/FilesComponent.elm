@@ -8,7 +8,7 @@ module FilesComponent
         , isEmpty
         , isSyncing
         , subscriptions
-        , syncFraction
+        , completion
         , update
         , encode
         , decoder
@@ -52,7 +52,7 @@ type alias Model =
 
 
 type State
-    = Decoding Float
+    = Decoding CacheDecoderState
     | FromCache Time
     | StartedSync
     | Syncing { entries : Int, requests : Int }
@@ -112,11 +112,11 @@ getSyncData state =
             { entries = 0, requests = 0 }
 
 
-syncFraction : Model -> Float
-syncFraction model =
+completion : Model -> Float
+completion model =
     case model.state of
-        Decoding frac ->
-            frac
+        Decoding state ->
+            decodingCompletion state
 
         FromCache _ ->
             1.0
@@ -218,13 +218,14 @@ update auth msg model =
 
         LoadFromCache decoderState ->
             case decodePathBatch decoderState model of
-                Result.Ok ( m, Just nextState ) ->
-                    m ! [ message Changed, nextFrame <| LoadFromCache nextState ]
+                CacheDecoderProgress m nextState ->
+                    { m | state = Decoding nextState }
+                        ! [ message Changed, nextFrame <| LoadFromCache nextState ]
 
-                Result.Ok ( m, Nothing ) ->
-                    m ! []
+                CacheDecoderComplete m finalState ->
+                    { m | state = finalState } ! []
 
-                Result.Err s ->
+                CacheDecoderError s ->
                     { model | error = Just s } ! [ message StartSyncFiles ]
 
         RestoreFromCacheOrListFolder accountInfo ->
@@ -238,9 +239,13 @@ update auth msg model =
             in
                 case model.cache of
                     Just jsonString ->
-                        -- delay in order to update the display
-                        { m | state = Decoding 0.0 }
-                            ! [ nextFrame <| LoadFromCache (JsonString jsonString) ]
+                        let
+                            state =
+                                JsonString jsonString
+                        in
+                            -- delay in order to update the display
+                            { m | state = Decoding state }
+                                ! [ nextFrame <| LoadFromCache state ]
 
                     Nothing ->
                         m ! [ message StartSyncFiles ]
@@ -272,7 +277,13 @@ type CacheDecoderState
         }
 
 
-decodePathBatch : CacheDecoderState -> Model -> Result String ( Model, Maybe CacheDecoderState )
+type CacheDecoderResult
+    = CacheDecoderProgress Model CacheDecoderState
+    | CacheDecoderComplete Model State
+    | CacheDecoderError String
+
+
+decodePathBatch : CacheDecoderState -> Model -> CacheDecoderResult
 decodePathBatch state model =
     case state of
         JsonString s ->
@@ -283,51 +294,51 @@ decodePathBatch state model =
                             paths =
                                 String.split ";" files
                         in
-                            Result.Ok
-                                ( model
-                                , Just <|
-                                    FileStrings
-                                        { paths = paths
-                                        , total = List.length paths
-                                        , decoderState = Nothing
-                                        , finalState = state
-                                        }
-                                )
+                            CacheDecoderProgress model <|
+                                FileStrings
+                                    { paths = paths
+                                    , total = List.length paths
+                                    , decoderState = Nothing
+                                    , finalState = state
+                                    }
                     else
-                        Result.Err "Invalid cache; re-syncing…"
+                        CacheDecoderError "Invalid cache; re-syncing…"
 
                 Result.Err _ ->
                     -- The err is too long; displaying it hangs the browser
-                    Result.Err "Coudn't read the cache; re-syncing…"
+                    CacheDecoderError "Coudn't read the cache; re-syncing…"
 
         FileStrings ({ paths, decoderState, total, finalState } as state) ->
             if List.isEmpty paths then
-                Result.Ok ( { model | state = finalState }, Nothing )
+                CacheDecoderComplete model finalState
             else
                 let
                     batchSize =
                         1000
 
-                    ( files, ds2 ) =
+                    ( files, newDecoderState ) =
                         paths
                             |> List.take batchSize
                             |> FileTree.addFromStrings model.files decoderState
 
-                    remainingPaths =
-                        List.drop batchSize paths
-
-                    completion =
-                        1.0 - (toFloat (List.length remainingPaths)) / toFloat (max 1 total)
+                    nextState =
+                        FileStrings
+                            { state
+                                | paths = List.drop batchSize paths
+                                , decoderState = newDecoderState
+                            }
                 in
-                    Result.Ok
-                        ( { model | files = files, state = Decoding completion }
-                        , Just <|
-                            FileStrings <|
-                                { state
-                                    | paths = remainingPaths
-                                    , decoderState = ds2
-                                }
-                        )
+                    CacheDecoderProgress { model | files = files } nextState
+
+
+decodingCompletion : CacheDecoderState -> Float
+decodingCompletion state =
+    case state of
+        JsonString _ ->
+            0.0
+
+        FileStrings { paths, total } ->
+            1.0 - (toFloat (List.length paths)) / toFloat (max 1 total)
 
 
 

@@ -185,15 +185,8 @@ progress model =
         files =
             model.files
 
-        fileSize =
-            humanize <| FileTree.nodeSize files.files
-
         width =
-            let
-                frac =
-                    FilesComponent.syncFraction files
-            in
-                frac * 100 |> toString |> flip (++) "%"
+            (FilesComponent.completion files |> (*) 100 |> toString) ++ "%"
 
         msg =
             case files.state of
@@ -202,8 +195,6 @@ progress model =
                         String.join "" <|
                             [ "Loaded "
                             , toStringWithCommas entries
-                            , " entries totalling "
-                            , fileSize
                             , " in "
                             , quantify "request" requests
                             , "…"
@@ -214,8 +205,6 @@ progress model =
                         String.join "" <|
                             [ "Loaded "
                             , toStringWithCommas entries
-                            , " entries totalling "
-                            , fileSize
                             , " in "
                             , quantify "request" requests
                             , "."
