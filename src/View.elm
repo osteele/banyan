@@ -5,7 +5,7 @@ import Date.Extra as Date
 import Dropbox.FileTree as FileTree exposing (FileTree(..))
 import Dict
 import Extras exposing (..)
-import FilesComponent exposing (State(..), isSyncing)
+import FilesComponent exposing (State(..), isLoading)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
@@ -41,7 +41,7 @@ header model =
             [ Html.h1 [ class "header item" ] [ text "Banyan" ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
-                    [ ifJust (isSignedIn model && not (isSyncing model.files)) <|
+                    [ ifJust (isSignedIn model && not (isLoading model.files)) <|
                         button
                             [ class "item", onClick syncFiles ]
                             [ text "Sync" ]
@@ -190,31 +190,31 @@ progress model =
 
         msg =
             case files.state of
-                Syncing { entries, requests } ->
-                    text <|
-                        String.join "" <|
-                            [ "Loaded "
-                            , toStringWithCommas entries
-                            , " in "
-                            , quantify "request" requests
-                            , "…"
-                            ]
-
-                Synced { entries, requests } ->
-                    text <|
-                        String.join "" <|
-                            [ "Loaded "
-                            , toStringWithCommas entries
-                            , " in "
-                            , quantify "request" requests
-                            , "."
-                            ]
-
                 Unsynced ->
                     text "Unsyced"
 
                 StartedSync ->
                     text "Starting sync…"
+
+                Syncing { entryCount, requestCount } ->
+                    text <|
+                        String.join "" <|
+                            [ "Loaded "
+                            , toStringWithCommas entryCount
+                            , " entries in "
+                            , quantify "request" requestCount
+                            , "…"
+                            ]
+
+                Synced { entryCount, requestCount } ->
+                    text <|
+                        String.join "" <|
+                            [ "Loaded "
+                            , toStringWithCommas entryCount
+                            , " entries in "
+                            , quantify "request" requestCount
+                            , "."
+                            ]
 
                 Decoding _ ->
                     text "Loading file entries from cache…"
@@ -242,7 +242,7 @@ progress model =
                 ]
     in
         progressView
-            (if isSyncing files then
+            (if isLoading files then
                 []
              else
                 [ "success" ]

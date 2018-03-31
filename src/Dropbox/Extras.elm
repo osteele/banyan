@@ -133,13 +133,6 @@ record entry =
             }
 
 
-path : Metadata -> String
-path =
-    record
-        >> \{ name, pathDisplay } ->
-            Maybe.withDefault ("…/" ++ name) pathDisplay
-
-
 size : Metadata -> Maybe Int
 size =
     record >> .size

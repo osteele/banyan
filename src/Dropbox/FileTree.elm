@@ -2,10 +2,12 @@ module Dropbox.FileTree
     exposing
         ( FileTree(..)
         , addEntries
+        , addFromStrings
         , combineSmallerEntries
         , decoder
         , empty
         , encode
+        , fromEntries
         , fromString
         , get
         , getSubtree
@@ -23,7 +25,6 @@ module Dropbox.FileTree
         , trimDepth
         , logTree
         , logTrees
-        , addFromStrings
         )
 
 {-|
@@ -39,12 +40,12 @@ See the official Dropbox documentation at
 
 ### Build
 
-@docs empty, addEntries
+@docs empty, fromEntries
 
 
 ### Query
 
-@docs get, getSubtree, isEmpty
+@docs get, getSubtree, isEmpty, isFolder
 
 
 ### Node Properties
@@ -57,9 +58,19 @@ See the official Dropbox documentation at
 @docs map, mapChildLists, mapChildren, toListS
 
 
-### Truncate
+### Transform
 
 @docs combineSmallerEntries, trimDepth
+
+
+### Serialization
+
+@docs addFromStrings, fromString
+
+
+### Update
+
+@docs addEntries
 
 
 ### Debug
@@ -139,6 +150,11 @@ addEntries entries tree =
                     insert entry
     in
         List.foldl action tree entries
+
+
+fromEntries : List Metadata -> FileTree
+fromEntries entries =
+    empty |> addEntries entries
 
 
 
@@ -538,10 +554,6 @@ addFromStrings tree s =
                         )
                     else
                         ( entry, cwd )
-
-        decodeEntry2 : SerializationState -> String -> ( Metadata, SerializationState )
-        decodeEntry2 cwd =
-            Dropbox.Extras.decodeString >> \e -> ( e, cwd )
     in
         mapS decodeEntry s
             >> Tuple.mapFirst (flip addEntries tree)
@@ -630,54 +642,3 @@ encode =
 decoder : Decoder FileTree
 decoder =
     Decode.string |> Decode.andThen (Decode.succeed << fromString)
-
-
-
--- encodeJson : FileTree -> Encode.Value
--- encodeJson node =
---     let
---         maybeToList =
---             Maybe.map List.singleton >> Maybe.withDefault []
---         maybeKey name key =
---             splitPath key
---                 |> List.reverse
---                 |> List.head
---                 |> Maybe.withDefault key
---                 |> maybeToDefault (String.toLower name)
---                 |> Maybe.map (\k -> ( "k", Encode.string k ))
---         maybeSize size =
---             size
---                 |> maybeToDefault 0
---                 |> Maybe.map
---                     (\s -> ( "s", Encode.int s ))
---     in
---         case node of
---             Folder { name, key } _ children ->
---                 Encode.object <|
---                     [ ( "n", Encode.string name )
---                     , ( "c", Encode.list <| List.map encodeJson <| Dict.values children )
---                     ]
---                         ++ (maybeToList <| maybeKey name key)
---             File { name, key, size } ->
---                 Encode.object <|
---                     [ ( "n", Encode.string name ) ]
---                         ++ (maybeToList <| maybeKey name key)
---                         ++ (maybeToList <| maybeSize size)
--- jsonDecoder : Decoder FileTree
--- jsonDecoder =
---     let
---         dec : String -> Decoder FileTree
---         dec prefix =
---             Decode.map2
---                 node
---                 (Decode.field "n" Decode.string)
---                 (Decode.field "c" (Decode.maybe (Decode.list (Decode.lazy (\_ -> dec prefix)))))
---         node : String -> Maybe (List FileTree) -> FileTree
---         node name children =
---             case children of
---                 Just c ->
---                     Folder { name = name, key = name, path = name } 0 (List.map (\e -> ( itemKey e, e )) c |> Dict.fromList)
---                 Nothing ->
---                     File { name = name, key = name, path = name, size = 0 }
---     in
---         dec ""

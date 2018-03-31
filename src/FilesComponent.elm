@@ -6,7 +6,7 @@ module FilesComponent
         , fromCache
         , init
         , isEmpty
-        , isSyncing
+        , isLoading
         , subscriptions
         , completion
         , update
@@ -55,8 +55,8 @@ type State
     = Decoding CacheDecoderState
     | FromCache Time
     | StartedSync
-    | Syncing { entries : Int, requests : Int }
-    | Synced { entries : Int, requests : Int }
+    | Syncing { entryCount : Int, requestCount : Int }
+    | Synced { entryCount : Int, requestCount : Int }
     | Unsynced
 
 
@@ -76,13 +76,8 @@ fromCache c =
     { init | cache = c }
 
 
-isEmpty : Model -> Bool
-isEmpty =
-    .files >> FileTree.isEmpty
 
-
-
---- STATE
+--- STATE QUERIES
 
 
 completion : Model -> Float
@@ -94,8 +89,8 @@ completion model =
         FromCache _ ->
             1.0
 
-        Syncing { requests } ->
-            toFloat requests / toFloat (requests + 1)
+        Syncing { requestCount } ->
+            toFloat requestCount |> \n -> n / (n + 1)
 
         Synced _ ->
             1.0
@@ -104,8 +99,13 @@ completion model =
             0
 
 
-isSyncing : Model -> Bool
-isSyncing model =
+isEmpty : Model -> Bool
+isEmpty =
+    .files >> FileTree.isEmpty
+
+
+isLoading : Model -> Bool
+isLoading model =
     case model.state of
         Decoding _ ->
             True
@@ -215,18 +215,19 @@ subscriptions _ =
 startListFolder : Dropbox.UserAuth -> Model -> ( Model, Cmd Msg )
 startListFolder auth model =
     let
-        task =
-            Dropbox.listFolder auth
-                { path = ""
-                , recursive = True
-                , includeDeleted = False
-                , includeHasExplicitSharedMembers = False
-                , includeMediaInfo = False
-                }
+        listFolder =
+            Task.mapError listFolderToContinueError <|
+                Dropbox.listFolder auth
+                    { path = ""
+                    , recursive = True
+                    , includeDeleted = False
+                    , includeHasExplicitSharedMembers = False
+                    , includeMediaInfo = False
+                    }
     in
         { model | files = FileTree.empty, state = StartedSync }
             ! [ message Cleared
-              , Task.attempt ReceiveListFolderResponse <| Task.mapError listFolderToContinueError task
+              , Task.attempt ReceiveListFolderResponse listFolder
               ]
 
 
@@ -261,28 +262,21 @@ updateFromListFolderResponse auth model result =
 nextSyncState : State -> { a | entries : List Metadata, hasMore : Bool } -> State
 nextSyncState state { entries, hasMore } =
     let
-        data1 =
-            getSyncData state
+        { entryCount, requestCount } =
+            case state of
+                Syncing data ->
+                    data
 
-        data2 =
-            { entries = List.length entries + data1.entries
-            , requests = 1 + data1.requests
-            }
+                _ ->
+                    { entryCount = 0, requestCount = 0 }
     in
-        if hasMore then
-            Syncing data2
-        else
-            Synced data2
-
-
-getSyncData : State -> { entries : Int, requests : Int }
-getSyncData state =
-    case state of
-        Syncing data ->
-            data
-
-        _ ->
-            { entries = 0, requests = 0 }
+        { entryCount = entryCount + List.length entries
+        , requestCount = requestCount + 1
+        }
+            |> if hasMore then
+                Syncing
+               else
+                Synced
 
 
 
@@ -330,7 +324,7 @@ decodePathBatch model state =
                     -- The err is too long; displaying it hangs the browser
                     CacheDecoderError "Coudn't read the cache; re-syncing…"
 
-        FileStrings ({ paths, decoderState, total, finalState } as state) ->
+        FileStrings ({ paths, decoderState, finalState } as state) ->
             if List.isEmpty paths then
                 CacheDecoderComplete model finalState
             else

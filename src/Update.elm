@@ -113,6 +113,7 @@ update msg model =
             -- a race condition, but probably less likely than the display
             -- updating between user intention and action
             let
+                -- TODO move to utils
                 remove n lst =
                     List.take n lst ++ List.drop (n + 1) lst
             in
