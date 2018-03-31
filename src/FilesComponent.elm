@@ -9,6 +9,7 @@ module FilesComponent
         , isLoading
         , subscriptions
         , completion
+        , progress
         , update
         , encode
         , decoder
@@ -19,7 +20,14 @@ module FilesComponent
 {-|
 
 
-## The synced file state and the synchronization status.
+## This component maintains a model of the Dropbox files.
+
+It creates its model from Dropbox API or from a local cache, and saves it to
+a cache.
+
+This is a component rather than a data structure, because it uses Commands to
+read and store its state.
+
 -}
 
 import CmdExtras exposing (..)
@@ -29,7 +37,7 @@ import Dropbox exposing (..)
 import Dropbox.AccountInfo exposing (AccountInfo)
 import Dropbox.Extras exposing (listFolderToContinueError)
 import Dropbox.FileTree as FileTree exposing (FileTree)
-import Extras exposing (maybeToDefault)
+import Extras exposing (maybeToDefault, quantify, toStringWithCommas)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Extra as Decode
 import Json.Encode as Encode
@@ -41,6 +49,16 @@ import Time exposing (Time)
 -- MODEL
 
 
+{-| A Dropbox FileTree, and the values necessary to sync it from a Dropbox
+account.
+
+    - files: The Dropbox folder tree
+    - state: The synchronization or cache deserialization state
+    - error: The last error.
+    - accountId, teamId: Used to insure the cache matches the account.
+    - cache: A cache that is consulted once the user is authorized.
+
+-}
 type alias Model =
     { files : FileTree
     , state : State
@@ -60,6 +78,24 @@ type State
     | Unsynced
 
 
+
+-- MESSAGES
+
+
+type Msg
+    = Changed
+    | Cleared
+    | StartSyncFiles
+    | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
+    | RestoreFromCacheOrListFolder AccountInfo
+    | LoadFromCache CacheDecoderState
+    | SaveToCache Time
+
+
+
+-- INITIALIZATION
+
+
 init : Model
 init =
     { files = FileTree.empty
@@ -71,6 +107,9 @@ init =
     }
 
 
+{-| Initialize a model, with a cache that is consulted once the
+RestoreFromCacheOrListFolder message is sent.
+-}
 fromCache : Maybe String -> Model
 fromCache c =
     { init | cache = c }
@@ -80,6 +119,13 @@ fromCache c =
 --- STATE QUERIES
 
 
+{-| Return a float between 0.0 and 1.0, that indicates the completion progress
+of a file list or cache decode operation.
+
+The completion of a file list is an estimate with exponential backoff. See
+<https://github.com/osteele/banyan/issues/9>.
+
+-}
 completion : Model -> Float
 completion model =
     case model.state of
@@ -99,11 +145,15 @@ completion model =
             0
 
 
+{-| Determine if the set of files and folders is empty.
+-}
 isEmpty : Model -> Bool
 isEmpty =
     .files >> FileTree.isEmpty
 
 
+{-| Determine if the model is still loading from Dropbox or from the cache.
+-}
 isLoading : Model -> Bool
 isLoading model =
     case model.state of
@@ -120,18 +170,44 @@ isLoading model =
             False
 
 
+{-| Return a string description of the loading or synchronization progress.
+-}
+progress : Model -> String
+progress { state } =
+    case state of
+        Unsynced ->
+            "Unsyced"
 
--- MESSAGES
+        StartedSync ->
+            "Starting sync…"
 
+        Syncing { entryCount, requestCount } ->
+            String.join "" <|
+                [ "Loaded "
+                , toStringWithCommas entryCount
+                , " entries in "
+                , quantify "request" requestCount
+                , "…"
+                ]
 
-type Msg
-    = Changed
-    | Cleared
-    | StartSyncFiles
-    | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
-    | RestoreFromCacheOrListFolder AccountInfo
-    | LoadFromCache CacheDecoderState
-    | SaveToCache Time
+        Synced { entryCount, requestCount } ->
+            String.join "" <|
+                [ "Loaded "
+                , toStringWithCommas entryCount
+                , " entries in "
+                , quantify "request" requestCount
+                , "."
+                ]
+
+        Decoding _ ->
+            "Loading file entries from cache…"
+
+        FromCache timestamp ->
+            String.join "" <|
+                [ "Cached at "
+                , Date.toFormattedString "h:mm a on EEEE, MMMM d, y" <| Date.fromTime timestamp
+                , ". "
+                ]
 
 
 

@@ -1,10 +1,8 @@
-module View exposing (..)
+module View exposing (view)
 
-import Date
-import Date.Extra as Date
 import Dropbox.FileTree as FileTree exposing (FileTree(..))
 import Dict
-import Extras exposing (..)
+import Extras exposing (humanize, ifJust, prefixes, takeFileName, zip)
 import FilesComponent exposing (State(..), isLoading)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
@@ -188,47 +186,22 @@ progress model =
         width =
             (FilesComponent.completion files |> (*) 100 |> toString) ++ "%"
 
+        msgTxt =
+            text <| FilesComponent.progress files
+
         msg =
             case files.state of
-                Unsynced ->
-                    text "Unsyced"
-
-                StartedSync ->
-                    text "Starting sync…"
-
-                Syncing { entryCount, requestCount } ->
-                    text <|
-                        String.join "" <|
-                            [ "Loaded "
-                            , toStringWithCommas entryCount
-                            , " entries in "
-                            , quantify "request" requestCount
-                            , "…"
-                            ]
-
-                Synced { entryCount, requestCount } ->
-                    text <|
-                        String.join "" <|
-                            [ "Loaded "
-                            , toStringWithCommas entryCount
-                            , " entries in "
-                            , quantify "request" requestCount
-                            , "."
-                            ]
-
-                Decoding _ ->
-                    text "Loading file entries from cache…"
-
                 FromCache timestamp ->
                     span []
-                        [ text "Cached at "
-                        , text <| Date.toFormattedString "h:mm a on EEEE, MMMM d, y" <| Date.fromTime timestamp
-                        , text ". "
+                        [ msgTxt
                         , Html.a
                             [ class "item", onClick syncFiles ]
                             [ text "Re-sync now" ]
                         , text "."
                         ]
+
+                _ ->
+                    msgTxt
 
         progressView classes width msg =
             div
