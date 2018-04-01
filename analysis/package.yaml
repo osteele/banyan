@@ -31,6 +31,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - analysis
+    - optparse-applicative
     - split
 
 tests:
