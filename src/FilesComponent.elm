@@ -206,7 +206,7 @@ progress { state } =
                         [ "Loaded "
                         , toStringWithCommas addedPathCount
                         , " of "
-                        , quantify " file" totalPathCount
+                        , quantify " file entry" totalPathCount
                         , " from the cache…"
                         ]
 
@@ -236,17 +236,17 @@ update auth msg model =
 
         StartSyncFiles ->
             let
-                ( m, msg ) =
+                ( m, msg_ ) =
                     startListFolder auth model
             in
-                m ! [ message Changed, msg ]
+                m ! [ message Changed, msg_ ]
 
         ReceiveListFolderResponse result ->
             let
-                ( m, msg ) =
+                ( m, msg_ ) =
                     updateFromListFolderResponse auth model result
             in
-                m ! [ message Changed, msg ]
+                m ! [ message Changed, msg_ ]
 
         LoadFromCache decoderState ->
             case decodePathBatch model decoderState of
@@ -446,7 +446,7 @@ decodingCompletion state =
             0.0
 
         FileStrings { addedPathCount, totalPathCount } ->
-            (toFloat addedPathCount) / toFloat (max 1 totalPathCount)
+            toFloat addedPathCount / toFloat (max 1 totalPathCount)
 
 
 

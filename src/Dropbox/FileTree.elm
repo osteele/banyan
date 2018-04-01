@@ -298,7 +298,7 @@ updateTreeItem keys alter path tree =
         withDirItem : (FolderData -> Dict.Dict String FileTree -> a) -> a
         withDirItem fn =
             case tree of
-                Folder data size children ->
+                Folder data _ children ->
                     fn data children
 
                 _ ->
@@ -371,7 +371,7 @@ insert data =
 {-| Remove a value from a tree.
 -}
 remove : Metadata -> FileTree -> FileTree
-remove data =
+remove meta =
     let
         rm : List String -> FileTree -> FileTree
         rm keys entry =
@@ -391,7 +391,7 @@ remove data =
                         k :: ks ->
                             children |> Dict.update k (Maybe.map <| rm ks) |> Folder data stats |> recomputeStats
     in
-        case Dropbox.Extras.record data |> .pathLower of
+        case Dropbox.Extras.record meta |> .pathLower of
             Just path ->
                 rm <| splitPath path
 
@@ -551,7 +551,7 @@ addFromStrings tree s =
                         ( entry
                         , Dropbox.Extras.record entry
                             |> .pathLower
-                            |> Maybe.map (\s -> s ++ "/")
+                            |> Maybe.map (\p -> p ++ "/")
                         )
                     else
                         ( entry, cwd )

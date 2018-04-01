@@ -194,8 +194,8 @@ remove n lst =
 {-| Monadic map.
 -}
 mapS : (s -> a -> ( b, s )) -> s -> List a -> ( List b, s )
-mapS f s xs =
-    case xs of
+mapS f s list =
+    case list of
         [] ->
             ( [], s )
 

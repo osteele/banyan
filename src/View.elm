@@ -191,7 +191,7 @@ progress model =
 
         msg =
             case files.state of
-                FromCache timestamp ->
+                FromCache _ ->
                     span []
                         [ msgTxt
                         , Html.a
@@ -391,6 +391,7 @@ icon attrs =
     Html.i <| class "icon" :: attrs
 
 
-row : Node msg
-row attrs =
-    div <| class "row" :: attrs
+
+-- row : Node msg
+-- row attrs =
+--     div <| class "row" :: attrs
