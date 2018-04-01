@@ -1,0 +1,47 @@
+name:                analysis
+version:             0.1.0.0
+github:              "osteele/banyan"
+license:             BSD3
+author:              "Oliver Steele"
+maintainer:          "steele@osteele.com"
+copyright:           "2018 Oliver Steele"
+
+extra-source-files:
+- README.md
+
+description:         Please see the README on Github at <https://github.com/osteele/blob/master/analysis/README.md>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+  dependencies:
+    - filepath
+    - mtl
+    - split
+
+executables:
+  analyze-cache:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - analysis
+    - split
+
+tests:
+  analysis-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - analysis
+    - tasty
+    - tasty-hunit
