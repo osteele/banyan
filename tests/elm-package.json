@@ -3,7 +3,7 @@
   "summary": "Visualize Dropbox file and directory sizes",
   "repository": "https://github.com/osteele/banyan.git",
   "license": "MIT",
-  "source-directories": [".", "../src", "../shared/elm-dropbox/src"],
+  "source-directories": [".", "../src", "../shared/elm-extras/src", "../shared/elm-dropbox/src"],
   "exposed-modules": [],
   "dependencies": {
     "NoRedInk/elm-decode-pipeline": "3.0.0 <= v < 4.0.0",

@@ -30,7 +30,7 @@ read and store its state.
 
 -}
 
-import CmdExtras exposing (..)
+import Cmd.Extras exposing (..)
 import Date
 import Date.Extra as Date
 import Dropbox exposing (..)
