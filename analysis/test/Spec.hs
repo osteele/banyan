@@ -8,7 +8,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [serializationTests]
+tests = testGroup "Tests" [filePathTests, serializationTests]
 
 serializationTests = testGroup "Serialization tests"
     [ testCase "decodePaths" $ do
@@ -35,16 +35,20 @@ filePathTests = testGroup "FilePathExtras tests"
         let mr = makeRelativeWithDots
         mr "/" "/a" @?= "a"
         mr "/" "/dir/a" @?= "dir/a"
-        mr "/dir/" "/dir/a" @?= "a"
         mr "/dir" "/a" @?= "../a"
+        mr "/dir/" "/dir/a" @?= "a"
         mr "/d1/d2/" "/d1/a" @?= "../a"
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
         mr "/d1/d2/d3/" "/d1/a" @?= "../../a"
         mr "/d1/d2/d3/" "/d4/a" @?= "../../../d4/a"
 
     , testCase "makeShortestRelative" $ do
-        let mr = makeRelativeWithDots
-        mr "/dir" "/a" @?= "/a"
+        let mr = makeShortestRelative
+        mr "/dir/" "/a" @?= "/a"
+        mr "/dir/" "/dir/a" @?= "a"
+        mr "/d1/d2/" "/d1/d2/a" @?= "a"
+        mr "/d1/d2/" "/d1/d3/a" @?= "../d3/a"
+        mr "/d1/d2/d3/" "/d1/d2/d3/a" @?= "a"
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
         mr "/long-name/d2/d3/" "/long-name/a" @?= "../../a"

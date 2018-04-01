@@ -6,8 +6,9 @@ module Serialize
 
 import Control.Monad.State
 import Data.List
-import FilePathExtras
 import System.FilePath.Posix
+
+import FilePathExtras
 
 type WorkingDirectory = FilePath
 
@@ -43,6 +44,6 @@ encodePaths = mapPaths $ \p -> do
 encodePathsRel :: [FilePath] -> [FilePath]
 encodePathsRel = mapPaths $ \p -> do
     cwd <- getCwd
-    let p' = makeRelativeWithDots cwd p
+    let p' = makeShortestRelative cwd p
     when (isDirectory p) $ putCwd p
-    return p'
+    return $ p'
