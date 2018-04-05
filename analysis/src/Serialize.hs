@@ -7,10 +7,12 @@ module Serialize
 
 import Control.Monad.State
 import Data.List
+
 import System.FilePath.Posix
 
 import FilePathExtras
 
+-- For documentation
 type WorkingDirectory = FilePath
 
 type CwdState = State WorkingDirectory

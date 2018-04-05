@@ -16,10 +16,13 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options:
+    - -Wall
+    - -Werror
   dependencies:
     - filepath
-    - MissingH
     - mtl
+    - regex-compat
     - split
 
 executables:
@@ -30,6 +33,8 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -Wall
+    - -Werror
     dependencies:
     - analysis
     - optparse-applicative
@@ -40,9 +45,9 @@ tests:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
+    - -Wall
+    - -Werror
+    - -Wno-missing-signatures
     dependencies:
     - analysis
     - tasty
