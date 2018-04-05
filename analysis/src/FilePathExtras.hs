@@ -1,11 +1,14 @@
 module FilePathExtras
     (isDirectory
     , makeRelativeWithDots
+    , makeRelativeMultidots
     , makeShortestRelative
+    , makeShortestMultidots
     ) where
 
 import Data.Function (on)
 import Data.List
+import Data.List.Utils (replace)
 import System.FilePath.Posix
 
 isDirectory :: FilePath -> Bool
@@ -30,6 +33,18 @@ makeRelativeWithDots base path =
 makeShortestRelative :: FilePath -> FilePath -> FilePath
 makeShortestRelative base path =
     minimumBy (compare `on` length) [path, makeRelativeWithDots base path]
+
+-- TODO add sentinels; require / at ends
+makeRelativeMultidots :: FilePath -> FilePath -> FilePath
+makeRelativeMultidots base path =
+    replace "../.." "..."
+    $ replace "../.." "..."
+    $ replace "../.." "..."
+    $ makeRelativeWithDots base path
+
+makeShortestMultidots :: FilePath -> FilePath -> FilePath
+makeShortestMultidots base path =
+    minimumBy (compare `on` length) [path, makeRelativeMultidots base path]
 
 -- takeParentDirectory "a/b" ==> "a/"
 -- takeParentDirectory "a/b/" ==> "a/"

@@ -1,6 +1,7 @@
 module Serialize
     ( decodePaths
     , encodePaths
+    , encodePathsMultidot
     , encodePathsRel
     ) where
 
@@ -30,20 +31,21 @@ decodePaths = mapPaths $ \p -> do
     when (isDirectory p') $ putCwd p'
     return p'
 
-encodePaths :: [FilePath] -> [FilePath]
-encodePaths = mapPaths $ \p -> do
+mkEncoder :: (FilePath -> FilePath -> FilePath) -> [FilePath] -> [FilePath]
+mkEncoder enc = mapPaths $ \p -> do
     cwd <- getCwd
-    let
-        p' =
-            case stripPrefix cwd p of
-                Just rel -> rel
-                Nothing -> p
+    let p' = enc cwd p
     when (isDirectory p) $ putCwd p
     return p'
 
+encodePaths :: [FilePath] -> [FilePath]
+encodePaths = mkEncoder $ \cwd p ->
+    case stripPrefix cwd p of
+        Just rel -> rel
+        Nothing -> p
+
 encodePathsRel :: [FilePath] -> [FilePath]
-encodePathsRel = mapPaths $ \p -> do
-    cwd <- getCwd
-    let p' = makeShortestRelative cwd p
-    when (isDirectory p) $ putCwd p
-    return $ p'
+encodePathsRel = mkEncoder makeShortestRelative
+
+encodePathsMultidot :: [FilePath] -> [FilePath]
+encodePathsMultidot = mkEncoder makeShortestMultidots

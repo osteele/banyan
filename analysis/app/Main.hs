@@ -1,7 +1,7 @@
 module Main where
 
 import Data.List
-import Data.List.Split
+import Data.List.Split (splitOn)
 import Data.Semigroup ((<>))
 import Options.Applicative
 import System.Environment
@@ -9,27 +9,31 @@ import System.Environment
 import Serialize
 
 data Options = Options
-    { output      :: Maybe String
-    , relative    :: Bool
-    , stats       :: Bool
+    { stats       :: Bool
+    , useDots     :: Bool
+    , combineDots :: Bool
+    , output      :: Maybe String
     , input       :: String
     }
 
 options :: Parser Options
 options = Options
-    <$> optional (strOption
+    <$> switch
+        ( long "stats"
+        <> short 's'
+        <> help "Display statistics" )
+    <*> switch
+        ( long "use-dots"
+        <> short 'd'
+        <> help "Allow .. in relative pathnames" )
+    <*> switch
+        ( long "combine-dots"
+        <> help "Allow ... etc. in pathnames" )
+    <*> optional (strOption
         ( long "output"
         <> short 'o'
         <> metavar "FILE"
         <> help "Write output to FILE" ))
-    <*> switch
-        ( long "relative"
-        <> short 'r'
-        <> help "Use the ..-relative encoder" )
-    <*> switch
-        ( long "stats"
-        <> short 's'
-        <> help "Display statistics" )
     <*> argument str (metavar "FILE")
 
 main :: IO ()
@@ -41,9 +45,14 @@ main = run =<< execParser opts
             <> header "analyze - report path cache metrics" )
 
 run :: Options -> IO ()
-run (Options output relative stats infile) = do
+run (Options stats dots multidots output infile) = do
     inString <- readFile infile >>= return . trimnl
-    let encoder = if relative then encodePathsRel else encodePaths
+    let
+        encoder =
+            case (dots, multidots) of
+                (False, _) -> encodePaths
+                (True, False) -> encodePathsRel
+                (True, True)  -> encodePathsMultidot
     let inPaths = splitOn entryPathSeparator inString
     let absPaths = decodePaths inPaths
     let outPaths = encoder absPaths

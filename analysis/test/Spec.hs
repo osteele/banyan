@@ -52,4 +52,14 @@ filePathTests = testGroup "FilePathExtras tests"
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
         mr "/long-name/d2/d3/" "/long-name/a" @?= "../../a"
+
+    , testCase "makeRelativeMultidots" $ do
+        let mr = makeRelativeMultidots
+        mr "/d1/d2/d3/" "/d1/a" @?= ".../a"
+        mr "/d1/d2/d3/" "/d4/a" @?= "..../d4/a"
+
+    , testCase "makeShortestMultidots" $ do
+        let mr = makeShortestMultidots
+        mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
+        mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
     ]

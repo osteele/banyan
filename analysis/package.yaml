@@ -18,6 +18,7 @@ library:
   source-dirs: src
   dependencies:
     - filepath
+    - MissingH
     - mtl
     - split
 
