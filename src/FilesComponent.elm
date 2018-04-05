@@ -35,6 +35,7 @@ import Date
 import Date.Extra as Date
 import Dropbox exposing (..)
 import Dropbox.AccountInfo exposing (AccountInfo)
+import Dropbox.Encoding
 import Dropbox.Extras exposing (listFolderToContinueError)
 import Dropbox.FileTree as FileTree exposing (FileTree)
 import Extras exposing (maybeToDefault, quantify, toStringWithCommas)
@@ -374,7 +375,7 @@ type CacheDecoderState
     = JsonString String
     | FileStrings
         { paths : List String
-        , decoderState : Dropbox.Extras.SerializationState
+        , decoderState : Dropbox.Encoding.SerializationState
         , addedPathCount : Int
         , totalPathCount : Int
         , finalState : State

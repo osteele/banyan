@@ -81,6 +81,7 @@ See the official Dropbox documentation at
 
 import Dict
 import Dropbox exposing (Metadata(..))
+import Dropbox.Encoding exposing (..)
 import Dropbox.Extras exposing (..)
 import Extras exposing (..)
 import Json.Decode as Decode exposing (Decoder)
@@ -545,7 +546,7 @@ addFromStrings tree s =
     let
         decodeEntry : SerializationState -> String -> ( Metadata, SerializationState )
         decodeEntry cwd =
-            Dropbox.Extras.decodeRelString cwd
+            Dropbox.Encoding.decodeRelString cwd
                 >> \entry ->
                     if isDir entry then
                         ( entry
@@ -570,7 +571,7 @@ encodeAsString s =
     let
         encodeNode : SerializationState -> FileTree -> ( Maybe String, SerializationState )
         encodeNode s0 =
-            itemEntry >> Dropbox.Extras.encodeRelString s0
+            itemEntry >> Dropbox.Encoding.encodeRelString s0
     in
         toListS encodeNode s
             >> Tuple.mapFirst
