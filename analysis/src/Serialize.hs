@@ -6,7 +6,9 @@ module Serialize
     ) where
 
 import Control.Monad.State
-import Data.List
+import Data.Function ((&))
+import Data.List (stripPrefix)
+import Data.Maybe (fromMaybe)
 
 import System.FilePath.Posix
 
@@ -18,7 +20,7 @@ type WorkingDirectory = FilePath
 type CwdState = State WorkingDirectory
 
 mapPaths :: (FilePath -> CwdState FilePath) -> [FilePath] -> [FilePath]
-mapPaths f =  flip evalState "/" . sequence . map f
+mapPaths f =  flip evalState "/" . mapM f
 
 getCwd :: CwdState WorkingDirectory
 getCwd = get
@@ -42,10 +44,8 @@ mkEncoder enc = mapPaths $ \p -> do
     return p'
 
 encodePaths :: [FilePath] -> [FilePath]
-encodePaths = mkEncoder $ \cwd p ->
-    case stripPrefix cwd p of
-        Just rel -> rel
-        Nothing -> p
+encodePaths = mkEncoder $ \base path ->
+    stripPrefix base path & fromMaybe path
 
 encodePathsRel :: [FilePath] -> [FilePath]
 encodePathsRel = mkEncoder makeShortestRelative

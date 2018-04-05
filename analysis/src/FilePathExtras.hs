@@ -6,8 +6,9 @@ module FilePathExtras
     , makeShortestMultidots
     ) where
 
-import Data.Function (on)
-import Data.List
+import Data.Function ((&), on)
+import Data.List (minimumBy, stripPrefix)
+import Data.Maybe (fromMaybe)
 
 import System.FilePath.Posix
 import Text.Regex
@@ -32,11 +33,11 @@ makeRelativeWithDots :: Relativizer
 makeRelativeWithDots "." path = path
 makeRelativeWithDots "/" path = makeRelative "/" path
 makeRelativeWithDots base path =
-    case stripPrefix base path of
-        Just rel -> rel -- ++ "-j(" ++ base ++ ")"
-        Nothing ->
-            let parent = takeParentDirectory base
-            in joinPath ["..", makeRelativeWithDots parent path]
+    let parent = takeParentDirectory base
+    in
+        stripPrefix base path &
+        fromMaybe
+            (joinPath ["..", makeRelativeWithDots parent path])
 
 
 -- | Like makeRelativeWithDots but uses `...`, `....` etc. to move up multiple
@@ -50,7 +51,7 @@ makeRelativeMultidots base path =
 -- | Apply each function to a value; return the shortest result
 shortest :: Foldable f => [a -> f b] -> a -> f b
 shortest funcs x =
-    minimumBy (compare `on` length) $ (funcs <*> [x])
+    minimumBy (compare `on` length) $ funcs <*> [x]
 
 
 -- | Return the shortest result from a list of relativizers.
