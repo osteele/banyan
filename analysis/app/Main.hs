@@ -44,10 +44,10 @@ run :: Options -> IO ()
 run (Options output relative stats infile) = do
     inString <- readFile infile >>= return . trimnl
     let encoder = if relative then encodePathsRel else encodePaths
-    let inPaths = splitOn ";" inString
+    let inPaths = splitOn entryPathSeparator inString
     let absPaths = decodePaths inPaths
     let outPaths = encoder absPaths
-    let outString = intercalate ";" outPaths
+    let outString = intercalate entryPathSeparator outPaths
 
     if stats then do
         putStrLn $ "input size : " ++ (show $ length inString)
@@ -60,7 +60,9 @@ run (Options output relative stats infile) = do
     case output of
         Nothing -> do return ()
         Just output ->
-            putStrLn $ intercalate ";" outPaths
+            putStrLn $ intercalate entryPathSeparator outPaths
+
+entryPathSeparator = ":"
 
 trimnl =
     reverse . dropWhile (=='\n') . reverse

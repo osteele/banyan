@@ -12,7 +12,7 @@ suite =
         [ describe "decodeString"
             [ test "decodes file" <|
                 \_ ->
-                    decodeString "/a/b:12"
+                    decodeString "/a/b;12"
                         |> Expect.equal (file "/a/b" 12)
             , test "decodes zero-sized file" <|
                 \_ ->
@@ -46,7 +46,7 @@ suite =
                 \_ ->
                     file "/a/b" 12
                         |> encodeString
-                        |> Expect.equal "/a/b:12"
+                        |> Expect.equal "/a/b;12"
             , test "encodes zero-size file" <|
                 \_ ->
                     file "/a/b" 0

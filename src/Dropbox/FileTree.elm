@@ -7,6 +7,7 @@ module Dropbox.FileTree
         , decoder
         , empty
         , encode
+        , entryPathSeparator
         , fromEntries
         , fromString
         , get
@@ -538,7 +539,12 @@ trimDepth n =
 
 
 
--- SERIALIZATION
+-- STRING SERIALIZATION
+
+
+entryPathSeparator : String
+entryPathSeparator =
+    ":"
 
 
 addFromStrings : FileTree -> SerializationState -> List String -> ( FileTree, SerializationState )
@@ -563,7 +569,7 @@ addFromStrings tree s =
 
 decodeFromString : SerializationState -> String -> ( FileTree, SerializationState )
 decodeFromString s =
-    String.split ";" >> addFromStrings empty s
+    String.split entryPathSeparator >> addFromStrings empty s
 
 
 encodeAsString : SerializationState -> FileTree -> ( String, SerializationState )
@@ -578,7 +584,7 @@ encodeAsString s =
                 (List.filterMap identity
                     >> -- the root folder is implicit
                        List.filter ((/=) "/")
-                    >> String.join ";"
+                    >> String.join entryPathSeparator
                 )
 
 

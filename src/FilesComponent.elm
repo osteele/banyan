@@ -397,7 +397,7 @@ decodePathBatch model state =
                     if ( model.accountId, model.teamId ) == ( accountId, teamId ) then
                         let
                             paths =
-                                String.split ";" files
+                                String.split FileTree.entryPathSeparator files
                         in
                             CacheDecoderProgress model <|
                                 FileStrings
@@ -481,10 +481,10 @@ encode : Model -> Encode.Value
 encode model =
     Encode.object
         [ ( "version", Encode.int encodingVersion )
-        , ( "files", FileTree.encode model.files )
         , ( "state", encodeState model.state )
         , ( "accountId", Encode.string <| Maybe.withDefault "" model.accountId )
         , ( "teamId", Encode.string <| Maybe.withDefault "" model.teamId )
+        , ( "entries", FileTree.encode model.files )
         ]
 
 
@@ -492,7 +492,7 @@ decoder : Decoder Model
 decoder =
     decodeRequireVersion encodingVersion <|
         Decode.map4
-            (\f s id tid ->
+            (\s id tid f ->
                 { init
                     | files = f
                     , state = s
@@ -500,27 +500,27 @@ decoder =
                     , teamId = maybeToDefault "" tid
                 }
             )
-            (Decode.field "files" FileTree.decoder)
             (Decode.field "state" stateDecoder)
             (Decode.field "accountId" Decode.string)
             (Decode.field "teamId" Decode.string)
+            (Decode.field "entries" FileTree.decoder)
 
 
 partialModelDecoder : Decoder { files : String, state : State, accountId : Maybe String, teamId : Maybe String }
 partialModelDecoder =
     decodeRequireVersion encodingVersion <|
         Decode.map4
-            (\f s id tid ->
+            (\s id tid f ->
                 { files = f
                 , state = s
                 , accountId = maybeToDefault "" id
                 , teamId = maybeToDefault "" tid
                 }
             )
-            (Decode.field "files" Decode.string)
             (Decode.field "state" stateDecoder)
             (Decode.field "accountId" Decode.string)
             (Decode.field "teamId" Decode.string)
+            (Decode.field "entries" Decode.string)
 
 
 

@@ -19,14 +19,23 @@ type alias SerializationState =
     Maybe String
 
 
+
+-- CONSTANTS
+
+
 relativeFilePrefix : String
 relativeFilePrefix =
     "…/"
 
 
+metadataSeparator : String
+metadataSeparator =
+    ";"
+
+
 nameOptionalSizeRe : Regex.Regex
 nameOptionalSizeRe =
-    Regex.regex "^(.+):(\\d*)$"
+    Regex.regex "^(.+);(\\d*)$"
 
 
 pathQuoteRe : Regex.Regex
@@ -37,6 +46,10 @@ pathQuoteRe =
 pathUnquoteRe : Regex.Regex
 pathUnquoteRe =
     Regex.regex "%[0-9a-zA-Z]{2}"
+
+
+
+-- HELPERS
 
 
 quotePath : String -> String
@@ -61,6 +74,34 @@ unquotePath =
                 |> Result.map (Char.fromCode >> String.fromChar)
                 |> Result.withDefault match
         )
+
+
+{-| Transform deleted, folder, and file paths respecively into
+"-path", "path/", and "path"
+-}
+affixPathMetadata : Metadata -> String -> String
+affixPathMetadata entry path =
+    let
+        p =
+            quotePath path
+    in
+        case entry of
+            DeletedMeta _ ->
+                "-" ++ p
+
+            FileMeta { size } ->
+                String.join metadataSeparator <|
+                    List.filterMap identity
+                        [ Just p
+                        , Maybe.map Basics.toString <| maybeToDefault 0 size
+                        ]
+
+            FolderMeta _ ->
+                p ++ "/"
+
+
+
+-- RELATIVE STRING ENCODING
 
 
 decodeRelString : SerializationState -> String -> Metadata
@@ -90,45 +131,6 @@ decodeRelString cwd path =
             String.dropRight 1 absPath |> unquotePath |> folder
         else
             file (unquotePath filePath) fileSize
-
-
-{-| Construct an entry from a string.
-
-The string is a ;-separated list of paths. Files end in :size, where size
-is an optional size.
-
-    fromString "/file" -- file with no size
-    fromString "/file:10" -- file with size
-    fromString "/dir/" -- folder
-
--}
-decodeString : String -> Metadata
-decodeString =
-    decodeRelString Nothing
-
-
-{-| Transform deleted, folder, and file paths respecively into
-"-path", "path/", and "path"
--}
-affixPathMetadata : Metadata -> String -> String
-affixPathMetadata entry path =
-    let
-        p =
-            quotePath path
-    in
-        case entry of
-            DeletedMeta _ ->
-                "-" ++ p
-
-            FileMeta { size } ->
-                String.join ":" <|
-                    List.filterMap identity
-                        [ Just p
-                        , Maybe.map Basics.toString <| maybeToDefault 0 size
-                        ]
-
-            FolderMeta _ ->
-                p ++ "/"
 
 
 {-| Encode a file entry as a path, given a current working directory as context.
@@ -163,6 +165,25 @@ encodeRelString cwd entry =
                 ( Just <| affixPathMetadata entry relPath
                 , newCwd
                 )
+
+
+
+-- STRING ENCODING
+
+
+{-| Construct an entry from a string.
+
+The string is a :-separated list of paths. Files end in ;size, where size
+is an optional size.
+
+    fromString "/file" -- file with no size
+    fromString "/file;10" -- file with size
+    fromString "/dir/" -- folder
+
+-}
+decodeString : String -> Metadata
+decodeString =
+    decodeRelString Nothing
 
 
 {-| Serialize a file entry as a string. See decodeString for the format.
