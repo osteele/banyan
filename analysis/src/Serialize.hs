@@ -12,7 +12,6 @@ import Data.Maybe (fromMaybe)
 import FilePathExtras
 import System.FilePath.Posix
 
--- For documentation
 type WorkingDirectory = FilePath
 
 type CwdState = State WorkingDirectory

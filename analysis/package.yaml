@@ -48,6 +48,7 @@ tests:
     - -Wall
     - -Werror
     - -Wno-missing-signatures
+    - -Wno-type-defaults
     dependencies:
     - analysis
     - tasty
