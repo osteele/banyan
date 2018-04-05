@@ -46,7 +46,7 @@ main = run =<< execParser opts
 
 run :: Options -> IO ()
 run (Options stats dots multidots output infile) = do
-    inString <- readFile infile >>= return . trimnl
+    inString <- trimnl <$> readFile infile
     let
         encoder =
             case (dots, multidots) of
@@ -67,7 +67,7 @@ run (Options stats dots multidots output infile) = do
         putStrLn $ "re-coded: " ++ show outPaths
 
     case output of
-        Nothing -> do return ()
+        Nothing -> pure ()
         Just output ->
             putStrLn $ intercalate entryPathSeparator outPaths
 

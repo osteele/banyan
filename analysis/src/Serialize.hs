@@ -24,7 +24,8 @@ getCwd = get
 putCwd :: WorkingDirectory -> CwdState ()
 putCwd = put
 
-decodePaths :: [FilePath] -> [FilePath]
+decodePaths :: [FilePath] -- relative paths
+            -> [FilePath] -- absolute paths
 decodePaths = mapPaths $ \p -> do
     cwd <- getCwd
     let p' = if isRelative p then joinPath [cwd, p] else p
