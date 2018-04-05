@@ -1,7 +1,7 @@
 module DropboxExtrasTests exposing (..)
 
 import Dropbox.Encoding exposing (..)
-import Dropbox.Extras as DropboxExtras exposing (file, folder, record)
+import Dropbox.Extras as DropboxExtras exposing (file, folder, info)
 import Expect exposing (Expectation)
 import Test exposing (..)
 
@@ -30,15 +30,15 @@ suite =
                 \_ ->
                     decodeString "…/file"
                         |> Expect.all
-                            [ record >> .name >> Expect.equal "file"
-                            , record >> .pathDisplay >> Expect.equal Nothing
+                            [ info >> .name >> Expect.equal "file"
+                            , info >> .pathDisplay >> Expect.equal Nothing
                             ]
             , test "decodes relative folders" <|
                 \_ ->
                     decodeString "…/dir/"
                         |> Expect.all
-                            [ record >> .name >> Expect.equal "dir"
-                            , record >> .pathDisplay >> Expect.equal Nothing
+                            [ info >> .name >> Expect.equal "dir"
+                            , info >> .pathDisplay >> Expect.equal Nothing
                             ]
             ]
         , describe "encodeString"

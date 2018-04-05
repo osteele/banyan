@@ -3,7 +3,7 @@ module Dropbox.Extras
         ( folder
         , file
         , deleted
-        , record
+        , info
         , size
         , isDir
         , listFolderToContinueError
@@ -118,8 +118,8 @@ pathAttrs path =
 
 {-| Return a record with the common attributes of the Metadata union records.
 -}
-record : Metadata -> CommonMeta
-record entry =
+info : Metadata -> CommonMeta
+info entry =
     case entry of
         FileMeta data ->
             { name = data.name
@@ -154,7 +154,7 @@ record entry =
 
 size : Metadata -> Maybe Int
 size =
-    record >> .size
+    info >> .size
 
 
 

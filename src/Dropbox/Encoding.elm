@@ -137,7 +137,7 @@ new context.
 -}
 encodeRelString : SerializationState -> Metadata -> ( Maybe String, SerializationState )
 encodeRelString cwd entry =
-    case record entry |> .pathDisplay of
+    case info entry |> .pathDisplay of
         Nothing ->
             ( Nothing, cwd )
 
@@ -172,7 +172,7 @@ encodeString entry =
     encodeRelString Nothing entry
         |> Tuple.first
         |> Maybe.withDefault
-            (record entry
+            (info entry
                 |> .name
                 |> (++) relativeFilePrefix
                 |> affixPathMetadata entry

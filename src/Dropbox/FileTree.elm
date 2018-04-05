@@ -361,7 +361,7 @@ insert data =
                 _ ->
                     Debug.crash "unexpected Dropbox metadata case"
     in
-        case Dropbox.Extras.record data |> .pathDisplay of
+        case Dropbox.Extras.info data |> .pathDisplay of
             Just path ->
                 updateTreeItem (splitPath <| String.toLower path) (update path) [ "" ]
 
@@ -392,7 +392,7 @@ remove meta =
                         k :: ks ->
                             children |> Dict.update k (Maybe.map <| rm ks) |> Folder data stats |> recomputeStats
     in
-        case Dropbox.Extras.record meta |> .pathLower of
+        case Dropbox.Extras.info meta |> .pathLower of
             Just path ->
                 rm <| splitPath path
 
@@ -550,7 +550,7 @@ addFromStrings tree s =
                 >> \entry ->
                     if isDir entry then
                         ( entry
-                        , Dropbox.Extras.record entry
+                        , Dropbox.Extras.info entry
                             |> .pathLower
                             |> Maybe.map (\p -> p ++ "/")
                         )
