@@ -4,16 +4,15 @@ import Data.List
 import Data.List.Split (splitOn)
 import Data.Semigroup ((<>))
 import Options.Applicative
-import System.Environment
 
 import Serialize
 
 data Options = Options
-    { stats       :: Bool
-    , useDots     :: Bool
-    , combineDots :: Bool
-    , output      :: Maybe String
-    , input       :: String
+    { _stats       :: Bool
+    , _useDots     :: Bool
+    , _combineDots :: Bool
+    , _output      :: Maybe String
+    , _input       :: String
     }
 
 options :: Parser Options
@@ -59,8 +58,8 @@ run (Options stats dots multidots output infile) = do
     let outString = intercalate entryPathSeparator outPaths
 
     if stats then do
-        putStrLn $ "input size : " ++ (show $ length inString)
-        putStrLn $ "output size: " ++ (show $ length outString)
+        putStrLn $ "input size : " ++ show (length inString)
+        putStrLn $ "output size: " ++ show (length outString)
     else do
         putStrLn $ "input   : " ++ show inPaths
         putStrLn $ "decoded : " ++ show absPaths
@@ -68,10 +67,12 @@ run (Options stats dots multidots output infile) = do
 
     case output of
         Nothing -> pure ()
-        Just output ->
+        Just _ ->
             putStrLn $ intercalate entryPathSeparator outPaths
 
+entryPathSeparator :: String
 entryPathSeparator = ":"
 
+trimnl :: String -> String
 trimnl =
     reverse . dropWhile (=='\n') . reverse
