@@ -37,21 +37,21 @@ serializationTests =
         decodePaths ["a"] @?= ["/a"]
         decodePaths ["a", "b"] @?= ["/a", "/b"]
         decodePaths ["a/", "b"] @?= ["/a/", "/a/b"]
-        decodePaths ["a/", "b", "c/", "d"] @?=
-          ["/a/", "/a/b", "/a/c/", "/a/c/d"]
+        decodePaths ["a/", "b", "c/", "d"] @?= ["/a/", "/a/b", "/a/c/", "/a/c/d"]
         decodePaths ["a/", "b", "/c/", "d"] @?= ["/a/", "/a/b", "/c/", "/c/d"]
 
-    , testCase "encodePaths" $ do
-        encodePaths ["/a"] @?= ["a"]
-        encodePaths ["/a", "/b"] @?= ["a", "b"]
-        encodePaths ["/a/", "/a/b"] @?= ["a/", "b"]
-        encodePaths ["/a/", "/a/b", "/a/c/", "/a/c/d"] @?=
-          ["a/", "b", "c/", "d"]
-        encodePaths ["/a/", "/a/b", "/c/", "/c/d"] @?= ["a/", "b", "/c/", "d"]
+    , testCase "mkEncoder makeRelative" $ do
+        let enc = mkEncoder makeRelative
+        enc ["/a"] @?= ["a"]
+        enc ["/a", "/b"] @?= ["a", "b"]
+        enc ["/a/", "/a/b"] @?= ["a/", "b"]
+        enc ["/a/", "/a/b", "/a/c/", "/a/c/d"] @?= ["a/", "b", "c/", "d"]
+        enc ["/a/", "/a/b", "/c/", "/c/d"] @?= ["a/", "b", "/c/", "d"]
 
-    , testCase "encodePathsWithDots" $ do
-        encodePathsWithDots ["/a/b/c/", "/a/b/c/d"] @?= ["a/b/c/", "d"]
-        encodePathsWithDots ["/a/b/c/", "/a/b/e"] @?= ["a/b/c/", "../e"]
+    , testCase "mkEncoder makeRelativeWithDots" $ do
+        let enc = mkEncoder makeRelativeWithDots
+        enc ["/a/b/c/", "/a/b/c/d"] @?= ["a/b/c/", "d"]
+        enc ["/a/b/c/", "/a/b/e"] @?= ["a/b/c/", "../e"]
     ]
 
 filePathTests =
@@ -98,6 +98,11 @@ filePathTests =
         mr "/d1/d2/d3/" "/d1/a" @?= "../../a"
         mr "/d1/d2/d3/" "/d4/a" @?= "../../../d4/a"
 
+    , testCase "makeRelativeMultidots" $ do
+        let mr = makeRelativeWithMultidots
+        mr "/d1/d2/d3/" "/d1/a" @?= ".../a"
+        mr "/d1/d2/d3/" "/d4/a" @?= "..../d4/a"
+
     , testCase "makeRelativeIfShorter makeRelativeWithDots" $ do
         let mr = makeRelativeIfShorter makeRelativeWithDots
         mr "/dir/" "/a" @?= "/a"
@@ -108,11 +113,6 @@ filePathTests =
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
         mr "/long-name/d2/d3/" "/long-name/a" @?= "../../a"
-
-    , testCase "makeRelativeMultidots" $ do
-        let mr = makeRelativeWithMultidots
-        mr "/d1/d2/d3/" "/d1/a" @?= ".../a"
-        mr "/d1/d2/d3/" "/d4/a" @?= "..../d4/a"
 
     , testCase "makeRelativeIfShorter makeRelativeWithMultidots" $ do
         let mr = makeRelativeIfShorter makeRelativeWithMultidots

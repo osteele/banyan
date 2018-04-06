@@ -2,6 +2,7 @@ module FilePathExtras
   ( compareByDirectory
   , isDirectory
   , Relativizer
+  , makeRelative
   , makeRelativeWithDots
   , makeRelativeWithMultidots
   , makeRelativeIfShorter

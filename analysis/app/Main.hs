@@ -5,7 +5,7 @@ import           Data.List.Split     (splitOn)
 import           Data.Semigroup      ((<>))
 import           Options.Applicative
 
-import           FilePathExtras      (compareByDirectory)
+import           FilePathExtras
 import           Serialize
 
 data Options = Options
@@ -17,18 +17,29 @@ data Options = Options
   , getInputFile     :: String
   }
 
+getRelativizer :: Options -> Relativizer
+getRelativizer opts =
+  case (getDotsFlag opts, getMultidotsFlag opts) of
+    (False, _)    -> makeRelative
+    (True, False) -> makeRelativeIfShorter makeRelativeWithDots
+    (True, True)  -> makeRelativeIfShorter makeRelativeWithMultidots
+
+getPathSorter :: Options -> [FilePath] -> [FilePath]
+getPathSorter opts =
+  if getSortFlag opts
+    then sortBy compareByDirectory
+    else id
+
 options :: Parser Options
 options =
   Options
   <$> switch (long "stats" <> short 's' <> help "Display statistics")
   <*> switch (long "sort" <> help "Sort files before directories")
   <*> switch (long "use-dots" <> short 'd' <> help "Allow .. in relative pathnames")
-  <*> switch
-    (long "combine-dots" <> short 'm' <> help "Allow ... etc. in pathnames")
+  <*> switch (long "combine-dots" <> short 'm' <> help "Allow ... etc. in pathnames")
   <*> optional (strOption
-        (long "output" <> short 'o' <> metavar "FILE" <>
-        help "Write output to FILE"))
-        <*> argument str (metavar "FILE")
+      (long "output" <> short 'o' <> metavar "FILE" <> help "Write output to FILE"))
+  <*> argument str (metavar "FILE")
 
 main :: IO ()
 main = run =<< execParser opts
@@ -40,18 +51,10 @@ main = run =<< execParser opts
 run :: Options -> IO ()
 run opts = do
   content <- trimnl <$> readFile (getInputFile opts)
-  let encoder =
-        case (getDotsFlag opts, getMultidotsFlag opts) of
-          (False, _)    -> encodePaths
-          (True, False) -> encodePathsWithDots
-          (True, True)  -> encodePathsWithMultidots
-      sorter =
-        if getSortFlag opts
-          then sortBy compareByDirectory
-          else id
-  let inPaths     = entryPaths content
+  let encoder = mkEncoder $ getRelativizer opts
+      inPaths     = entryPaths content
       absPaths    = decodePaths inPaths
-      sortedPaths = sorter absPaths
+      sortedPaths = getPathSorter opts absPaths
       outPaths    = encoder sortedPaths
       outString   = unEntryPaths outPaths
   if getDisplayStats opts

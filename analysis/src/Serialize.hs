@@ -1,14 +1,12 @@
 module Serialize
   ( decodePaths
-  , encodePaths
-  , encodePathsWithDots
-  , encodePathsWithMultidots
+  , mkEncoder
   ) where
 
 import           Control.Monad.State
-import           Data.Function         ((&))
-import           Data.List             (stripPrefix)
-import           Data.Maybe            (fromMaybe)
+-- import           Data.Function         ((&))
+-- import           Data.List             (stripPrefix)
+-- import           Data.Maybe            (fromMaybe)
 import           FilePathExtras
 import           System.FilePath.Posix
 
@@ -44,13 +42,3 @@ mkEncoder enc =
     let p' = enc cwd p
     when (isDirectory p) $ putCwd p
     return p'
-
-encodePaths :: [AbsolutePath] -> [RelativePath]
-encodePaths = mkEncoder $ \base path ->
-  stripPrefix base path & fromMaybe path
-
-encodePathsWithDots :: [AbsolutePath] -> [RelativePath]
-encodePathsWithDots = mkEncoder $ makeRelativeIfShorter makeRelativeWithDots
-
-encodePathsWithMultidots :: [AbsolutePath] -> [RelativePath]
-encodePathsWithMultidots = mkEncoder $ makeRelativeIfShorter makeRelativeWithMultidots
