@@ -1,15 +1,15 @@
 module Main where
 
+import           Control.Monad
 import           Data.List
 import           Data.List.Split     (splitOn)
 import           Data.Semigroup      ((<>))
-import           Options.Applicative
-
 import           FilePathExtras
+import           Options.Applicative
 import           Serialize
 
 data Options = Options
-  { getDisplayStats  :: Bool
+  { getShowPaths     :: Bool
   , getSortFlag      :: Bool
   , getDotsFlag      :: Bool
   , getMultidotsFlag :: Bool
@@ -33,20 +33,13 @@ getPathSorter opts =
 options :: Parser Options
 options =
   Options
-  <$> switch (long "stats" <> short 's' <> help "Display statistics")
+  <$> switch (long "paths" <> short 'p' <> help "Show paths")
   <*> switch (long "sort" <> help "Sort files before directories")
-  <*> switch (long "use-dots" <> short 'd' <> help "Allow .. in relative pathnames")
+  <*> switch (long "allow-dots" <> short 'd' <> help "Allow .. in relative pathnames")
   <*> switch (long "combine-dots" <> short 'm' <> help "Allow ... etc. in pathnames")
   <*> optional (strOption
       (long "output" <> short 'o' <> metavar "FILE" <> help "Write output to FILE"))
   <*> argument str (metavar "FILE")
-
-main :: IO ()
-main = run =<< execParser opts
-  where
-    opts = info (options <**> helper)
-        (fullDesc <> progDesc "Report path cache metrics" <>
-         header "analyze - report path cache metrics")
 
 run :: Options -> IO ()
 run opts = do
@@ -57,17 +50,22 @@ run opts = do
       sortedPaths = getPathSorter opts absPaths
       outPaths    = encoder sortedPaths
       outString   = unEntryPaths outPaths
-  if getDisplayStats opts
-    then do
-      putStrLn $ "input size : " ++ show (length content)
-      putStrLn $ "output size: " ++ show (length outString)
-    else do
-      putStrLn $ "input   : " ++ show inPaths
-      putStrLn $ "decoded : " ++ show absPaths
-      putStrLn $ "re-coded: " ++ show outPaths
+  putStrLn $ "input size : " ++ show (length content)
+  putStrLn $ "output size: " ++ show (length outString)
+  when (getShowPaths opts) $ do
+    putStrLn $ "input   : " ++ show inPaths
+    putStrLn $ "decoded : " ++ show absPaths
+    putStrLn $ "re-coded: " ++ show outPaths
   case getOutputFile opts of
     Nothing      -> return ()
     Just outfile -> writeFile outfile outString
+
+main :: IO ()
+main = run =<< execParser opts
+  where
+    opts = info (options <**> helper)
+        (fullDesc <> progDesc "Report path cache metrics" <>
+         header "analyze - report path cache metrics")
 
 -- remove a final newline if present
 trimnl :: String -> String
