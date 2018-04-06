@@ -33,23 +33,23 @@ listTests =
 
 serializationTests =
   testGroup "Serialization tests"
-    [ testCase "decodePaths" $ do
-        decodePaths ["a"] @?= ["/a"]
-        decodePaths ["a", "b"] @?= ["/a", "/b"]
-        decodePaths ["a/", "b"] @?= ["/a/", "/a/b"]
-        decodePaths ["a/", "b", "c/", "d"] @?= ["/a/", "/a/b", "/a/c/", "/a/c/d"]
-        decodePaths ["a/", "b", "/c/", "d"] @?= ["/a/", "/a/b", "/c/", "/c/d"]
+    [ testCase "decodeFilePaths" $ do
+        decodeFilePaths ["a"] @?= ["/a"]
+        decodeFilePaths ["a", "b"] @?= ["/a", "/b"]
+        decodeFilePaths ["a/", "b"] @?= ["/a/", "/a/b"]
+        decodeFilePaths ["a/", "b", "c/", "d"] @?= ["/a/", "/a/b", "/a/c/", "/a/c/d"]
+        decodeFilePaths ["a/", "b", "/c/", "d"] @?= ["/a/", "/a/b", "/c/", "/c/d"]
 
-    , testCase "mkEncoder makeRelative" $ do
-        let enc = mkEncoder makeRelative
+    , testCase "mkFilePathsEncoder makeRelative" $ do
+        let enc = mkFilePathsEncoder makeRelative
         enc ["/a"] @?= ["a"]
         enc ["/a", "/b"] @?= ["a", "b"]
         enc ["/a/", "/a/b"] @?= ["a/", "b"]
         enc ["/a/", "/a/b", "/a/c/", "/a/c/d"] @?= ["a/", "b", "c/", "d"]
         enc ["/a/", "/a/b", "/c/", "/c/d"] @?= ["a/", "b", "/c/", "d"]
 
-    , testCase "mkEncoder makeRelativeWithDots" $ do
-        let enc = mkEncoder makeRelativeWithDots
+    , testCase "mkFilePathsEncoder makeRelativeWithDots" $ do
+        let enc = mkFilePathsEncoder makeRelativeWithDots
         enc ["/a/b/c/", "/a/b/c/d"] @?= ["a/b/c/", "d"]
         enc ["/a/b/c/", "/a/b/e"] @?= ["a/b/c/", "../e"]
     ]

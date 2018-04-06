@@ -11,10 +11,10 @@ module FilePathExtras
 import           Data.Function         ((&))
 import           Data.List             (isPrefixOf, stripPrefix)
 import           Data.Maybe            (fromMaybe)
-import           System.FilePath.Posix
-import           Text.Regex
-
 import           ListExtras
+import           System.FilePath.Posix
+
+import           Text.Regex
 
 {-| Same as `compare`, but sort files before subdirectories in the same
 parent directory.

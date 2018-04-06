@@ -4,17 +4,20 @@ import           Control.Monad
 import           Data.List
 import           Data.List.Split     (splitOn)
 import           Data.Semigroup      ((<>))
-import           FilePathExtras
 import           Options.Applicative
+
+import           FilePathExtras
 import           Serialize
+
+-- OPTIONS
 
 data Options = Options
   { getShowPaths     :: Bool
   , getSortFlag      :: Bool
   , getDotsFlag      :: Bool
   , getMultidotsFlag :: Bool
-  , getOutputFile    :: Maybe String
   , getInputFile     :: String
+  , getOutputFile    :: Maybe String
   }
 
 getRelativizer :: Options -> Relativizer
@@ -37,16 +40,18 @@ options =
   <*> switch (long "sort" <> help "Sort files before directories")
   <*> switch (long "allow-dots" <> short 'd' <> help "Allow .. in relative pathnames")
   <*> switch (long "combine-dots" <> short 'm' <> help "Allow ... etc. in pathnames")
+  <*> argument str (metavar "FILE")
   <*> optional (strOption
       (long "output" <> short 'o' <> metavar "FILE" <> help "Write output to FILE"))
-  <*> argument str (metavar "FILE")
+
+-- MAIN
 
 run :: Options -> IO ()
 run opts = do
-  content <- trimnl <$> readFile (getInputFile opts)
-  let encoder = mkEncoder $ getRelativizer opts
+  content <- dropFinalNewline <$> readFile (getInputFile opts)
+  let encoder = mkFilePathsEncoder $ getRelativizer opts
       inPaths     = entryPaths content
-      absPaths    = decodePaths inPaths
+      absPaths    = decodeFilePaths inPaths
       sortedPaths = getPathSorter opts absPaths
       outPaths    = encoder sortedPaths
       outString   = unEntryPaths outPaths
@@ -67,15 +72,26 @@ main = run =<< execParser opts
         (fullDesc <> progDesc "Report path cache metrics" <>
          header "analyze - report path cache metrics")
 
--- remove a final newline if present
-trimnl :: String -> String
-trimnl = reverse . dropWhile (== '\n') . reverse
+-- HELPERS
 
+-- | Drop a final newline if present.
+dropFinalNewline :: String -> String
+dropFinalNewline = reverse . dropWhile (== '\n') . reverse
+
+-- ENTRY PATH SEPARATORS
+
+-- | The character that separates paths.
 entryPathSeparator :: String
 entryPathSeparator = ":"
 
+{-| `entryPaths` breaks a string up into a list of paths, which were delimited
+by colons.
+-}
 entryPaths :: String -> [FilePath]
 entryPaths = splitOn entryPathSeparator
 
+{-| `unEntryPaths` is an inverse operation to `entryPaths`. It uses separating
+colons to join paths.
+-}
 unEntryPaths :: [FilePath] -> String
 unEntryPaths = intercalate entryPathSeparator

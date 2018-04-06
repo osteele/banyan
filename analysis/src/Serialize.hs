@@ -1,32 +1,31 @@
 module Serialize
-  ( decodePaths
-  , mkEncoder
+  ( decodeFilePaths
+  , mkFilePathsEncoder
   ) where
 
 import           Control.Monad.State
--- import           Data.Function         ((&))
--- import           Data.List             (stripPrefix)
--- import           Data.Maybe            (fromMaybe)
-import           FilePathExtras
 import           System.FilePath.Posix
+
+import           FilePathExtras
 
 type AbsolutePath = FilePath
 type RelativePath = FilePath
-type WorkingDirectory = AbsolutePath
-type CwdState = State WorkingDirectory
 
-getCwd :: CwdState WorkingDirectory
+-- | A Monad whose state is the current working directory.
+type CwdState = State AbsolutePath
+
+getCwd :: CwdState AbsolutePath
 getCwd = get
 
-putCwd :: WorkingDirectory -> CwdState ()
+putCwd :: AbsolutePath -> CwdState ()
 putCwd = put
 
-mapPaths :: (FilePath -> CwdState FilePath) -> [FilePath] -> [FilePath]
-mapPaths f = flip evalState "/" . mapM f
+mapFilePaths :: (FilePath -> CwdState FilePath) -> [FilePath] -> [FilePath]
+mapFilePaths f = flip evalState "/" . mapM f
 
-decodePaths :: [RelativePath] -> [AbsolutePath]
-decodePaths =
-  mapPaths $ \p -> do
+decodeFilePaths :: [RelativePath] -> [AbsolutePath]
+decodeFilePaths =
+  mapFilePaths $ \p -> do
     cwd <- getCwd
     let p' =
           if isRelative p
@@ -35,9 +34,9 @@ decodePaths =
     when (isDirectory p') $ putCwd p'
     return p'
 
-mkEncoder :: Relativizer -> [AbsolutePath] -> [RelativePath]
-mkEncoder enc =
-  mapPaths $ \p -> do
+mkFilePathsEncoder :: Relativizer -> [AbsolutePath] -> [RelativePath]
+mkFilePathsEncoder enc =
+  mapFilePaths $ \p -> do
     cwd <- getCwd
     let p' = enc cwd p
     when (isDirectory p) $ putCwd p
