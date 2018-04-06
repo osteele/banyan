@@ -9,12 +9,12 @@ import           FilePathExtras      (compareByDirectory)
 import           Serialize
 
 data Options = Options
-  { _stats       :: Bool
-  , _sort        :: Bool
-  , _useDots     :: Bool
-  , _combineDots :: Bool
-  , _output      :: Maybe String
-  , _input       :: String
+  { getDisplayStats  :: Bool
+  , getSortFlag      :: Bool
+  , getDotsFlag      :: Bool
+  , getMultidotsFlag :: Bool
+  , getOutputFile    :: Maybe String
+  , getInputFile     :: String
   }
 
 options :: Parser Options
@@ -38,36 +38,43 @@ main = run =<< execParser opts
          header "analyze - report path cache metrics")
 
 run :: Options -> IO ()
-run opts@(Options stats _ dots multidots output infile) = do
-  inString <- trimnl <$> readFile infile
+run opts = do
+  content <- trimnl <$> readFile (getInputFile opts)
   let encoder =
-        case (dots, multidots) of
+        case (getDotsFlag opts, getMultidotsFlag opts) of
           (False, _)    -> encodePaths
           (True, False) -> encodePathsWithDots
           (True, True)  -> encodePathsWithMultidots
       sorter =
-        if _sort opts
+        if getSortFlag opts
           then sortBy compareByDirectory
           else id
-  let inPaths     = splitOn entryPathSeparator inString
+  let inPaths     = entryPaths content
       absPaths    = decodePaths inPaths
       sortedPaths = sorter absPaths
       outPaths    = encoder sortedPaths
-      outString   = intercalate entryPathSeparator outPaths
-  if stats
+      outString   = unEntryPaths outPaths
+  if getDisplayStats opts
     then do
-      putStrLn $ "input size : " ++ show (length inString)
+      putStrLn $ "input size : " ++ show (length content)
       putStrLn $ "output size: " ++ show (length outString)
     else do
       putStrLn $ "input   : " ++ show inPaths
       putStrLn $ "decoded : " ++ show absPaths
       putStrLn $ "re-coded: " ++ show outPaths
-  case output of
-    Nothing -> pure ()
-    Just _  -> putStrLn $ intercalate entryPathSeparator outPaths
+  case getOutputFile opts of
+    Nothing      -> return ()
+    Just outfile -> writeFile outfile outString
+
+-- remove a final newline if present
+trimnl :: String -> String
+trimnl = reverse . dropWhile (== '\n') . reverse
 
 entryPathSeparator :: String
 entryPathSeparator = ":"
 
-trimnl :: String -> String
-trimnl = reverse . dropWhile (== '\n') . reverse
+entryPaths :: String -> [FilePath]
+entryPaths = splitOn entryPathSeparator
+
+unEntryPaths :: [FilePath] -> String
+unEntryPaths = intercalate entryPathSeparator
