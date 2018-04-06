@@ -1,5 +1,6 @@
 module FilePathExtras
-  ( isDirectory
+  ( compareByDirectory
+  , isDirectory
   , makeRelativeWithDots
   , makeRelativeMultidots
   , makeShortestRelative
@@ -7,12 +8,23 @@ module FilePathExtras
   ) where
 
 import Data.Function ((&))
-import Data.List (stripPrefix)
+import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromMaybe)
 import System.FilePath.Posix
 import Text.Regex
 
 import ListExtras
+
+-- | Sort files before subdirectories, that are in the same parent directory
+compareByDirectory :: FilePath -> FilePath -> Ordering
+compareByDirectory a b
+  | da == db = compare a b
+  | da `isPrefixOf` db = LT
+  | db `isPrefixOf` da = GT
+  | otherwise = compare a b
+  where
+    da = takeDirectory a
+    db = takeDirectory b
 
 {-| Is a path a directory name (ends in pathSeparator)?
 
@@ -24,6 +36,15 @@ isDirectory path =
   case reverse path of
     '/':_ -> True
     _ -> False
+
+{-| Returns a file or directory path's parent dierctory.
+
+   takeParentDirectory "a/b/c" ==> "a/b"
+   takeParentDirectory "a/b/c/" ==> "a/b"
+-}
+takeParentDirectory :: FilePath -> FilePath
+takeParentDirectory =
+  addTrailingPathSeparator . takeDirectory . dropTrailingPathSeparator
 
 -- | A function that contracts a filename based on a reference path (the first
 -- argument). `System.Filepath.makeRelative` is an example of a `Relativizer`.
@@ -51,20 +72,12 @@ makeRelativeMultidots base path =
 shortestRelativizer :: [Relativizer] -> Relativizer
 shortestRelativizer funcs base path = shortest (map uncurry funcs) (base, path)
 
--- | Like System.FilePath.Posix.makeRelative, but uses .. where this is shorter
--- than the non-relativized path.
+-- | Like System.FilePath.Posix.makeRelative, but uses `..` where this is
+-- shorter than the non-relativized path.
 makeShortestRelative :: Relativizer
 makeShortestRelative = shortestRelativizer [flip const, makeRelativeWithDots]
 
--- | Returns whichever of the original and relative path is shorter. Uses ...
--- .... etc. to move up multiple directory levels.
+-- | Returns whichever of the original and relative path is shorter. Uses
+-- `...`, `....` etc. to move up multiple directory levels.
 makeShortestMultidots :: Relativizer
 makeShortestMultidots = shortestRelativizer [flip const, makeRelativeMultidots]
-
-{-|
-   takeParentDirectory "a/b" ==> "a/"
-   takeParentDirectory "a/b/" ==> "a/"
--}
-takeParentDirectory :: FilePath -> FilePath
-takeParentDirectory =
-  addTrailingPathSeparator . takeDirectory . dropTrailingPathSeparator

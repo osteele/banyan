@@ -31,7 +31,7 @@ shortest funcs x = minimumBy (compare `on` length) $ funcs <*> [x]
 first and last element of the result.
 
     withSentinel 'a' f "bcd" == head . init . f "abcda"
-    withSentinel s (map f) == map f
+    withSentinel s id == id
 -}
 withSentinel :: a -> ([a] -> [b]) -> [a] -> [b]
 withSentinel s func =
