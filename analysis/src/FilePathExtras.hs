@@ -7,13 +7,13 @@ module FilePathExtras
   , makeShortestMultidots
   ) where
 
-import Data.Function ((&))
-import Data.List (isPrefixOf, stripPrefix)
-import Data.Maybe (fromMaybe)
-import System.FilePath.Posix
-import Text.Regex
+import           Data.Function         ((&))
+import           Data.List             (isPrefixOf, stripPrefix)
+import           Data.Maybe            (fromMaybe)
+import           System.FilePath.Posix
+import           Text.Regex
 
-import ListExtras
+import           ListExtras
 
 -- | Sort files before subdirectories, that are in the same parent directory
 compareByDirectory :: FilePath -> FilePath -> Ordering
@@ -35,7 +35,7 @@ isDirectory :: FilePath -> Bool
 isDirectory path =
   case reverse path of
     '/':_ -> True
-    _ -> False
+    _     -> False
 
 {-| Returns a file or directory path's parent dierctory.
 
@@ -63,14 +63,14 @@ makeRelativeWithDots base path =
 -- directory levels.
 makeRelativeMultidots :: Relativizer
 makeRelativeMultidots base path =
-  withSentinel
-    '/'
+  withSentinel '/'
     (invariant $ \s -> subRegex (mkRegex "/(\\.\\.+)/\\.(\\.+)/") s "/\\1\\2/") $
   makeRelativeWithDots base path
 
 -- | Return the shortest result from a list of relativizers.
 shortestRelativizer :: [Relativizer] -> Relativizer
-shortestRelativizer funcs base path = shortest (map uncurry funcs) (base, path)
+shortestRelativizer funcs base path =
+  shortest (map uncurry funcs) (base, path)
 
 -- | Like System.FilePath.Posix.makeRelative, but uses `..` where this is
 -- shorter than the non-relativized path.

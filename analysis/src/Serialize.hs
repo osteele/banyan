@@ -5,12 +5,12 @@ module Serialize
   , encodePathsRel
   ) where
 
-import Control.Monad.State
-import Data.Function ((&))
-import Data.List (stripPrefix)
-import Data.Maybe (fromMaybe)
-import FilePathExtras
-import System.FilePath.Posix
+import           Control.Monad.State
+import           Data.Function         ((&))
+import           Data.List             (stripPrefix)
+import           Data.Maybe            (fromMaybe)
+import           FilePathExtras
+import           System.FilePath.Posix
 
 type WorkingDirectory = FilePath
 

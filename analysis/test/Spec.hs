@@ -1,11 +1,11 @@
-import Data.List
+import           Data.List
 
-import Test.Tasty
-import Test.Tasty.HUnit
+import           Test.Tasty
+import           Test.Tasty.HUnit
 
-import FilePathExtras
-import ListExtras
-import Serialize
+import           FilePathExtras
+import           ListExtras
+import           Serialize
 
 main :: IO ()
 main = defaultMain tests
@@ -14,15 +14,16 @@ tests :: TestTree
 tests = testGroup "Tests" [listTests, filePathTests, serializationTests]
 
 listTests =
-  testGroup
-    "List tests"
+  testGroup "List tests"
     [ testCase "invariant" $ do
         invariant (min 10 . (1 +)) 1 @?= 10
         invariant (`div` 2) 100 @?= 0
+
     , testCase "shortest" $ do
         shortest [id] "word" @?= "word"
         shortest [id, tail] "hedge" @?= "edge"
         shortest [id, init, init . tail] "hedges" @?= "edge"
+
     , testCase "withSentinel" $ do
         withSentinel 0 id [2, 3] @?= [2, 3]
         withSentinel 0 (map (+ 1)) [1, 2] @?= [2, 3]
@@ -31,8 +32,7 @@ listTests =
     ]
 
 serializationTests =
-  testGroup
-    "Serialization tests"
+  testGroup "Serialization tests"
     [ testCase "decodePaths" $ do
         decodePaths ["a"] @?= ["/a"]
         decodePaths ["a", "b"] @?= ["/a", "/b"]
@@ -53,33 +53,38 @@ serializationTests =
     ]
 
 filePathTests =
-  testGroup
-    "FilePathExtras tests"
+  testGroup "FilePathExtras tests"
     [ testCase "compareByDirectory" $
-        -- files are sorted alphabetically
        do
+        -- files are sorted alphabetically
         compareByDirectory "/a/b" "/a/b" @?= EQ
         compareByDirectory "/a/b" "/a/c" @?= LT
         compareByDirectory "/a/c" "/a/b" @?= GT
         compareByDirectory "/a/c" "/b/c" @?= LT
         compareByDirectory "/b/c" "/a/c" @?= GT
+
         -- directories are sorted alphabetically
         compareByDirectory "/a/b/" "/a/b/" @?= EQ
         compareByDirectory "/a/b/" "/a/c/" @?= LT
         compareByDirectory "/a/c/" "/a/b/" @?= GT
+
         -- files precede directories in the same parent directory
         compareByDirectory "/a/b" "/a/c/" @?= LT
         compareByDirectory "/a/c" "/a/b/" @?= LT
         compareByDirectory "/a/b/" "/a/c" @?= GT
         compareByDirectory "/a/c/" "/a/b" @?= GT
+
         -- entries in different parent directories are sorted alphabetically
         compareByDirectory "/a/b/c" "/a/b/a" @?= GT
+
         -- putting it all together
         sortBy compareByDirectory ["/a/b/c", "/a/b/a", "/a/c", "/a/d"] @?=
           ["/a/c", "/a/d", "/a/b/a", "/a/b/c"]
+
     , testCase "isDirectory" $ do
         isDirectory "dir/" @?= True
         isDirectory "file" @?= False
+
     , testCase "makeRelativeWithDots" $ do
         let mr = makeRelativeWithDots
         mr "/" "/a" @?= "a"
@@ -90,6 +95,7 @@ filePathTests =
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
         mr "/d1/d2/d3/" "/d1/a" @?= "../../a"
         mr "/d1/d2/d3/" "/d4/a" @?= "../../../d4/a"
+
     , testCase "makeShortestRelative" $ do
         let mr = makeShortestRelative
         mr "/dir/" "/a" @?= "/a"
@@ -100,10 +106,12 @@ filePathTests =
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
         mr "/long-name/d2/d3/" "/long-name/a" @?= "../../a"
+
     , testCase "makeRelativeMultidots" $ do
         let mr = makeRelativeMultidots
         mr "/d1/d2/d3/" "/d1/a" @?= ".../a"
         mr "/d1/d2/d3/" "/d4/a" @?= "..../d4/a"
+
     , testCase "makeShortestMultidots" $ do
         let mr = makeShortestMultidots
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
