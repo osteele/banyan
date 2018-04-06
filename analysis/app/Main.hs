@@ -1,6 +1,6 @@
 module Main where
 
-import           Control.Monad
+import           Control.Monad       (when)
 import           Data.List
 import           Data.List.Split     (splitOn)
 import           Data.Semigroup      ((<>))

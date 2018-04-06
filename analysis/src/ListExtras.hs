@@ -26,7 +26,7 @@ shortest funcs x = minimumBy (compare `on` length) $ funcs <*> [x]
 
 shortest2 :: Foldable f => [a -> b -> f c] -> a -> b -> f c
 shortest2 f =
-  curry $ shortest $ map uncurry f
+  curry $ shortest $ fmap uncurry f
 
 {-| Append a sentinel to each end of a list, apply the function, and remove the
 first and last element of the result.
