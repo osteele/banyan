@@ -1,8 +1,8 @@
 module Serialize
   ( decodePaths
   , encodePaths
-  , encodePathsMultidot
-  , encodePathsRel
+  , encodePathsWithDots
+  , encodePathsWithMultidots
   ) where
 
 import           Control.Monad.State
@@ -12,12 +12,10 @@ import           Data.Maybe            (fromMaybe)
 import           FilePathExtras
 import           System.FilePath.Posix
 
-type WorkingDirectory = FilePath
-
+type AbsolutePath = FilePath
+type RelativePath = FilePath
+type WorkingDirectory = AbsolutePath
 type CwdState = State WorkingDirectory
-
-mapPaths :: (FilePath -> CwdState FilePath) -> [FilePath] -> [FilePath]
-mapPaths f = flip evalState "/" . mapM f
 
 getCwd :: CwdState WorkingDirectory
 getCwd = get
@@ -25,9 +23,10 @@ getCwd = get
 putCwd :: WorkingDirectory -> CwdState ()
 putCwd = put
 
-decodePaths
-  :: [FilePath] -- relative paths
-  -> [FilePath] -- absolute paths
+mapPaths :: (FilePath -> CwdState FilePath) -> [FilePath] -> [FilePath]
+mapPaths f = flip evalState "/" . mapM f
+
+decodePaths :: [RelativePath] -> [AbsolutePath]
 decodePaths =
   mapPaths $ \p -> do
     cwd <- getCwd
@@ -38,7 +37,7 @@ decodePaths =
     when (isDirectory p') $ putCwd p'
     return p'
 
-mkEncoder :: (FilePath -> FilePath -> FilePath) -> [FilePath] -> [FilePath]
+mkEncoder :: Relativizer -> [AbsolutePath] -> [RelativePath]
 mkEncoder enc =
   mapPaths $ \p -> do
     cwd <- getCwd
@@ -46,11 +45,12 @@ mkEncoder enc =
     when (isDirectory p) $ putCwd p
     return p'
 
-encodePaths :: [FilePath] -> [FilePath]
-encodePaths = mkEncoder $ \base path -> stripPrefix base path & fromMaybe path
+encodePaths :: [AbsolutePath] -> [RelativePath]
+encodePaths = mkEncoder $ \base path ->
+  stripPrefix base path & fromMaybe path
 
-encodePathsRel :: [FilePath] -> [FilePath]
-encodePathsRel = mkEncoder makeShortestRelative
+encodePathsWithDots :: [AbsolutePath] -> [RelativePath]
+encodePathsWithDots = mkEncoder $ makeRelativeIfShorter makeRelativeWithDots
 
-encodePathsMultidot :: [FilePath] -> [FilePath]
-encodePathsMultidot = mkEncoder makeShortestMultidots
+encodePathsWithMultidots :: [AbsolutePath] -> [RelativePath]
+encodePathsWithMultidots = mkEncoder $ makeRelativeIfShorter makeRelativeWithMultidots

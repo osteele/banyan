@@ -1,6 +1,7 @@
 module ListExtras
   ( invariant
   , shortest
+  , shortest2
   , withSentinel
   ) where
 
@@ -23,7 +24,11 @@ invariant fn a =
 shortest :: Foldable f => [a -> f b] -> a -> f b
 shortest funcs x = minimumBy (compare `on` length) $ funcs <*> [x]
 
-{-| Append a to each end of a list, applies the function, and removes the
+shortest2 :: Foldable f => [a -> b -> f c] -> a -> b -> f c
+shortest2 f =
+  curry $ shortest $ map uncurry f
+
+{-| Append a sentinel to each end of a list, apply the function, and remove the
 first and last element of the result.
 
     withSentinel 'a' f "bcd" == head . init . f "abcda"

@@ -1,10 +1,10 @@
 module FilePathExtras
   ( compareByDirectory
   , isDirectory
+  , Relativizer
   , makeRelativeWithDots
-  , makeRelativeMultidots
-  , makeShortestRelative
-  , makeShortestMultidots
+  , makeRelativeWithMultidots
+  , makeRelativeIfShorter
   ) where
 
 import           Data.Function         ((&))
@@ -15,7 +15,9 @@ import           Text.Regex
 
 import           ListExtras
 
--- | Sort files before subdirectories, that are in the same parent directory
+{-| Same as `compare`, but sort files before subdirectories in the same
+parent directory.
+-}
 compareByDirectory :: FilePath -> FilePath -> Ordering
 compareByDirectory a b
   | da == db = compare a b
@@ -26,7 +28,7 @@ compareByDirectory a b
     da = takeDirectory a
     db = takeDirectory b
 
-{-| Is a path a directory name (ends in pathSeparator)?
+{-| Is a path a directory name (a filepath that ends in POSIX pathSeparator)?
 
     isDirectory "/path/to" == False
     isDirectory "/path/to/" == True
@@ -50,7 +52,7 @@ takeParentDirectory =
 -- argument). `System.Filepath.makeRelative` is an example of a `Relativizer`.
 type Relativizer = FilePath -> FilePath -> FilePath
 
--- | Like System.FilePath.Posix.makeRelative, but uses `..` wherever possible.
+-- | Like `System.FilePath.Posix.makeRelative`, but uses `..` wherever possible.
 makeRelativeWithDots :: Relativizer
 makeRelativeWithDots "." path = path
 makeRelativeWithDots "/" path = makeRelative "/" path
@@ -59,25 +61,17 @@ makeRelativeWithDots base path =
   in stripPrefix base path &
      fromMaybe (joinPath ["..", makeRelativeWithDots parent path])
 
--- | Like makeRelativeWithDots but uses `...`, `....` etc. to move up multiple
--- directory levels.
-makeRelativeMultidots :: Relativizer
-makeRelativeMultidots base path =
-  withSentinel '/'
-    (invariant $ \s -> subRegex (mkRegex "/(\\.\\.+)/\\.(\\.+)/") s "/\\1\\2/") $
-  makeRelativeWithDots base path
+-- | Like `makeRelativeWithDots`, but also uses `...`, `....` etc. to move up
+-- multiple directory levels.
+makeRelativeWithMultidots :: Relativizer
+makeRelativeWithMultidots base path =
+  withSentinel '/' (invariant combineAdjacentDots)
+  $ makeRelativeWithDots base path
+    where combineAdjacentDots s =
+            subRegex (mkRegex "/(\\.\\.+)/\\.(\\.+)/") s "/\\1\\2/"
 
--- | Return the shortest result from a list of relativizers.
-shortestRelativizer :: [Relativizer] -> Relativizer
-shortestRelativizer funcs base path =
-  shortest (map uncurry funcs) (base, path)
-
--- | Like System.FilePath.Posix.makeRelative, but uses `..` where this is
--- shorter than the non-relativized path.
-makeShortestRelative :: Relativizer
-makeShortestRelative = shortestRelativizer [flip const, makeRelativeWithDots]
-
--- | Returns whichever of the original and relative path is shorter. Uses
--- `...`, `....` etc. to move up multiple directory levels.
-makeShortestMultidots :: Relativizer
-makeShortestMultidots = shortestRelativizer [flip const, makeRelativeMultidots]
+-- | Returns whichever of the original and relative path is shorter.
+makeRelativeIfShorter :: Relativizer -> Relativizer
+makeRelativeIfShorter relativizer =
+  shortest2 [original, relativizer]
+    where original = flip const

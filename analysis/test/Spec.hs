@@ -40,6 +40,7 @@ serializationTests =
         decodePaths ["a/", "b", "c/", "d"] @?=
           ["/a/", "/a/b", "/a/c/", "/a/c/d"]
         decodePaths ["a/", "b", "/c/", "d"] @?= ["/a/", "/a/b", "/c/", "/c/d"]
+
     , testCase "encodePaths" $ do
         encodePaths ["/a"] @?= ["a"]
         encodePaths ["/a", "/b"] @?= ["a", "b"]
@@ -47,9 +48,10 @@ serializationTests =
         encodePaths ["/a/", "/a/b", "/a/c/", "/a/c/d"] @?=
           ["a/", "b", "c/", "d"]
         encodePaths ["/a/", "/a/b", "/c/", "/c/d"] @?= ["a/", "b", "/c/", "d"]
-    , testCase "encodePathsRel" $ do
-        encodePathsRel ["/a/b/c/", "/a/b/c/d"] @?= ["a/b/c/", "d"]
-        encodePathsRel ["/a/b/c/", "/a/b/e"] @?= ["a/b/c/", "../e"]
+
+    , testCase "encodePathsWithDots" $ do
+        encodePathsWithDots ["/a/b/c/", "/a/b/c/d"] @?= ["a/b/c/", "d"]
+        encodePathsWithDots ["/a/b/c/", "/a/b/e"] @?= ["a/b/c/", "../e"]
     ]
 
 filePathTests =
@@ -96,8 +98,8 @@ filePathTests =
         mr "/d1/d2/d3/" "/d1/a" @?= "../../a"
         mr "/d1/d2/d3/" "/d4/a" @?= "../../../d4/a"
 
-    , testCase "makeShortestRelative" $ do
-        let mr = makeShortestRelative
+    , testCase "makeRelativeIfShorter makeRelativeWithDots" $ do
+        let mr = makeRelativeIfShorter makeRelativeWithDots
         mr "/dir/" "/a" @?= "/a"
         mr "/dir/" "/dir/a" @?= "a"
         mr "/d1/d2/" "/d1/d2/a" @?= "a"
@@ -108,12 +110,12 @@ filePathTests =
         mr "/long-name/d2/d3/" "/long-name/a" @?= "../../a"
 
     , testCase "makeRelativeMultidots" $ do
-        let mr = makeRelativeMultidots
+        let mr = makeRelativeWithMultidots
         mr "/d1/d2/d3/" "/d1/a" @?= ".../a"
         mr "/d1/d2/d3/" "/d4/a" @?= "..../d4/a"
 
-    , testCase "makeShortestMultidots" $ do
-        let mr = makeShortestMultidots
+    , testCase "makeRelativeIfShorter makeRelativeWithMultidots" $ do
+        let mr = makeRelativeIfShorter makeRelativeWithMultidots
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
     ]

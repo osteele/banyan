@@ -43,8 +43,8 @@ run opts@(Options stats _ dots multidots output infile) = do
   let encoder =
         case (dots, multidots) of
           (False, _)    -> encodePaths
-          (True, False) -> encodePathsRel
-          (True, True)  -> encodePathsMultidot
+          (True, False) -> encodePathsWithDots
+          (True, True)  -> encodePathsWithMultidots
       sorter =
         if _sort opts
           then sortBy compareByDirectory
