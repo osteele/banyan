@@ -6,6 +6,12 @@ format:
 lint:
 	hlint .
 
+.PHONY: profile
+profile:
+	stack clean
+	stack build --profile
+	stack exec -- analyze-cache data/personal.txt +RTS -p
+
 .PHONY: test
 test:
 	stack test --fast
