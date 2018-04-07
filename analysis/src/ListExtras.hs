@@ -4,28 +4,35 @@ module ListExtras
   ( invariant
   , shortest
   , shortest2
-  , withSentinel
+  , conjugateWithSentinels
   ) where
 
 import           Prelude   as UnsafePartial (tail)
 import           Protolude
 
-{-| `invariant f` is the *mathematical fixed point of f, i.e. the element x s.t.
-f x == x.
+{-| `invariant f` is the convergence of the fixed-point iteraton f, i.e. the
+element x s.t. f x == x.
 
-Cf. `Data.function.fix`, which returns the *least-defined* fixed point.
+The result is undefined if the iteration doesn't converge. This can happen
+even if there is a fixed point, if it doesn't attract the initial value.
+
+Cf. `Data.function.fix`, which returns the least-defined *domain-theory* fixed
+point.
 -}
 invariant :: Eq a => (a -> a) -> a -> a
-invariant fn a =
-  let b = fn a
-  in if a == b
-       then a
-       else invariant fn b
+invariant f x =
+  if x == x'
+    then x
+    else invariant f x'
+  where x' = f x
 
--- | Apply each function to a value; return the shortest result
+-- | Apply each function to a value; return the shortest result.
 shortest :: Foldable f => [a -> f b] -> a -> f b
-shortest funcs x = minimumBy (compare `on` length) $ funcs <*> [x]
+shortest fns x =
+  minimumBy (compare `on` length) $ fmap ($ x) fns
+  -- minimumBy (compare `on` length) $ funcs <*> [x]
 
+-- | Apply each curried binary function to a value; return the shortest result.
 shortest2 :: Foldable f => [a -> b -> f c] -> a -> b -> f c
 shortest2 f =
   curry $ shortest $ fmap uncurry f
@@ -33,10 +40,15 @@ shortest2 f =
 {-| Append a sentinel to each end of a list, apply the function, and remove the
 first and last element of the result.
 
-    withSentinel 'a' f "bcd" == head . init . f "abcda"
-    withSentinel s id == id
+(This is the left conjugation of `f` by `[s] ++ _ ++ [s]`.)
+
+`conjugateWithSentinels` is a partial function. It's undefined if the provided
+doesn't return a list with at least two elements.
+
+    conjugateWithSentinels 'a' f "bcd" == head . init . f "abcda"
+    conjugateWithSentinels s id == id
 -}
-withSentinel :: a -> ([a] -> [b]) -> [a] -> [b]
-withSentinel s func =
-  let eachEnd f = f . reverse . f . reverse
-  in eachEnd UnsafePartial.tail . func . eachEnd (s :)
+conjugateWithSentinels :: a -> ([a] -> [b]) -> [a] -> [b]
+conjugateWithSentinels s f =
+  eachEnd UnsafePartial.tail . f . eachEnd (s :)
+    where eachEnd g = g . reverse . g . reverse

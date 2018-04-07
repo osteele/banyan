@@ -9,7 +9,7 @@ module FilePathExtras
   ) where
 
 import           Data.Function         ((&))
-import           Data.List             (isPrefixOf, stripPrefix)
+import           Data.List             (isPrefixOf, isSuffixOf, stripPrefix)
 import           Data.Maybe            (fromMaybe)
 import           ListExtras
 import           System.FilePath.Posix
@@ -35,10 +35,8 @@ compareByDirectory a b
     isDirectory "/path/to/" == True
 -}
 isDirectory :: FilePath -> Bool
-isDirectory path =
-  case reverse path of
-    '/':_ -> True
-    _     -> False
+isDirectory =
+  isSuffixOf "/"
 
 {-| Returns a file or directory path's parent dierctory.
 
@@ -66,7 +64,7 @@ makeRelativeWithDots base path =
 -- multiple directory levels.
 makeRelativeWithMultidots :: Relativizer
 makeRelativeWithMultidots base path =
-  withSentinel '/' (invariant combineAdjacentDots)
+  conjugateWithSentinels '/' (invariant combineAdjacentDots)
   $ makeRelativeWithDots base path
     where combineAdjacentDots s =
             subRegex (mkRegex "/(\\.\\.+)/\\.(\\.+)/") s "/\\1\\2/"

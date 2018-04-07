@@ -27,10 +27,10 @@ listTests =
         shortest [identity, tail] "hedge" @?= "edge"
         shortest [identity, init, init . tail] "hedges" @?= "edge"
 
-    , testCase "withSentinel" $ do
-        withSentinel 0 identity [2, 3] @?= [2, 3]
-        withSentinel 0 (map (+ 1)) [1, 2] @?= [2, 3]
-        withSentinel 0 (\a -> zip (init a) (tail a)) [1, 2, 3] @?=
+    , testCase "conjugateWithSentinels" $ do
+        conjugateWithSentinels 0 identity [2, 3] @?= [2, 3]
+        conjugateWithSentinels 0 (map (+ 1)) [1, 2] @?= [2, 3]
+        conjugateWithSentinels 0 (\a -> zip (init a) (tail a)) [1, 2, 3] @?=
           [(1, 2), (2, 3)]
     ]
 
