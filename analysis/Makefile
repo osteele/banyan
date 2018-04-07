@@ -1,3 +1,11 @@
+.PHONY: format
+format:
+	stylish-haskell --inplace **/*.hs
+
+.PHONY: lint
+lint:
+	hlint .
+
 .PHONY: test
 test:
 	stack test --fast
