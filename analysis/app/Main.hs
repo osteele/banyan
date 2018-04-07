@@ -62,21 +62,22 @@ run opts = do
       sortedPaths = getPathSorter opts absPaths
       outPaths    = encoder sortedPaths
       outString   = unEntryPaths outPaths
-  putStrLn $ "input size : " ++ show (length content)
-  putStrLn $ "output size: " ++ show (length outString)
+  putStrLn $ "input size    : " ++ show (length content)
+  putStrLn $ "re-packed size: " ++ show (length outString)
   when (getShowPaths opts) $ do
-    putStrLn $ "input   : " ++ show inPaths
-    putStrLn $ "decoded : " ++ show absPaths
-    putStrLn $ "re-coded: " ++ show outPaths
+    putStrLn $ "input    : " ++ show inPaths
+    putStrLn $ "unpacked : " ++ show absPaths
+    putStrLn $ "re-packed: " ++ show outPaths
   case getCsvOutputFile opts of
-    Nothing -> return ()
-    Just outfile -> do
-      let csv = Data.Csv.encode $ fileSizes absPaths
-      BL.writeFile outfile csv
-      putStrLn $ "Wrote CSV to " ++ outfile
+    Nothing   -> return ()
+    Just file -> do
+      BL.writeFile file $ Data.Csv.encode $ fileSizes absPaths
+      putStrLn $ "Wrote CSV to " ++ file
   case getOutputFile opts of
-    Nothing      -> return ()
-    Just outfile -> Prelude.writeFile outfile outString
+    Nothing   -> return ()
+    Just file -> do
+      Prelude.writeFile file outString
+      putStrLn $ "Wrote re-packed cache to " ++ file
 
 main :: IO ()
 main = run =<< execParser opts
