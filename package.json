@@ -7,6 +7,7 @@
   "repository": "github:osteele/banyan",
   "license": "MIT",
   "scripts": {
+    "analyse": "elm-analyse",
     "analyze": "elm-analyse",
     "build": "poi build",
     "deploy": "yarn build && netlifyctl deploy -b dist",
