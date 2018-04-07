@@ -43,6 +43,7 @@ executables:
     - protolude
     - optparse-applicative
     - split
+    - text
 
 tests:
   analysis-test:

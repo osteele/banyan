@@ -1,14 +1,17 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Csv
-import           Data.List.Split      (splitOn)
+import           Data.Text.Lazy       (Text, intercalate, pack, split,
+                                       stripSuffix, unpack)
+import qualified Data.Text.Lazy       as T
+import qualified Data.Text.Lazy.IO    as T
 import           Options.Applicative
 import           Prelude              (String)
-import qualified Prelude              (readFile, writeFile)
-import           Protolude
+import           Protolude            hiding (Text, intercalate)
 
 import           FilePathExtras
 import           Serialize
@@ -55,15 +58,15 @@ options =
 
 run :: Options -> IO ()
 run opts = do
-  content <- dropFinalNewline <$> Prelude.readFile (getInputFile opts)
+  content <- dropFinalNewline <$> T.readFile (getInputFile opts)
   let encoder = mkFilePathsEncoder $ getRelativizer opts
       inPaths     = entryPaths content
       absPaths    = decodeFilePaths inPaths
       sortedPaths = getPathSorter opts absPaths
       outPaths    = encoder sortedPaths
       outString   = unEntryPaths outPaths
-  putStrLn $ "input size    : " ++ show (length content)
-  putStrLn $ "re-packed size: " ++ show (length outString)
+  putStrLn $ "input size    : " ++ show (T.length content)
+  putStrLn $ "re-packed size: " ++ show (T.length outString)
   when (getShowPaths opts) $ do
     putStrLn $ "input    : " ++ show inPaths
     putStrLn $ "unpacked : " ++ show absPaths
@@ -76,7 +79,7 @@ run opts = do
   case getOutputFile opts of
     Nothing   -> return ()
     Just file -> do
-      Prelude.writeFile file outString
+      T.writeFile file outString
       putStrLn $ "Wrote re-packed cache to " ++ file
 
 main :: IO ()
@@ -89,23 +92,24 @@ main = run =<< execParser opts
 -- HELPERS
 
 -- | Drop a final newline if present.
-dropFinalNewline :: String -> String
-dropFinalNewline = reverse . dropWhile (== '\n') . reverse
+dropFinalNewline :: Text -> Text
+dropFinalNewline = fromMaybe <*> stripSuffix "\n"
 
 -- ENTRY PATH SEPARATORS
 
 -- | The character that separates paths.
-entryPathSeparator :: String
-entryPathSeparator = ":"
+entryPathSeparator :: Char
+entryPathSeparator = ':'
 
-{-| `entryPaths` breaks a string up into a list of paths, which were delimited
+{-| `entryPaths` breaks a string into a list of paths, which were delimited
 by colons.
 -}
-entryPaths :: String -> [FilePath]
-entryPaths = splitOn entryPathSeparator
+entryPaths :: Text -> [FilePath]
+entryPaths = fmap unpack . split (== entryPathSeparator)
 
 {-| `unEntryPaths` is an inverse operation to `entryPaths`. It uses separating
 colons to join paths.
 -}
-unEntryPaths :: [FilePath] -> String
-unEntryPaths = intercalate entryPathSeparator
+unEntryPaths :: [FilePath] -> Text
+unEntryPaths = intercalate sep . fmap pack
+  where sep = pack [entryPathSeparator]
