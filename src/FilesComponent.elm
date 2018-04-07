@@ -36,6 +36,9 @@ view. There's a blurry line around computing a text description of the sync
 status. This currently lives in this module, because the state type has been
 changing faster than the view.
 
+NB: The existence of this module goes against the advice in
+<https://guide.elm-lang.org/reuse/>.
+
 -}
 
 import Cmd.Extras exposing (..)

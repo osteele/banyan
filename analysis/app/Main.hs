@@ -101,14 +101,13 @@ dropFinalNewline = fromMaybe <*> stripSuffix "\n"
 entryPathSeparator :: Char
 entryPathSeparator = ':'
 
-{-| `entryPaths` breaks a string into a list of paths, which were delimited
-by colons.
+{-| `entryPaths` breaks a string into a list of paths, delimited by colons.
 -}
 entryPaths :: Text -> [FilePath]
 entryPaths = fmap unpack . split (== entryPathSeparator)
 
-{-| `unEntryPaths` is an inverse operation to `entryPaths`. It uses separating
-colons to join paths.
+{-| `unEntryPaths` inverts `entryPaths`. It uses separating colons to join
+paths.
 -}
 unEntryPaths :: [FilePath] -> Text
 unEntryPaths = intercalate sep . fmap pack
