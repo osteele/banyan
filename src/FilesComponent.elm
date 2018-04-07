@@ -1,11 +1,12 @@
 module FilesComponent
     exposing
         ( Model
-        , Msg(..)
-        , State(..)
+        , Msg(ModelChange, RestoreFromCacheOrListFolder, StartSyncFiles)
+        , ModelChangeMsg(..)
         , fromCache
         , init
         , isEmpty
+        , isFromCache
         , isLoading
         , subscriptions
         , completion
@@ -25,8 +26,14 @@ module FilesComponent
 It creates its model from Dropbox API or from a local cache, and saves it to
 a cache.
 
-This is a component rather than a data structure, because it uses Commands to
+This is a “component” rather than a data structure, because it uses Commands to
 read and store its state.
+
+It's not a full-fledged component, because it's just the model and messages,
+not the view. The intent is that the model update logic is independent of the
+view. There's a blurry line around computing a text description of the sync
+status. This currently lives in this module, because the state type has been
+changing faster than the view.
 
 -}
 
@@ -55,7 +62,7 @@ account.
 
     - files: The Dropbox folder tree
     - state: The synchronization or cache deserialization state
-    - error: The last error.
+    - error: The most recent error, if any.
     - accountId, teamId: Used to insure the cache matches the account.
     - cache: A cache that is consulted once the user is authorized.
 
@@ -83,14 +90,40 @@ type State
 -- MESSAGES
 
 
+{-| A few of these are exposed. The rest are private.
+
+Exposed values that initiate model flows. The application applies this
+module's `update` to these. TODO: Replace the public API by functions on the
+model (that return these messages).
+
+    - StartSyncFiles
+    - RestoreFromCacheOrListFolder
+
+Exposed values that notify the application that a value has changed. The
+application peeks at these before passing them to this module's `update`.
+TODO: Change the notification mechanism to a subscription function that the
+application passes to the init method.
+
+    - ModelChange
+
+-}
 type Msg
-    = Changed
-    | Cleared
+    = ModelChange ModelChangeMsg
     | StartSyncFiles
     | ReceiveListFolderResponse (Result ListFolderContinueError ListFolderResponse)
     | RestoreFromCacheOrListFolder AccountInfo
     | LoadFromCache CacheDecoderState
     | SaveToCache Time
+
+
+type ModelChangeMsg
+    = Changed
+    | Cleared
+
+
+sendSubscriberMessage : Model -> ModelChangeMsg -> Cmd Msg
+sendSubscriberMessage _ msg =
+    message <| ModelChange msg
 
 
 
@@ -146,11 +179,27 @@ completion model =
             0
 
 
+
+-- PREDICATES
+
+
 {-| Determine if the set of files and folders is empty.
 -}
 isEmpty : Model -> Bool
 isEmpty =
     .files >> FileTree.isEmpty
+
+
+{-| Determine if the model was loaded from a cache.
+-}
+isFromCache : Model -> Bool
+isFromCache { state } =
+    case state of
+        FromCache _ ->
+            True
+
+        _ ->
+            False
 
 
 {-| Determine if the model is still loading from Dropbox or from the cache.
@@ -229,41 +278,40 @@ progress { state } =
 update : Dropbox.UserAuth -> Msg -> Model -> ( Model, Cmd Msg )
 update auth msg model =
     case msg of
-        Changed ->
-            ( model, Cmd.none )
-
-        Cleared ->
+        ModelChange _ ->
             ( model, Cmd.none )
 
         StartSyncFiles ->
             let
-                ( m, msg_ ) =
+                ( newModel, msg_ ) =
                     startListFolder auth model
             in
-                m ! [ message Changed, msg_ ]
+                newModel ! [ sendSubscriberMessage model Changed, msg_ ]
 
         ReceiveListFolderResponse result ->
             let
-                ( m, msg_ ) =
+                ( newModel, msg_ ) =
                     updateFromListFolderResponse auth model result
             in
-                m ! [ message Changed, msg_ ]
+                newModel ! [ sendSubscriberMessage model Changed, msg_ ]
 
         LoadFromCache decoderState ->
             case decodePathBatch model decoderState of
-                CacheDecoderProgress m nextState ->
-                    { m | state = Decoding nextState }
-                        ! [ message Changed, nextFrame <| LoadFromCache nextState ]
+                CacheDecoderProgress newModel newState ->
+                    { newModel | state = Decoding newState }
+                        ! [ sendSubscriberMessage model Changed
+                          , nextFrame <| LoadFromCache newState
+                          ]
 
-                CacheDecoderComplete m finalState ->
-                    { m | state = finalState } ! []
+                CacheDecoderComplete newModel finalState ->
+                    { newModel | state = finalState } ! []
 
                 CacheDecoderError s ->
                     { model | error = Just s } ! [ message StartSyncFiles ]
 
         RestoreFromCacheOrListFolder accountInfo ->
             let
-                m =
+                newModel =
                     { model
                         | accountId = Just accountInfo.accountId
                         , teamId = accountInfo.team |> Maybe.map .id
@@ -276,12 +324,11 @@ update auth msg model =
                             state =
                                 JsonString jsonString
                         in
-                            -- delay in order to update the display
-                            { m | state = Decoding state }
+                            { newModel | state = Decoding state }
                                 ! [ nextFrame <| LoadFromCache state ]
 
                     Nothing ->
-                        m ! [ message StartSyncFiles ]
+                        newModel ! [ message StartSyncFiles ]
 
         SaveToCache timestamp ->
             model ! [ saveFilesCache <| encode { model | state = FromCache timestamp } ]
@@ -289,6 +336,9 @@ update auth msg model =
 
 
 -- SUBSCRIPTIONS
+--
+-- There used to be some. The code is retained to avoid changing the client
+-- if they return.
 
 
 subscriptions : Model -> Sub Msg
@@ -297,7 +347,7 @@ subscriptions _ =
 
 
 
--- LIST FOLDERS
+-- LIST-FOLDER FLOW
 
 
 startListFolder : Dropbox.UserAuth -> Model -> ( Model, Cmd Msg )
@@ -314,7 +364,7 @@ startListFolder auth model =
                     }
     in
         { model | files = FileTree.empty, state = StartedSync }
-            ! [ message Cleared
+            ! [ sendSubscriberMessage model Cleared
               , Task.attempt ReceiveListFolderResponse listFolder
               ]
 
@@ -324,7 +374,7 @@ updateFromListFolderResponse auth model result =
     case result of
         Result.Ok ({ entries, cursor, hasMore } as data) ->
             let
-                m =
+                newModel =
                     { model
                         | files = FileTree.addEntries entries model.files
                         , state = nextSyncState model.state data
@@ -335,9 +385,12 @@ updateFromListFolderResponse auth model result =
                         Dropbox.listFolderContinue auth { cursor = cursor }
                             |> Task.attempt ReceiveListFolderResponse
                     else
+                        -- This time actually when the request succeeded, but
+                        -- close enough. It's used in the UI, not to detect
+                        -- whether the cache is up to date.
                         Task.perform SaveToCache Time.now
             in
-                m ! [ cmd ]
+                newModel ! [ cmd ]
 
         Result.Err err ->
             { model
@@ -368,7 +421,7 @@ nextSyncState state { entries, hasMore } =
 
 
 
--- DECODING
+-- DECODE CACHE FLOW
 
 
 type CacheDecoderState
@@ -429,7 +482,7 @@ decodePathBatch model state =
                         batch
                             |> FileTree.addFromStrings model.files decoderState
 
-                    nextState =
+                    newState =
                         FileStrings
                             { state
                                 | paths = List.drop batchSize paths
@@ -437,7 +490,7 @@ decodePathBatch model state =
                                 , addedPathCount = state.addedPathCount + List.length batch
                             }
                 in
-                    CacheDecoderProgress { model | files = files } nextState
+                    CacheDecoderProgress { model | files = files } newState
 
 
 decodingCompletion : CacheDecoderState -> Float

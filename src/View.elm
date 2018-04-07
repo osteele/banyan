@@ -3,7 +3,7 @@ module View exposing (view)
 import Dropbox.FileTree as FileTree exposing (FileTree(..))
 import Dict
 import Extras exposing (humanize, ifJust, prefixes, takeFileName, zip)
-import FilesComponent exposing (State(..), isLoading)
+import FilesComponent exposing (isFromCache, isLoading)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
 import Html.Events exposing (onClick)
@@ -190,18 +190,16 @@ progress model =
             text <| FilesComponent.progress files
 
         msg =
-            case files.state of
-                FromCache _ ->
-                    span []
-                        [ msgTxt
-                        , Html.a
-                            [ class "item", onClick syncFiles ]
-                            [ text "Re-sync now" ]
-                        , text "."
-                        ]
-
-                _ ->
-                    msgTxt
+            if isFromCache files then
+                span []
+                    [ msgTxt
+                    , Html.a
+                        [ class "item", onClick syncFiles ]
+                        [ text "Re-sync now" ]
+                    , text "."
+                    ]
+            else
+                msgTxt
 
         progressView classes width msg =
             div

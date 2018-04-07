@@ -3,7 +3,7 @@ module Update exposing (update)
 import Dropbox
 import Dropbox.AccountInfo exposing (..)
 import Extras exposing (remove)
-import FilesComponent
+import FilesComponent exposing (ModelChangeMsg(..))
 import Message exposing (..)
 import Model exposing (..)
 import Navigation
@@ -91,14 +91,14 @@ update msg model =
                     combineErrors m1
             in
                 case filesMsg of
-                    FilesComponent.Changed ->
+                    FilesComponent.ModelChange Changed ->
                         let
                             ( m2, cmd2 ) =
                                 update RenderFileTreeMap m
                         in
                             m2 ! [ cmd, cmd2 ]
 
-                    FilesComponent.Cleared ->
+                    FilesComponent.ModelChange Cleared ->
                         { m | path = "/" } ! [ cmd ]
 
                     _ ->
