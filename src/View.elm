@@ -2,7 +2,7 @@ module View exposing (view)
 
 import Dropbox.FileTree as FileTree exposing (FileTree(..))
 import Dict
-import Extras exposing (humanize, ifJust, prefixes, takeFileName, zip)
+import Extras exposing (humanize, ifJust, inits, takeFileName, zip)
 import FilesComponent exposing (isFromCache, isLoading)
 import Html exposing (Html, div, span, text)
 import Html.Attributes exposing (attribute, class, href, id, style)
@@ -149,6 +149,10 @@ breadcrumb =
 breadcrumb_ : Node Msg -> Html Msg -> Model -> Html Msg
 breadcrumb_ hn sep model =
     let
+        -- non-null initial subsequences
+        prefixes =
+            Maybe.withDefault [] << List.tail << inits
+
         withPrefixes dirs =
             prefixes dirs
                 |> List.map (String.join "/")
