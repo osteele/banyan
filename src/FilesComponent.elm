@@ -4,6 +4,7 @@ module FilesComponent
         , Msg(ModelChange, RestoreFromCacheOrListFolder, StartSyncFiles)
         , ModelChangeMsg(..)
         , fromCache
+        , fromCacheStateForTesting
         , init
         , isEmpty
         , isFromCache
@@ -590,3 +591,12 @@ decodeRequireVersion version decoder =
                 else
                     Decode.fail <| "Unknown version " ++ toString v
             )
+
+
+
+-- TESTING
+
+
+fromCacheStateForTesting : Time -> State
+fromCacheStateForTesting =
+    FromCache
