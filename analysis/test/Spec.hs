@@ -1,4 +1,7 @@
-import           Data.List
+{-# LANGUAGE NoImplicitPrelude #-}
+
+import           Prelude          (init, tail)
+import           Protolude
 
 import           Test.Tasty
 import           Test.Tasty.HUnit
@@ -20,12 +23,12 @@ listTests =
         invariant (`div` 2) 100 @?= 0
 
     , testCase "shortest" $ do
-        shortest [id] "word" @?= "word"
-        shortest [id, tail] "hedge" @?= "edge"
-        shortest [id, init, init . tail] "hedges" @?= "edge"
+        shortest [identity] "word" @?= "word"
+        shortest [identity, tail] "hedge" @?= "edge"
+        shortest [identity, init, init . tail] "hedges" @?= "edge"
 
     , testCase "withSentinel" $ do
-        withSentinel 0 id [2, 3] @?= [2, 3]
+        withSentinel 0 identity [2, 3] @?= [2, 3]
         withSentinel 0 (map (+ 1)) [1, 2] @?= [2, 3]
         withSentinel 0 (\a -> zip (init a) (tail a)) [1, 2, 3] @?=
           [(1, 2), (2, 3)]

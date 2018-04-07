@@ -1,10 +1,13 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Serialize
   ( decodeFilePaths
   , fileSizes
   , mkFilePathsEncoder
   ) where
 
-import           Control.Monad.State
+import qualified Prelude               as UnsafePartial (read)
+import           Protolude
 import           System.FilePath.Posix
 
 import           FilePathExtras
@@ -47,5 +50,5 @@ fileSizes :: [FilePath] -> [(FilePath, Int)]
 fileSizes = fmap parse . filter (not . isDirectory)
     where parse path =
             case break (== ';')  path of
-              (prefix, ';' : size) -> (prefix, read size)
+              (prefix, ';' : size) -> (prefix, UnsafePartial.read size)
               _                    -> (path, 0)

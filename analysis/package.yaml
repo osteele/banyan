@@ -22,6 +22,7 @@ library:
   dependencies:
     - filepath
     - mtl
+    - protolude
     - regex-compat
     - split
 
@@ -39,6 +40,7 @@ executables:
     - analysis
     - bytestring
     - cassava
+    - protolude
     - optparse-applicative
     - split
 
@@ -53,5 +55,6 @@ tests:
     - -Wno-type-defaults
     dependencies:
     - analysis
+    - protolude
     - tasty
     - tasty-hunit

@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module ListExtras
   ( invariant
   , shortest
@@ -5,8 +7,8 @@ module ListExtras
   , withSentinel
   ) where
 
-import           Data.Function (on)
-import           Data.List     (minimumBy)
+import           Prelude   as UnsafePartial (tail)
+import           Protolude
 
 {-| `invariant f` is the *mathematical fixed point of f, i.e. the element x s.t.
 f x == x.
@@ -37,4 +39,4 @@ first and last element of the result.
 withSentinel :: a -> ([a] -> [b]) -> [a] -> [b]
 withSentinel s func =
   let eachEnd f = f . reverse . f . reverse
-  in eachEnd tail . func . eachEnd (s :)
+  in eachEnd UnsafePartial.tail . func . eachEnd (s :)

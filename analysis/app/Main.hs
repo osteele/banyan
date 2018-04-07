@@ -1,12 +1,14 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Main where
 
-import           Control.Monad        (when)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Csv
-import           Data.List
 import           Data.List.Split      (splitOn)
-import           Data.Semigroup       ((<>))
 import           Options.Applicative
+import           Prelude              (String)
+import qualified Prelude              (readFile, writeFile)
+import           Protolude
 
 import           FilePathExtras
 import           Serialize
@@ -34,7 +36,7 @@ getPathSorter :: Options -> [FilePath] -> [FilePath]
 getPathSorter opts =
   if getSortFlag opts
     then sortBy compareByDirectory
-    else id
+    else identity
 
 options :: Parser Options
 options =
@@ -53,7 +55,7 @@ options =
 
 run :: Options -> IO ()
 run opts = do
-  content <- dropFinalNewline <$> readFile (getInputFile opts)
+  content <- dropFinalNewline <$> Prelude.readFile (getInputFile opts)
   let encoder = mkFilePathsEncoder $ getRelativizer opts
       inPaths     = entryPaths content
       absPaths    = decodeFilePaths inPaths
@@ -74,7 +76,7 @@ run opts = do
       putStrLn $ "Wrote CSV to " ++ outfile
   case getOutputFile opts of
     Nothing      -> return ()
-    Just outfile -> writeFile outfile outString
+    Just outfile -> Prelude.writeFile outfile outString
 
 main :: IO ()
 main = run =<< execParser opts
