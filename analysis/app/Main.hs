@@ -1,9 +1,11 @@
 module Main where
 
-import           Control.Monad       (when)
+import           Control.Monad        (when)
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.Csv
 import           Data.List
-import           Data.List.Split     (splitOn)
-import           Data.Semigroup      ((<>))
+import           Data.List.Split      (splitOn)
+import           Data.Semigroup       ((<>))
 import           Options.Applicative
 
 import           FilePathExtras
@@ -18,6 +20,7 @@ data Options = Options
   , getMultidotsFlag :: Bool
   , getInputFile     :: String
   , getOutputFile    :: Maybe String
+  , getCsvOutputFile :: Maybe String
   }
 
 getRelativizer :: Options -> Relativizer
@@ -43,6 +46,8 @@ options =
   <*> argument str (metavar "FILE")
   <*> optional (strOption
       (long "output" <> short 'o' <> metavar "FILE" <> help "Write output to FILE"))
+    <*> optional (strOption
+    (long "csv" <> metavar "FILE" <> help "Write CSV output to FILE"))
 
 -- MAIN
 
@@ -61,6 +66,12 @@ run opts = do
     putStrLn $ "input   : " ++ show inPaths
     putStrLn $ "decoded : " ++ show absPaths
     putStrLn $ "re-coded: " ++ show outPaths
+  case getCsvOutputFile opts of
+    Nothing -> return ()
+    Just outfile -> do
+      let csv = Data.Csv.encode $ fileSizes absPaths
+      BL.writeFile outfile csv
+      putStrLn $ "Wrote CSV to " ++ outfile
   case getOutputFile opts of
     Nothing      -> return ()
     Just outfile -> writeFile outfile outString

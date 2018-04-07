@@ -1,5 +1,6 @@
 module Serialize
   ( decodeFilePaths
+  , fileSizes
   , mkFilePathsEncoder
   ) where
 
@@ -41,3 +42,10 @@ mkFilePathsEncoder enc =
     let p' = enc cwd p
     when (isDirectory p) $ putCwd p
     return p'
+
+fileSizes :: [FilePath] -> [(FilePath, Int)]
+fileSizes = fmap parse . filter (not . isDirectory)
+    where parse path =
+            case break (== ';')  path of
+              (prefix, ';' : size) -> (prefix, read size)
+              _                    -> (path, 0)

@@ -37,6 +37,8 @@ executables:
     - -Werror
     dependencies:
     - analysis
+    - bytestring
+    - cassava
     - optparse-applicative
     - split
 

@@ -52,6 +52,11 @@ serializationTests =
         let enc = mkFilePathsEncoder makeRelativeWithDots
         enc ["/a/b/c/", "/a/b/c/d"] @?= ["a/b/c/", "d"]
         enc ["/a/b/c/", "/a/b/e"] @?= ["a/b/c/", "../e"]
+
+    , testCase "fileSizes" $ do
+        fileSizes ["/a/b/"] @?= []
+        fileSizes ["/a/b"] @?= [("/a/b", 0)]
+        fileSizes ["/a/b;12"] @?= [("/a/b", 12)]
     ]
 
 filePathTests =
