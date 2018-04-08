@@ -4,7 +4,7 @@ module FilePathExtras
   , Relativizer
   , makeRelative
   , makeRelativeWithDots
-  , makeRelativeWithMultidots
+  , makeRelativeWithMultipleDots
   , makeRelativeIfShorter
   ) where
 
@@ -29,7 +29,7 @@ compareByDirectory a b
     da = takeDirectory a
     db = takeDirectory b
 
-{-| Is a path a directory name (a filepath that ends in POSIX pathSeparator)?
+{-| Is a path a directory name (a filepath that ends in POSIX `pathSeparator`)?
 
     isDirectory "/path/to" == False
     isDirectory "/path/to/" == True
@@ -40,18 +40,23 @@ isDirectory =
 
 {-| Returns a file or directory path's parent dierctory.
 
-   takeParentDirectory "a/b/c" ==> "a/b"
-   takeParentDirectory "a/b/c/" ==> "a/b"
+   takeParentDirectory "a/b/c" == "a/b"
+   takeParentDirectory "a/b/c/" == "a/b"
 -}
 takeParentDirectory :: FilePath -> FilePath
 takeParentDirectory =
   addTrailingPathSeparator . takeDirectory . dropTrailingPathSeparator
 
--- | A function that contracts a filename based on a reference path (the first
--- argument). `System.Filepath.makeRelative` is an example of a `Relativizer`.
+{-|} A function that contracts a filename based on a reference path (the first
+argument). `System.Filepath.makeRelative` is an example of a `Relativizer`.
+-}
 type Relativizer = FilePath -> FilePath -> FilePath
 
--- | Like `System.FilePath.Posix.makeRelative`, but uses `..` wherever possible.
+{-| Like `System.FilePath.Posix.makeRelative`, but uses `..`.
+
+   makeRelativeWithDots "/a/" "/f" == "../f"
+   makeRelativeWithDots "/a/b/" "/f" == "../../f"
+-}
 makeRelativeWithDots :: Relativizer
 makeRelativeWithDots "." path = path
 makeRelativeWithDots "/" path = makeRelative "/" path
@@ -60,16 +65,24 @@ makeRelativeWithDots base path =
   in stripPrefix base path &
      fromMaybe (joinPath ["..", makeRelativeWithDots parent path])
 
--- | Like `makeRelativeWithDots`, but also uses `...`, `....` etc. to move up
--- multiple directory levels.
-makeRelativeWithMultidots :: Relativizer
-makeRelativeWithMultidots base path =
+{-| Like `makeRelativeWithDots`, but also uses `...`, `....` etc. to move up
+multiple directory levels.
+
+   makeRelativeWithDots "/a/" "/f" == "../f"
+   makeRelativeWithDots "/a/b/" "/a/f" == "../f"
+-}
+makeRelativeWithMultipleDots :: Relativizer
+makeRelativeWithMultipleDots base path =
   conjugateWithSentinels '/' (invariant combineAdjacentDots)
   $ makeRelativeWithDots base path
     where combineAdjacentDots s =
             subRegex (mkRegex "/(\\.\\.+)/\\.(\\.+)/") s "/\\1\\2/"
 
--- | Returns whichever of the original and relative path is shorter.
+{-| Returns whichever of the original and relative path is shorter.
+
+   makeRelativeIfShorter makeRelativeWithDots "/a/" "/f" == "/f"
+   makeRelativeIfShorter makeRelativeWithDots "/a/b/c/" "/a/b/f" == "../b"
+-}
 makeRelativeIfShorter :: Relativizer -> Relativizer
 makeRelativeIfShorter relativizer =
   shortest2 [original, relativizer]

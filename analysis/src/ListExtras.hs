@@ -14,7 +14,7 @@ import           Protolude
 element x s.t. f x == x.
 
 The result is undefined if the iteration doesn't converge. This can happen
-even if there is a fixed point, if it doesn't attract the initial value.
+even if there is a fixed point, if this point doesn't attract the initial value.
 
 Cf. `Data.function.fix`, which returns the least-defined *domain-theory* fixed
 point.
@@ -43,7 +43,7 @@ first and last element of the result.
 (This is the left conjugation of `f` by `[s] ++ _ ++ [s]`.)
 
 `conjugateWithSentinels` is a partial function. It's undefined if the provided
-doesn't return a list with at least two elements.
+function doesn't return a list with at least two elements.
 
     conjugateWithSentinels 'a' f "bcd" == head . init . f "abcda"
     conjugateWithSentinels s id == id

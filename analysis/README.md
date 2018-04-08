@@ -1,7 +1,10 @@
 # Banyan file cache analysis tool
 
-This directory contains implementation for serializing file path lists and a
-scaffold for printing their metrics.
+This directory contains Haskell code to decode and re-encode Banyan's path list
+cache.
+
+It's for experimenting the path list cache encoding that Banyan uses with
+`localStorage`; also, mainly, for me to brush up on Haskell and tooling.
 
 ## Setup
 
@@ -11,13 +14,19 @@ scaffold for printing their metrics.
 
 ## Run
 
-Collect data by running the web app, and evaluating
-`JSON.parse(localStorage.files).entries`
-in the JavaScript console. Save this to e.g. `./data/test.txt`.
-
 ```bash
 stack build --fast --exec "analyze-cache data/test.txt"
 ```
+
+There's also a `make run` target. This assumes that you've captured a copy of
+the cache from running the app:
+
+1.  Run the web app.
+2.  Evaluate `JSON.parse(localStorage.files).entries` in the JavaScript
+    console.
+3.  Save the value of the printed string (not including the initial and final
+    quote character '`"`') to `./data/personal.txt`.
+4.  `make run`
 
 ## Develop
 

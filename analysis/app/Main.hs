@@ -33,7 +33,7 @@ getRelativizer opts =
   case (getDotsFlag opts, getMultidotsFlag opts) of
     (False, _)    -> makeRelative
     (True, False) -> makeRelativeIfShorter makeRelativeWithDots
-    (True, True)  -> makeRelativeIfShorter makeRelativeWithMultidots
+    (True, True)  -> makeRelativeIfShorter makeRelativeWithMultipleDots
 
 getPathSorter :: Options -> [FilePath] -> [FilePath]
 getPathSorter opts =
@@ -47,12 +47,12 @@ options =
   <$> switch (long "paths" <> short 'p' <> help "Show paths")
   <*> switch (long "sort" <> help "Sort files before directories")
   <*> switch (long "allow-dots" <> short 'd' <> help "Allow .. in relative pathnames")
-  <*> switch (long "combine-dots" <> short 'm' <> help "Allow ... etc. in pathnames")
+  <*> switch (long "allow-multiple-dots" <> short 'm' <> help "Allow ... etc. in pathnames")
   <*> argument str (metavar "FILE")
   <*> optional (strOption
       (long "output" <> short 'o' <> metavar "FILE" <> help "Write output to FILE"))
-    <*> optional (strOption
-    (long "csv" <> metavar "FILE" <> help "Write CSV output to FILE"))
+  <*> optional (strOption
+      (long "csv" <> metavar "FILE" <> help "Write CSV output to FILE"))
 
 -- MAIN
 

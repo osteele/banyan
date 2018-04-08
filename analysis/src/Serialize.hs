@@ -15,6 +15,8 @@ import           FilePathExtras
 type AbsolutePath = FilePath
 type RelativePath = FilePath
 
+-- CURRENT WORKING DIRECTORY STATE MONAD
+
 -- | A Monad whose state is the current working directory.
 type CwdState = State AbsolutePath
 
@@ -23,6 +25,8 @@ getCwd = get
 
 putCwd :: AbsolutePath -> CwdState ()
 putCwd = put
+
+-- PATH LIST TRANSFORMERS
 
 mapFilePaths :: (FilePath -> CwdState FilePath) -> [FilePath] -> [FilePath]
 mapFilePaths f = flip evalState "/" . mapM f
@@ -45,6 +49,8 @@ mkFilePathsEncoder enc =
     let p' = enc cwd p
     when (isDirectory p) $ putCwd p
     return p'
+
+-- PATH DECODER
 
 fileSizes :: [FilePath] -> [(FilePath, Int)]
 fileSizes = fmap parse . filter (not . isDirectory)

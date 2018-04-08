@@ -107,7 +107,7 @@ filePathTests =
         mr "/d1/d2/d3/" "/d4/a" @?= "../../../d4/a"
 
     , testCase "makeRelativeMultidots" $ do
-        let mr = makeRelativeWithMultidots
+        let mr = makeRelativeWithMultipleDots
         mr "/d1/d2/d3/" "/d1/a" @?= ".../a"
         mr "/d1/d2/d3/" "/d4/a" @?= "..../d4/a"
 
@@ -122,8 +122,8 @@ filePathTests =
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
         mr "/long-name/d2/d3/" "/long-name/a" @?= "../../a"
 
-    , testCase "makeRelativeIfShorter makeRelativeWithMultidots" $ do
-        let mr = makeRelativeIfShorter makeRelativeWithMultidots
+    , testCase "makeRelativeIfShorter makeRelativeWithMultipleDots" $ do
+        let mr = makeRelativeIfShorter makeRelativeWithMultipleDots
         mr "/d1/d2/d3/" "/d1/a" @?= "/d1/a"
         mr "/d1/d2/d3/" "/d1/d2/a" @?= "../a"
     ]
