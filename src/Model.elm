@@ -1,4 +1,16 @@
-module Model exposing (..)
+module Model
+    exposing
+        ( Model
+        , SignInStatus(..)
+        , SortOrder(..)
+        , clearAccountFields
+        , combineErrors
+        , init
+        , isSignedIn
+        , isSignedOut
+        , subtree
+        , teamName
+        )
 
 import Dropbox
 import Dropbox.AccountInfo exposing (..)

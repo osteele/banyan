@@ -1,4 +1,4 @@
-port module TreeMap exposing (..)
+port module TreeMap exposing (renderFileTreeMap)
 
 import Dict
 import Dropbox.FileTree exposing (..)

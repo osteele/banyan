@@ -1,4 +1,10 @@
-port module Dropbox.AccountInfo exposing (..)
+port module Dropbox.AccountInfo
+    exposing
+        ( AccountInfo
+        , extractAccessToken
+        , getAccountInfo
+        , receiveAccountInfo
+        )
 
 import Dropbox exposing (..)
 import Extras exposing (..)
@@ -6,6 +12,7 @@ import Regex
 
 
 -- RECORDS
+--
 -- TODO make accountType an enum
 
 

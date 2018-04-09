@@ -1,4 +1,4 @@
-module Message exposing (..)
+module Message exposing (Msg(..), restoreOrSyncFiles, syncFiles)
 
 import Dropbox
 import Dropbox.AccountInfo exposing (AccountInfo)
