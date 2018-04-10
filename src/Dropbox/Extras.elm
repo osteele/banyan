@@ -25,7 +25,6 @@ type alias CommonMeta =
     , pathLower : Maybe String
     , pathDisplay : Maybe String
     , size : Maybe Int
-    , parentSharedFolderId : Maybe String
     , clientModified : Maybe Date
     , serverModified : Maybe Date
     }
@@ -47,7 +46,6 @@ deleted path =
             { name = name
             , pathLower = pathLower
             , pathDisplay = pathDisplay
-            , parentSharedFolderId = Nothing
             }
 
 
@@ -71,7 +69,6 @@ file path size =
             , contentHash = Nothing
             , hasExplicitSharedMembers = Nothing
             , mediaInfo = Nothing
-            , parentSharedFolderId = Nothing
             , propertyGroups = Nothing
             , sharingInfo = Nothing
             }
@@ -90,8 +87,6 @@ folder path =
             , pathLower = pathLower
             , pathDisplay = pathDisplay
             , id = ""
-            , sharedFolderId = Nothing
-            , parentSharedFolderId = Nothing
             , propertyGroups = Nothing
             , sharingInfo = Nothing
             }
@@ -125,7 +120,6 @@ info entry =
             { name = data.name
             , pathDisplay = data.pathDisplay
             , pathLower = data.pathLower
-            , parentSharedFolderId = data.parentSharedFolderId
             , size = Just data.size
             , clientModified = Just data.clientModified
             , serverModified = Just data.serverModified
@@ -135,7 +129,6 @@ info entry =
             { name = data.name
             , pathDisplay = data.pathDisplay
             , pathLower = data.pathLower
-            , parentSharedFolderId = data.parentSharedFolderId
             , size = Nothing
             , clientModified = Nothing
             , serverModified = Nothing
@@ -145,7 +138,6 @@ info entry =
             { name = data.name
             , pathDisplay = data.pathDisplay
             , pathLower = data.pathLower
-            , parentSharedFolderId = data.parentSharedFolderId
             , size = Nothing
             , clientModified = Nothing
             , serverModified = Nothing
