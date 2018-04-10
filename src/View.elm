@@ -15,7 +15,6 @@ view : Model -> Html Msg
 view model =
     div []
         [ header model
-        , githubLink
         , if isSignedOut model then
             signedOut
           else
@@ -23,9 +22,19 @@ view model =
         ]
 
 
-githubURL : String
-githubURL =
-    "https://github.com/osteele/banyan"
+type alias Description =
+    { name : String
+    , githubUrl : String
+    , details : String
+    }
+
+
+description : Description
+description =
+    { name = "Banyan"
+    , githubUrl = "https://github.com/osteele/banyan"
+    , details = "Dropbox filesize visualizer"
+    }
 
 
 
@@ -35,28 +44,30 @@ githubURL =
 header : Model -> Html Msg
 header model =
     div [ class "ui container" ]
-        [ div [ class "ui borderless inverted menu" ]
-            [ Html.h1 [ class "header item" ] [ text "Banyan" ]
+        [ div [ class "ui mini borderless large text menu" ]
+            [ Html.h1 [ class "header item" ] [ text description.name ]
+            , div [ class "item" ] [ text description.details ]
             , div [ class "right menu" ] <|
                 List.filterMap identity <|
                     [ ifJust (isSignedIn model && not (isLoading model.files)) <|
-                        button
-                            [ class "item", onClick syncFiles ]
+                        div
+                            [ class "link item", onClick syncFiles ]
                             [ text "Sync" ]
                     , Just <| signInOut model
                     ]
+            , githubLink
             ]
         ]
 
 
 githubLink : Html msg
 githubLink =
-    Html.a
+    div
         [ class "github link item"
-        , href githubURL
+        , href description.githubUrl
         , attribute "target" "_"
         ]
-        [ icon [ class "huge github" ] [] ]
+        [ icon [ class "github" ] [] ]
 
 
 signInOut : Model -> Html Msg
@@ -65,15 +76,13 @@ signInOut model =
         SignedIn ->
             div
                 [ class "link item", onClick SignOut ]
-                [ icon [ class "large link sign out" ] []
-                , text "Sign out"
+                [ text "Sign out"
                 ]
 
         SignedOut ->
             div
                 [ class "link item", onClick SignIn ]
-                [ icon [ class "large link sign in" ] []
-                , text "Sign into Dropbox"
+                [ text "Sign into Dropbox"
                 ]
 
         SigningIn ->
