@@ -11,7 +11,7 @@ type Msg
     | AuthResponse Dropbox.AuthorizeResult
     | SignIn
     | SignOut
-    | SetAccountInfo AccountInfo
+    | SetAccountInfo (Result String AccountInfo)
     | FilesMessage FilesMsg
       -- view controls
     | RenderFileTreeMap

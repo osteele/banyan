@@ -72,15 +72,18 @@ update msg model =
                   , clearLocationHash model
                   ]
 
-        SetAccountInfo info ->
+        SetAccountInfo (Result.Ok accountInfo) ->
             let
-                m =
-                    { model | accountInfo = Just info, status = SignedIn }
+                newModel =
+                    { model | accountInfo = Just accountInfo, status = SignedIn }
             in
                 if FilesComponent.isEmpty model.files then
-                    update (restoreOrSyncFiles info) m
+                    update (restoreOrSyncFiles accountInfo) newModel
                 else
-                    m ! []
+                    newModel ! []
+
+        SetAccountInfo (Result.Err err) ->
+            { model | errors = [ err ] ++ model.errors } ! []
 
         FilesMessage filesMsg ->
             let
