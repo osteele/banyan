@@ -2,7 +2,7 @@ port module Dropbox.AccountInfo
     exposing
         ( AccountInfo
         , extractAccessToken
-        , getAccountInfo
+        , getCurrentAccount
         , receiveFullAccountInfo
         )
 
@@ -130,7 +130,7 @@ decodeAccountName =
 
 
 type alias AccountRootInfo =
-    { --- TODO tag
+    { --- TODO: tag
       rootNamespaceId : String
     , homeNamespaceId : String
     }
@@ -182,7 +182,7 @@ bearerRegex =
 
 extractAccessToken : UserAuth -> Maybe String
 extractAccessToken auth =
-    -- TODO extract from JSON instead?
+    -- TODO: extract from JSON instead?
     auth |> Basics.toString |> firstMatch bearerRegex
 
 
@@ -194,6 +194,16 @@ port getAccountInfo : String -> Cmd msg
 
 
 port receiveRawFullAccountInfo : (Json.Decode.Value -> msg) -> Sub msg
+
+
+getCurrentAccount : Dropbox.UserAuth -> Cmd msg
+getCurrentAccount auth =
+    case auth |> extractAccessToken of
+        Just token ->
+            getAccountInfo token
+
+        Nothing ->
+            Cmd.none
 
 
 receiveFullAccountInfo : (Result String AccountInfo -> msg) -> Sub msg

@@ -119,7 +119,7 @@ suite =
         , test "map" <|
             \_ ->
                 FileTree.fromString "/a/1:/a/2:/b"
-                    -- TODO replace identity by an actual test
+                    -- TODO: replace identity by an actual test
                     |> FileTree.map identity
                     |> FileTree.toString
                     |> Expect.equal "a/:1:2:/b"

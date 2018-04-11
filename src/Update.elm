@@ -18,12 +18,13 @@ update msg model =
         InitializeAccessToken accessToken ->
             case accessToken of
                 Just tokenString ->
-                    { model
-                      -- FIXME "You should not use this in a production app."
-                        | auth = Just <| Dropbox.authorizationFromAccessToken tokenString
-                        , status = SigningIn
-                    }
-                        ! [ getAccountInfo tokenString ]
+                    let
+                        -- FIXME: "You should not use this in a production app."
+                        token =
+                            Dropbox.authorizationFromAccessToken tokenString
+                    in
+                        { model | auth = Just token, status = SigningIn }
+                            ! [ getCurrentAccount token ]
 
                 Nothing ->
                     model ! []
@@ -33,7 +34,7 @@ update msg model =
             { model | auth = Just auth.userAuth, status = SignedIn }
                 ! (case auth.userAuth |> extractAccessToken of
                     Just token ->
-                        [ getAccountInfo token
+                        [ getCurrentAccount auth.userAuth
                         , storeAccessToken token
                         , clearLocationHash model
                         ]
