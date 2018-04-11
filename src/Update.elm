@@ -83,7 +83,7 @@ update msg model =
                     newModel ! []
 
         SetAccountInfo (Result.Err err) ->
-            { model | errors = [ err ] ++ model.errors } ! []
+            { model | errors = err :: model.errors } ! []
 
         FilesMessage filesMsg ->
             let

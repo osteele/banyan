@@ -142,18 +142,14 @@ teamName model =
 -- FILES
 
 
+{-| The currently-focused subtree.
+-}
 subtree : Model -> FileTree
 subtree model =
-    model.files.files
-        |> FileTree.getSubtree model.path
-        |> Maybe.withDefault model.files.files
-
-
-subtreeTitle : Model -> String
-subtreeTitle model =
     let
-        path =
-            subtree model
-                |> FileTree.nodePath
+        tree =
+            model.files.files
     in
-        teamName model ++ path
+        tree
+            |> FileTree.getSubtree model.path
+            |> Maybe.withDefault tree
