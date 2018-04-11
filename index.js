@@ -1,4 +1,3 @@
-import Dropbox from 'dropbox';
 import 'semantic-ui-css/semantic.min.css';
 import './src/Main.scss';
 
@@ -23,12 +22,6 @@ app.ports.saveFilesCache.subscribe((cacheValue) => {
   delete localStorage[oldFileCacheKey];
   console.info(`write cache: ${json.length} bytes`);
   localStorage[filesCacheKey] = json;
-});
-
-app.ports.getAccountInfo.subscribe(async (accessToken) => {
-  const dbx = new Dropbox({ accessToken });
-  const info = await dbx.usersGetCurrentAccount();
-  app.ports.receiveRawFullAccountInfo.send(info);
 });
 
 app.ports.storeAccessToken.subscribe((accessToken) => {

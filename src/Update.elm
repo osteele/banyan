@@ -10,6 +10,7 @@ import Model exposing (..)
 import Navigation
 import Ports exposing (..)
 import Result
+import Task
 import TreeMap exposing (renderFileTreeMap)
 
 
@@ -23,7 +24,7 @@ update msg model =
                     case Json.Decode.decodeString Dropbox.decodeUserAuth str of
                         Result.Ok auth ->
                             { model | auth = Just auth, status = SigningIn }
-                                ! [ getCurrentAccount auth ]
+                                ! [ Task.attempt SetAccountInfo <| getCurrentAccount auth ]
 
                         Result.Err err ->
                             { model | errors = err :: model.errors } ! []
@@ -34,7 +35,7 @@ update msg model =
         -- on OAuth callback
         AuthResponse (Dropbox.AuthorizeOk auth) ->
             { model | auth = Just auth.userAuth, status = SignedIn }
-                ! [ getCurrentAccount auth.userAuth
+                ! [ Task.attempt SetAccountInfo <| getCurrentAccount auth.userAuth
                   , storeAccessToken <| Dropbox.encodeUserAuth auth.userAuth
                   , clearLocationHash model
                   ]
@@ -80,7 +81,7 @@ update msg model =
                     newModel ! []
 
         SetAccountInfo (Result.Err err) ->
-            { model | errors = err :: model.errors } ! []
+            { model | errors = toString err :: model.errors } ! []
 
         FilesMessage filesMsg ->
             let

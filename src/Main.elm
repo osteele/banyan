@@ -39,7 +39,6 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ receiveFullAccountInfo SetAccountInfo
-        , setPath SetFocus
+        [ setPath SetFocus
         , Sub.map FilesMessage <| FilesComponent.subscriptions model.files
         ]

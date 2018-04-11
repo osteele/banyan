@@ -3,6 +3,7 @@ module Message exposing (Msg(..), restoreOrSyncFiles, syncFiles)
 import Dropbox
 import Dropbox.AccountInfo exposing (AccountInfo)
 import FilesComponent
+import Http
 import Model exposing (SortOrder)
 
 
@@ -11,7 +12,7 @@ type Msg
     | AuthResponse Dropbox.AuthorizeResult
     | SignIn
     | SignOut
-    | SetAccountInfo (Result String AccountInfo)
+    | SetAccountInfo (Result Http.Error AccountInfo)
     | FilesMessage FilesMsg
       -- view controls
     | RenderFileTreeMap

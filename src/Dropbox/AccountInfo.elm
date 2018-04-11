@@ -1,17 +1,18 @@
-port module Dropbox.AccountInfo
+module Dropbox.AccountInfo
     exposing
         ( AccountInfo
         , extractAccessToken
         , getCurrentAccount
-        , receiveFullAccountInfo
         )
 
 import Dropbox exposing (..)
 import Extras exposing (..)
+import Http
 import Regex
 import Json.Decode
 import Json.Decode.Dropbox exposing (optional)
 import Json.Decode.Pipeline as Pipeline
+import Task exposing (Task)
 
 
 -- DATA
@@ -172,7 +173,45 @@ type alias TeamSharingPolicies =
 
 
 
+-- REQUEST
+
+
+{-| Get information about the current user's account.
+
+See <https://www.dropbox.com/developers/documentation/http/documentation#users-get_current_account>
+
+-}
+getCurrentAccount : UserAuth -> Task Http.Error FullAccountInfo
+getCurrentAccount auth =
+    let
+        url =
+            "https://api.dropboxapi.com/2/users/get_current_account"
+    in
+        Http.request
+            { method = "POST"
+            , headers =
+                [ authHeader auth ]
+            , url = url
+            , body = Http.emptyBody
+            , expect = Http.expectJson decodeFullAccount
+            , timeout = Nothing
+            , withCredentials = False
+            }
+            |> Http.toTask
+
+
+
 -- ACCESS TOKEN
+
+
+authHeader : UserAuth -> Http.Header
+authHeader auth =
+    case extractAccessToken auth of
+        Just accessToken ->
+            Http.header "Authorization" ("Bearer " ++ accessToken)
+
+        Nothing ->
+            Debug.crash "couldn't extract access token"
 
 
 bearerRegex : Regex.Regex
@@ -184,28 +223,3 @@ extractAccessToken : UserAuth -> Maybe String
 extractAccessToken auth =
     -- TODO: extract from JSON instead?
     auth |> Basics.toString |> firstMatch bearerRegex
-
-
-
--- PORTS
-
-
-port getAccountInfo : String -> Cmd msg
-
-
-port receiveRawFullAccountInfo : (Json.Decode.Value -> msg) -> Sub msg
-
-
-getCurrentAccount : Dropbox.UserAuth -> Cmd msg
-getCurrentAccount auth =
-    case auth |> extractAccessToken of
-        Just token ->
-            getAccountInfo token
-
-        Nothing ->
-            Cmd.none
-
-
-receiveFullAccountInfo : (Result String AccountInfo -> msg) -> Sub msg
-receiveFullAccountInfo sub =
-    receiveRawFullAccountInfo (sub << Json.Decode.decodeValue decodeFullAccount)
