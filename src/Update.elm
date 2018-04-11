@@ -4,10 +4,12 @@ import Dropbox
 import Dropbox.AccountInfo exposing (..)
 import Extras exposing (remove)
 import FilesComponent exposing (ModelChangeMsg(..))
+import Json.Decode
 import Message exposing (..)
 import Model exposing (..)
 import Navigation
 import Ports exposing (..)
+import Result
 import TreeMap exposing (renderFileTreeMap)
 
 
@@ -17,14 +19,14 @@ update msg model =
         -- initial load, with saved access token
         InitializeAccessToken accessToken ->
             case accessToken of
-                Just tokenString ->
-                    let
-                        -- FIXME: "You should not use this in a production app."
-                        token =
-                            Dropbox.authorizationFromAccessToken tokenString
-                    in
-                        { model | auth = Just token, status = SigningIn }
-                            ! [ getCurrentAccount token ]
+                Just str ->
+                    case Json.Decode.decodeString Dropbox.decodeUserAuth str of
+                        Result.Ok auth ->
+                            { model | auth = Just auth, status = SigningIn }
+                                ! [ getCurrentAccount auth ]
+
+                        Result.Err err ->
+                            { model | errors = err :: model.errors } ! []
 
                 Nothing ->
                     model ! []
@@ -32,16 +34,10 @@ update msg model =
         -- on OAuth callback
         AuthResponse (Dropbox.AuthorizeOk auth) ->
             { model | auth = Just auth.userAuth, status = SignedIn }
-                ! (case auth.userAuth |> extractAccessToken of
-                    Just token ->
-                        [ getCurrentAccount auth.userAuth
-                        , storeAccessToken token
-                        , clearLocationHash model
-                        ]
-
-                    Nothing ->
-                        []
-                  )
+                ! [ getCurrentAccount auth.userAuth
+                  , storeAccessToken <| Dropbox.encodeUserAuth auth.userAuth
+                  , clearLocationHash model
+                  ]
 
         AuthResponse err ->
             { model

@@ -16,7 +16,7 @@ view model =
     div []
         [ header model
         , if isSignedOut model then
-            signedOut
+            signedOut model
           else
             content model
         ]
@@ -33,7 +33,7 @@ description : Description
 description =
     { name = "Banyan"
     , githubUrl = "https://github.com/osteele/banyan"
-    , details = "Dropbox filesize visualizer"
+    , details = "Dropbox file size visualizer"
     }
 
 
@@ -89,10 +89,11 @@ signInOut model =
             div [ class "item" ] [ text "Signing into Dropbox…" ]
 
 
-signedOut : Html Msg
-signedOut =
+signedOut : Model -> Html Msg
+signedOut model =
     div [ class "ui text container" ]
-        [ Html.p []
+        [ errors model
+        , Html.p []
             [ Html.a [ class "link item", onClick SignIn ] [ text "Sign in" ]
             , text " to Dropbox to browse files and folders by size."
             ]

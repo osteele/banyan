@@ -31,8 +31,8 @@ app.ports.getAccountInfo.subscribe(async (accessToken) => {
   app.ports.receiveRawFullAccountInfo.send(info);
 });
 
-app.ports.storeAccessToken.subscribe((token) => {
-  localStorage[accessTokenKey] = token;
+app.ports.storeAccessToken.subscribe((accessToken) => {
+  localStorage[accessTokenKey] = JSON.stringify(accessToken);
 });
 
 app.ports.removeAccountInfo.subscribe(() => {

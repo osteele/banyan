@@ -6,7 +6,7 @@ import Json.Encode
 -- Elm -> JS
 
 
-port storeAccessToken : String -> Cmd msg
+port storeAccessToken : Json.Encode.Value -> Cmd msg
 
 
 port removeAccountInfo : () -> Cmd msg
